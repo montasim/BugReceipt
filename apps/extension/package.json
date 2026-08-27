@@ -1,0 +1,49 @@
+{
+  "name": "@reprokit/extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Capture a privacy-filtered bug reproduction bundle from the active tab.",
+  "scripts": {
+    "dev": "wxt",
+    "prepare": "wxt prepare",
+    "build": "wxt build",
+    "zip": "pnpm check && wxt zip && pnpm validate:package",
+    "validate:package": "node scripts/validate-package.mjs",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.2.8",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@reprokit/capture-model": "workspace:*",
+    "@reprokit/issue-export": "workspace:*",
+    "@reprokit/privacy": "workspace:*",
+    "jszip": "3.10.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/chrome": "^0.2.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@wxt-dev/module-react": "^1.2.2",
+    "eslint": "^10.7.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "happy-dom": "^20.10.6",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.64.0",
+    "vite": "8.1.5",
+    "vitest": "^4.1.10",
+    "wxt": "^0.20.27"
+  }
+}

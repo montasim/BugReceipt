@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReproKit checkout fixture</title>
+    <style>
+      body {
+        max-width: 680px;
+        margin: 12vh auto;
+        padding: 24px;
+        font: 16px system-ui;
+        color: #102332;
+        background: #eef3f5;
+      }
+      main {
+        padding: 36px;
+        background: white;
+        border: 1px solid #bacbd2;
+        box-shadow: 8px 8px 0 #d6e1e5;
+      }
+      button {
+        border: 0;
+        padding: 12px 18px;
+        color: white;
+        background: #102332;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      code {
+        color: #b83c24;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>ReproKit deterministic fixture</p>
+      <h1>Checkout</h1>
+      <p>Clicking the button emits a console error containing known sensitive fixtures.</p>
+      <button id="fail">Complete payment</button>
+      <p id="status" aria-live="polite"></p>
+    </main>
+    <script>
+      document.querySelector('#fail').addEventListener('click', () => {
+        console.error('PaymentIntentError', {
+          status: 409,
+          email: 'fixture@example.com',
+          authorization: 'Bearer fixture-secret-token',
+        });
+        document.querySelector('#status').innerHTML =
+          '<code>Payment failed with status 409.</code>';
+      });
+    </script>
+  </body>
+</html>

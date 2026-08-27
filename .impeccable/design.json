@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-28T00:00:00Z",
+  "title": "Design System: ReproKit",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "primary",
+        "displayName": "Deep Ink",
+        "canonical": "#102332",
+        "tonalRamp": [
+          "oklch(15% 0.035 240)",
+          "oklch(25% 0.035 240)",
+          "oklch(35% 0.035 240)",
+          "oklch(47% 0.035 240)",
+          "oklch(59% 0.035 240)",
+          "oklch(71% 0.035 240)",
+          "oklch(83% 0.025 240)",
+          "oklch(95% 0.012 240)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Measured Gray",
+        "canonical": "#61737d",
+        "tonalRamp": [
+          "oklch(15% 0.02 225)",
+          "oklch(25% 0.02 225)",
+          "oklch(35% 0.02 225)",
+          "oklch(47% 0.02 225)",
+          "oklch(59% 0.02 225)",
+          "oklch(71% 0.018 225)",
+          "oklch(83% 0.014 225)",
+          "oklch(95% 0.008 225)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Cool Paper",
+        "canonical": "#f8fbfc",
+        "tonalRamp": [
+          "oklch(15% 0.01 220)",
+          "oklch(25% 0.01 220)",
+          "oklch(35% 0.01 220)",
+          "oklch(47% 0.01 220)",
+          "oklch(59% 0.009 220)",
+          "oklch(71% 0.008 220)",
+          "oklch(83% 0.006 220)",
+          "oklch(95% 0.004 220)"
+        ]
+      },
+      "fog": {
+        "role": "neutral",
+        "displayName": "Evidence Fog",
+        "canonical": "#eef3f5",
+        "tonalRamp": [
+          "oklch(15% 0.012 220)",
+          "oklch(25% 0.012 220)",
+          "oklch(35% 0.012 220)",
+          "oklch(47% 0.012 220)",
+          "oklch(59% 0.011 220)",
+          "oklch(71% 0.01 220)",
+          "oklch(83% 0.008 220)",
+          "oklch(95% 0.005 220)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Rule Blue",
+        "canonical": "#bacbd2",
+        "tonalRamp": [
+          "oklch(15% 0.018 220)",
+          "oklch(25% 0.018 220)",
+          "oklch(35% 0.018 220)",
+          "oklch(47% 0.018 220)",
+          "oklch(59% 0.017 220)",
+          "oklch(71% 0.015 220)",
+          "oklch(83% 0.012 220)",
+          "oklch(95% 0.006 220)"
+        ]
+      },
+      "signal": {
+        "role": "tertiary",
+        "displayName": "Coral Signal",
+        "canonical": "#ff5c3a",
+        "tonalRamp": [
+          "oklch(15% 0.19 35)",
+          "oklch(25% 0.19 35)",
+          "oklch(35% 0.19 35)",
+          "oklch(47% 0.19 35)",
+          "oklch(59% 0.19 35)",
+          "oklch(71% 0.17 35)",
+          "oklch(83% 0.1 35)",
+          "oklch(95% 0.035 35)"
+        ]
+      },
+      "trace": {
+        "role": "secondary",
+        "displayName": "Teal Trace",
+        "canonical": "#1f9fae",
+        "tonalRamp": [
+          "oklch(15% 0.09 205)",
+          "oklch(25% 0.09 205)",
+          "oklch(35% 0.09 205)",
+          "oklch(47% 0.09 205)",
+          "oklch(59% 0.09 205)",
+          "oklch(71% 0.08 205)",
+          "oklch(83% 0.05 205)",
+          "oklch(95% 0.018 205)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Dominant landing statements only." },
+      "headline": { "displayName": "Headline", "purpose": "Large editorial section statements." },
+      "body": { "displayName": "Body", "purpose": "Readable explanations and procedural copy." },
+      "label": {
+        "displayName": "Diagnostic Label",
+        "purpose": "Metadata, counts, paths, state, versions, and navigation."
+      }
+    },
+    "shadows": [
+      {
+        "name": "signal-action",
+        "value": "5px 7px 18px rgb(255 92 58 / 0.22)",
+        "purpose": "Warm ambient cast for the primary action at rest."
+      },
+      {
+        "name": "signal-action-hover",
+        "value": "4px 10px 24px rgb(255 92 58 / 0.28)",
+        "purpose": "Expanded warm cast for the primary action on hover."
+      },
+      {
+        "name": "evidence-artifact",
+        "value": "12px 18px 42px rgb(16 35 50 / 0.14)",
+        "purpose": "Broad low-opacity depth for the featured review copy."
+      },
+      {
+        "name": "ink-bundle",
+        "value": "10px 18px 38px rgb(16 35 50 / 0.16)",
+        "purpose": "Ambient depth for substantial dark proof containers."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-state",
+        "value": "180ms ease",
+        "purpose": "Button transform, shadow, and background state changes."
+      },
+      {
+        "name": "evidence-settle",
+        "value": "700ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "One-time entrance for the featured evidence preview."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "Animation and transition duration under prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      { "name": "stack", "value": "900px" },
+      { "name": "compact", "value": "560px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "High-contrast download or completion action with restrained ambient lift.",
+      "html": "<a class=\"ds-button-primary\" href=\"#\">Download ReproKit</a>",
+      "css": ".ds-button-primary { display: inline-flex; align-items: center; justify-content: center; gap: 15px; padding: 14px 18px; color: #fff; background: var(--ink, #102332); text-decoration: none; font: 750 16px 'Bricolage Grotesque Variable', system-ui, sans-serif; border-radius: 0; box-shadow: 5px 7px 18px rgb(255 92 58 / 0.22); transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease; } .ds-button-primary:hover { background: #1a3444; box-shadow: 4px 10px 24px rgb(255 92 58 / 0.28); transform: translateY(-2px); } .ds-button-primary:active { transform: translateY(0); } .ds-button-primary:focus-visible { outline: 3px solid var(--trace, #1f9fae); outline-offset: 4px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Ruled paper action for secondary navigation or explanation.",
+      "html": "<a class=\"ds-button-secondary\" href=\"#\">Explore what it captures</a>",
+      "css": ".ds-button-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 15px; padding: 14px 18px; color: var(--ink, #102332); background: var(--paper, #f8fbfc); border: 1px solid var(--line, #bacbd2); border-radius: 0; text-decoration: none; font: 750 16px 'Bricolage Grotesque Variable', system-ui, sans-serif; transition: transform 0.18s ease, background-color 0.18s ease; } .ds-button-secondary:hover { transform: translateY(-2px); } .ds-button-secondary:active { transform: translateY(0); } .ds-button-secondary:focus-visible { outline: 3px solid var(--trace, #1f9fae); outline-offset: 4px; }"
+    },
+    {
+      "name": "Technical Navigation",
+      "kind": "nav",
+      "description": "Compact uppercase mono navigation with coral hover state.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Example navigation\"><a href=\"#\">Details</a><a href=\"#\">Workflow</a><a href=\"#\">Install</a></nav>",
+      "css": ".ds-nav { display: flex; gap: 28px; font: 650 11px 'JetBrains Mono Variable', monospace; text-transform: uppercase; letter-spacing: 0.06em; } .ds-nav a { color: var(--ink, #102332); text-decoration: none; } .ds-nav a:hover { color: var(--signal, #ff5c3a); } .ds-nav a:focus-visible { outline: 3px solid var(--trace, #1f9fae); outline-offset: 4px; }"
+    },
+    {
+      "name": "Evidence Review Copy",
+      "kind": "custom",
+      "description": "Signature paper artifact combining ruled evidence rows and a diagnostic console excerpt.",
+      "html": "<article class=\"ds-evidence\"><span class=\"ds-evidence-stamp\">REVIEW COPY</span><header><span>Capture / checkout</span><b>Local only</b></header><h3><small>Issue report</small>Checkout fails after payment</h3><p><i>01</i><span>Open the cart with two items</span><b>Step</b></p><code><small>12:41:08 · ERROR</small>PaymentIntentError: status 409<em>[token REDACTED]</em></code></article>",
+      "css": ".ds-evidence { position: relative; color: var(--ink, #102332); background: var(--paper, #f8fbfc); border: 1px solid var(--ink, #102332); border-radius: 0; box-shadow: 12px 18px 42px rgb(16 35 50 / 0.14); font-family: 'Bricolage Grotesque Variable', system-ui, sans-serif; transform: rotate(1.2deg); } .ds-evidence-stamp { position: absolute; top: -12px; right: 24px; padding: 5px 12px; color: #fff; background: var(--signal, #ff5c3a); font: 700 9px 'JetBrains Mono Variable', monospace; letter-spacing: 0.12em; } .ds-evidence header { display: flex; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid var(--line, #bacbd2); font: 650 9px 'JetBrains Mono Variable', monospace; text-transform: uppercase; letter-spacing: 0.08em; } .ds-evidence header b { color: var(--trace, #1f9fae); } .ds-evidence h3 { margin: 0; padding: 27px 22px; border-bottom: 1px solid var(--line, #bacbd2); font-size: 29px; letter-spacing: -0.035em; } .ds-evidence h3 small { display: block; margin-bottom: 9px; color: var(--muted, #61737d); font: 650 9px 'JetBrains Mono Variable', monospace; text-transform: uppercase; } .ds-evidence p { display: grid; grid-template-columns: 35px 1fr auto; gap: 12px; margin: 0; padding: 16px 22px; border-bottom: 1px solid #dce5e8; align-items: center; } .ds-evidence p i, .ds-evidence p b { font: 650 9px 'JetBrains Mono Variable', monospace; } .ds-evidence p i { color: var(--trace, #1f9fae); } .ds-evidence p b { color: var(--muted, #61737d); text-transform: uppercase; } .ds-evidence code { display: grid; gap: 8px; margin: 18px; padding: 16px; color: #ffb5a5; background: #10232e; font-family: 'JetBrains Mono Variable', monospace; } .ds-evidence code small { color: #7594a0; } .ds-evidence code em { color: #5cc3ce; font-size: 10px; } .ds-evidence:focus-within { outline: 3px solid var(--trace, #1f9fae); outline-offset: 4px; } @media (max-width: 560px) { .ds-evidence { transform: none; } }"
+    },
+    {
+      "name": "Capture Ledger Row",
+      "kind": "custom",
+      "description": "Ruled evidence record pairing a coral index with a strong title and muted explanation.",
+      "html": "<div class=\"ds-ledger-row\"><dt><span>01</span>Screen recording</dt><dd>The selected tab's pixels, without microphone or tab audio.</dd></div>",
+      "css": ".ds-ledger-row { display: grid; grid-template-columns: minmax(260px, 0.8fr) 1.2fr; gap: 50px; align-items: baseline; padding: 27px 0; color: var(--ink, #102332); border-bottom: 1px solid var(--line, #bacbd2); font-family: 'Bricolage Grotesque Variable', system-ui, sans-serif; } .ds-ledger-row dt { display: flex; gap: 20px; align-items: baseline; font-size: 22px; font-weight: 760; letter-spacing: -0.02em; } .ds-ledger-row dt span { color: var(--signal, #ff5c3a); font: 700 10px 'JetBrains Mono Variable', monospace; } .ds-ledger-row dd { margin: 0; color: var(--muted, #61737d); line-height: 1.65; } .ds-ledger-row:focus-within { outline: 3px solid var(--trace, #1f9fae); outline-offset: 4px; } @media (max-width: 900px) { .ds-ledger-row { grid-template-columns: 1fr; gap: 10px; } }"
+    },
+    {
+      "name": "FAQ Disclosure",
+      "kind": "custom",
+      "description": "Square ruled disclosure with a coral plus/minus state marker.",
+      "html": "<details class=\"ds-disclosure\" open><summary>What does ReproKit capture?</summary><p>Only activity collected after you start, with every field available for review.</p></details>",
+      "css": ".ds-disclosure { color: var(--ink, #102332); border-top: 1px solid var(--line, #bacbd2); border-bottom: 1px solid var(--line, #bacbd2); font-family: 'Bricolage Grotesque Variable', system-ui, sans-serif; } .ds-disclosure summary { position: relative; padding: 25px 50px 25px 0; cursor: pointer; font-size: 20px; font-weight: 730; list-style: none; } .ds-disclosure summary::-webkit-details-marker { display: none; } .ds-disclosure summary::after { content: '+'; position: absolute; top: 21px; right: 4px; color: var(--signal, #ff5c3a); font-size: 26px; font-weight: 450; } .ds-disclosure[open] summary::after { content: '\u2212'; } .ds-disclosure p { margin: -5px 50px 25px 0; color: var(--muted, #61737d); line-height: 1.65; } .ds-disclosure summary:hover { color: var(--signal, #ff5c3a); } .ds-disclosure summary:focus-visible { outline: 3px solid var(--trace, #1f9fae); outline-offset: 4px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Evidence Desk",
+    "overview": "ReproKit feels like a carefully assembled technical review copy: cool paper and fog surfaces, deep ink structure, and diagnostic annotations that make evidence easy to inspect. The identity is editorial in scale but operational in detail, balancing oversized, tightly set headlines with compact mono metadata.\n\nThe system stays flat and document-like by default. Thin rules, numbered ledgers, file trees, and square evidence panels carry the structure; limited ambient shadows identify the few objects that behave like physical review artifacts. Teal traces progress and trustworthy diagnostic state, while coral signals action, exceptions, and human attention.",
+    "keyCharacteristics": [
+      "Cool fog and paper grounds with deep ink structure.",
+      "Oversized editorial type paired with compact diagnostic mono labels.",
+      "Square controls, ruled containers, and evidence-led proof patterns.",
+      "Teal trace and coral signal accents used by role, not as decoration.",
+      "Restrained ambient depth with one evidence-preview settle motion."
+    ],
+    "rules": [
+      {
+        "name": "The Two-Ink Rule",
+        "body": "Teal communicates trace, state, and technical continuity; coral communicates signal, action, or exception. Do not swap their roles casually.",
+        "section": "colors"
+      },
+      {
+        "name": "The Paper-and-Ink Rule",
+        "body": "Build hierarchy with the paper, fog, ink, and line neutrals before reaching for either accent.",
+        "section": "colors"
+      },
+      {
+        "name": "The Diagnostic Register Rule",
+        "body": "Use mono typography for evidence metadata and system state, never as a substitute for readable body copy.",
+        "section": "typography"
+      },
+      {
+        "name": "The Proof-Beside-Claim Rule",
+        "body": "When space permits, pair explanatory copy with an inspectable artifact, ledger, or procedure rather than another decorative content block.",
+        "section": "layout"
+      },
+      {
+        "name": "The Ambient-Only Rule",
+        "body": "Shadows suggest a review artifact resting above the page; they do not replace borders, rules, or tonal structure.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Squared Evidence Rule",
+        "body": "Keep interactive controls and proof containers unrounded so the interface reads as technical documentation rather than a soft consumer dashboard.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do lead with claims that are backed by an inspectable artifact, ledger, file tree, or explicit boundary.",
+      "Do use thin rules, square geometry, and tonal contrast as the default hierarchy tools.",
+      "Do reserve JetBrains Mono for diagnostic metadata, counts, paths, versions, status, and navigation labels.",
+      "Do preserve the 900px and 560px responsive behavior and reduced-motion handling when extending this web identity."
+    ],
+    "donts": [
+      "Don't introduce rounded pills or soft card radii into the established square form language.",
+      "Don't scatter coral and teal decoratively; keep their signal and trace roles distinct.",
+      "Don't use shadows on every container or create a generic floating-card dashboard aesthetic.",
+      "Don't turn this landing page's current section sequence into a global layout requirement."
+    ]
+  }
+}

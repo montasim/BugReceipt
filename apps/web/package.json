@@ -1,0 +1,43 @@
+{
+  "name": "@reprokit/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3000",
+    "generate-routes": "tsr generate",
+    "build": "tsr generate && vite build",
+    "preview": "vite preview",
+    "format": "prettier --write . && eslint --fix",
+    "lint": "eslint",
+    "test": "vitest run && node --test tests/netlify-build-filter.mjs",
+    "test:deploy-filter": "node --test tests/netlify-build-filter.mjs",
+    "typecheck": "tsc --noEmit",
+    "check": "tsr generate && prettier --check . && eslint && tsc --noEmit && vitest run && node --test tests/netlify-build-filter.mjs && vite build"
+  },
+  "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.2.8",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tanstack/react-router": "latest",
+    "@tanstack/react-start": "latest",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "resend": "^6.24.0",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@netlify/vite-plugin-tanstack-start": "^1.2.15",
+    "@tanstack/devtools-vite": "latest",
+    "@tanstack/eslint-config": "latest",
+    "@tanstack/router-cli": "latest",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "latest",
+    "eslint": "^10.7.0",
+    "typescript": "^6.0.3",
+    "vite": "latest",
+    "vitest": "^4.1.10"
+  }
+}
