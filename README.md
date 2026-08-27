@@ -4,7 +4,7 @@
 
 ReproKit records the human steps and browser failures that maintainers usually have to request after a bug is reported. A user starts capture on the affected tab, reproduces the problem, reviews every saved field and the tab recording locally, and exports a Markdown issue plus an optional WebM. Nothing leaves the browser unless the user explicitly chooses **Email report**.
 
-**Current status:** working pre-release source build. GitHub release automation and the landing-page download route are prepared for `montasim/ReproKit`, but the public repository and first downloadable release do not exist yet; use the source installation below.
+**Current status:** public v0.1.0 pre-release. Download the verified Chrome archive from [GitHub Releases](https://github.com/montasim/ReproKit/releases/latest), or visit the [ReproKit landing page](https://reprokit-679.netlify.app).
 
 ## What works today
 
@@ -167,26 +167,18 @@ The CI workflow runs the same command for pushes to `main` and pull requests. Ve
 - Visual email attachments are limited to 4 MiB; larger recordings must be downloaded and shared separately.
 - The in-memory endpoint rate limit is a baseline abuse control, not a substitute for deployment-level rate limiting in a public release.
 - Export creates local files only. It does not publish, authenticate with, or create issues in GitHub or Linear.
-- The public repository, release download, support channel, contribution guide, security policy, and code of conduct have not been published yet.
+- A dedicated support channel, contribution guide, security policy, and code of conduct have not been published yet.
 - Automated tests cover model, privacy, lifecycle, review, and export seams; the literal Chrome toolbar permission gesture still requires manual release testing.
 
 ## Releases
 
-The repository contains release automation, and the landing page targets `https://github.com/montasim/ReproKit/releases/latest`, but there is no public release yet. Before the first release:
-
-1. Add the chosen license file and update package metadata.
-2. Publish the repository and verify its default branch and community files.
-3. Run the manual Chrome permission, screen-recording, and fallback-screenshot checklist.
-4. Tag the verified version, for example `v0.1.0`.
-5. Confirm the release archive, checksum, installation instructions, and landing-page links.
-
-Do not deploy the landing page publicly until that release endpoint resolves and the first archive has been checked in Chrome.
+Version tags matching `v*` run the release workflow. It builds and validates the unpacked Chrome archive, creates `SHA256SUMS.txt`, and publishes both assets with the installation notes. The latest verified package is available from [GitHub Releases](https://github.com/montasim/ReproKit/releases/latest).
 
 ## Support, security, and contributing
 
-There is no public issue tracker or private security-reporting channel yet. Until those exist, do not publish suspected vulnerabilities, captured reports, recordings, screenshots, credentials, or other sensitive material through an improvised public channel.
+Use [GitHub Issues](https://github.com/montasim/ReproKit/issues) for ordinary, non-sensitive bugs. There is no private security-reporting channel yet, so do not publish suspected vulnerabilities, captured reports, recordings, screenshots, credentials, or other sensitive material through a public issue.
 
-The local contribution workflow is available through the development commands above, but external contribution instructions cannot be completed until the repository and its governance files are public.
+The local contribution workflow is available through the development commands above. Dedicated external contribution and governance documents have not been published yet.
 
 ## License
 

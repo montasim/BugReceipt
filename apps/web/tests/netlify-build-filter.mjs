@@ -27,6 +27,7 @@ function runIgnoreCommand(command, cwd, cachedCommit, commit) {
 
 test('Netlify skips extension-only changes and builds web-related changes', () => {
   const config = readFileSync(join(webRoot, 'netlify.toml'), 'utf8');
+  assert.match(config, /^\s*publish\s*=\s*"dist\/client"/m);
   const ignoreCommand = config.match(/^\s*ignore\s*=\s*"([^"]+)"/m)?.[1];
   assert.ok(ignoreCommand, 'apps/web/netlify.toml must define build.ignore');
 

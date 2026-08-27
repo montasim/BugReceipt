@@ -12,6 +12,7 @@
   "bugs": {
     "url": "https://github.com/montasim/ReproKit/issues"
   },
+  "homepage": "https://reprokit-679.netlify.app",
   "packageManager": "pnpm@11.7.0",
   "engines": {
     "node": ">=24"
