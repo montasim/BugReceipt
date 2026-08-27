@@ -5,6 +5,13 @@
   "type": "module",
   "description": "Privacy-first browser bug reproduction capture and export.",
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/montasim/ReproKit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/montasim/ReproKit/issues"
+  },
   "packageManager": "pnpm@11.7.0",
   "engines": {
     "node": ">=24"
