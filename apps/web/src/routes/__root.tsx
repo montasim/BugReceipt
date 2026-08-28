@@ -73,11 +73,10 @@ function RootDocument({ children }: { children: ReactNode }) {
         {children}
         <Scripts />
         <script
-          async
-          src="https://supportkori.com/widget.js"
+          src="https://www.supportkori.com/widget.js"
           data-id="montasim"
-          data-message="Support me"
-          data-color="#ff5c3a"
+          data-message="Support montasim"
+          data-color="#FFDD00"
           data-position="right"
         />
       </body>
