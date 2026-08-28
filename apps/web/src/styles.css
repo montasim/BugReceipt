@@ -10,10 +10,10 @@
   --line: #bacbd2;
   --signal: #ff5c3a;
   --trace: #1f9fae;
-  --type-display: clamp(2rem, 3.2vw, 2.375rem);
-  --type-section: clamp(1.375rem, 2vw, 1.5rem);
-  --type-title: 1.125rem;
-  --type-body: 1rem;
+  --type-display: clamp(2.3rem, 3.68vw, 2.73125rem);
+  --type-section: clamp(1.58125rem, 2.3vw, 1.725rem);
+  --type-title: 1.29375rem;
+  --type-body: 1.15rem;
   color: #102332;
   background: #eef3f5;
   font-family: 'Bricolage Grotesque Variable', system-ui, sans-serif;
@@ -64,7 +64,7 @@ a {
   gap: 10px;
   align-items: center;
   text-decoration: none;
-  font-size: 18px;
+  font-size: 20.7px;
   font-weight: 780;
   letter-spacing: -0.03em;
 }
@@ -90,7 +90,7 @@ nav {
   display: flex;
   gap: 28px;
   font:
-    650 11px 'JetBrains Mono Variable',
+    650 12.65px 'JetBrains Mono Variable',
     monospace;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -113,7 +113,7 @@ nav a:hover {
   margin: 0;
   color: var(--trace);
   font:
-    700 11px 'JetBrains Mono Variable',
+    700 12.65px 'JetBrains Mono Variable',
     monospace;
   text-transform: uppercase;
   letter-spacing: 0.13em;
@@ -148,7 +148,7 @@ nav a:hover {
   gap: 15px;
   padding: 14px 18px;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 16.1px;
   font-weight: 750;
   transition:
     transform 0.18s ease,
@@ -178,7 +178,7 @@ nav a:hover {
   margin-top: 26px;
   color: var(--muted);
   font:
-    600 10px 'JetBrains Mono Variable',
+    600 11.5px 'JetBrains Mono Variable',
     monospace;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -207,7 +207,7 @@ nav a:hover {
   background: var(--signal);
   color: white;
   font:
-    700 9px 'JetBrains Mono Variable',
+    700 10.35px 'JetBrains Mono Variable',
     monospace;
   letter-spacing: 0.12em;
 }
@@ -219,7 +219,7 @@ nav a:hover {
   padding: 13px 16px;
   border-bottom: 1px solid var(--line);
   font:
-    650 9px 'JetBrains Mono Variable',
+    650 10.35px 'JetBrains Mono Variable',
     monospace;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -235,14 +235,14 @@ nav a:hover {
   display: block;
   color: var(--muted);
   font:
-    650 9px 'JetBrains Mono Variable',
+    650 10.35px 'JetBrains Mono Variable',
     monospace;
   text-transform: uppercase;
 }
 .preview-title strong {
   display: block;
   margin-top: 9px;
-  font-size: 20px;
+  font-size: 23px;
   letter-spacing: -0.035em;
 }
 .preview-row {
@@ -256,7 +256,7 @@ nav a:hover {
 .preview-row i,
 .preview-row b {
   font:
-    650 9px 'JetBrains Mono Variable',
+    650 10.35px 'JetBrains Mono Variable',
     monospace;
 }
 .preview-row i {
@@ -283,7 +283,7 @@ nav a:hover {
 }
 .preview-console em {
   color: #5cc3ce;
-  font-size: 10px;
+  font-size: 11.5px;
 }
 .preview-footer {
   border-top: 1px solid var(--line);
@@ -301,7 +301,7 @@ nav a:hover {
   padding: 17px max(24px, calc((100vw - 1280px) / 6));
   border-right: 1px solid #3d515e;
   font:
-    650 10px 'JetBrains Mono Variable',
+    650 11.5px 'JetBrains Mono Variable',
     monospace;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -363,7 +363,7 @@ nav a:hover {
 .capture-ledger dt span {
   color: var(--signal);
   font:
-    700 10px 'JetBrains Mono Variable',
+    700 11.5px 'JetBrains Mono Variable',
     monospace;
 }
 .capture-ledger dd {
@@ -384,7 +384,7 @@ nav a:hover {
   box-shadow: 10px 18px 38px rgb(16 35 50 / 0.16);
 }
 .bundle-proof strong {
-  font-size: 20px;
+  font-size: 23px;
   letter-spacing: -0.025em;
 }
 .bundle-proof p {
@@ -400,7 +400,7 @@ nav a:hover {
   color: #ffb5a5;
   background: #0a1a24;
   font:
-    650 12px/1.5 'JetBrains Mono Variable',
+    650 13.8px/1.5 'JetBrains Mono Variable',
     monospace;
 }
 .bundle-trees {
@@ -451,7 +451,7 @@ nav a:hover {
 }
 .workflow li > span {
   font:
-    700 11px 'JetBrains Mono Variable',
+    700 12.65px 'JetBrains Mono Variable',
     monospace;
   color: var(--signal);
 }
@@ -523,7 +523,7 @@ nav a:hover {
   margin-top: 22px;
   color: var(--muted);
   font:
-    600 10px 'JetBrains Mono Variable',
+    600 11.5px 'JetBrains Mono Variable',
     monospace;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -548,7 +548,7 @@ nav a:hover {
   padding-top: 5px;
   color: var(--trace);
   font:
-    700 11px 'JetBrains Mono Variable',
+    700 12.65px 'JetBrains Mono Variable',
     monospace;
 }
 .install-steps h3 {
@@ -609,7 +609,7 @@ nav a:hover {
   top: 21px;
   right: 4px;
   color: var(--signal);
-  font-size: 26px;
+  font-size: 29.9px;
   font-weight: 450;
 }
 .questions details[open] summary::after {
@@ -650,7 +650,7 @@ footer .shell {
   justify-content: space-between;
   color: var(--muted);
   font:
-    600 10px 'JetBrains Mono Variable',
+    600 11.5px 'JetBrains Mono Variable',
     monospace;
   text-transform: uppercase;
 }
@@ -660,7 +660,7 @@ footer span:first-child {
   gap: 9px;
   color: var(--ink);
   font:
-    750 16px 'Bricolage Grotesque Variable',
+    750 18.4px 'Bricolage Grotesque Variable',
     sans-serif;
   text-transform: none;
 }
@@ -684,7 +684,7 @@ footer span:first-child {
 .not-found p {
   color: var(--signal);
   font:
-    700 11px 'JetBrains Mono Variable',
+    700 12.65px 'JetBrains Mono Variable',
     monospace;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -751,7 +751,7 @@ footer span:first-child {
     padding-block: 60px;
   }
   .hero h1 {
-    font-size: 2.25rem;
+    font-size: 2.5875rem;
   }
   .hero-actions {
     align-items: stretch;
@@ -761,7 +761,7 @@ footer span:first-child {
     transform: none;
   }
   .preview-title strong {
-    font-size: 23px;
+    font-size: 26.45px;
   }
   .workflow,
   .details,
