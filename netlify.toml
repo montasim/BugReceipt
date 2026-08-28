@@ -2,6 +2,10 @@
   base = "apps/web"
   command = "pnpm --filter @bugreceipt/web build"
   publish = "dist/client"
+
+[functions]
+  directory = ".netlify/v1/functions"
+
 [build.environment]
   NODE_VERSION = "24"
   PNPM_VERSION = "11.7.0"

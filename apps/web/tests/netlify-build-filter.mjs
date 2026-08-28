@@ -12,6 +12,7 @@ test('Netlify always deploys the web workspace from the root configuration', () 
   assert.match(config, /^\s*base\s*=\s*"apps\/web"/m);
   assert.match(config, /^\s*command\s*=\s*"pnpm --filter @bugreceipt\/web build"/m);
   assert.match(config, /^\s*publish\s*=\s*"dist\/client"/m);
+  assert.match(config, /^\s*directory\s*=\s*"\.netlify\/v1\/functions"/m);
   assert.doesNotMatch(
     config,
     /^\s*ignore\s*=/m,
