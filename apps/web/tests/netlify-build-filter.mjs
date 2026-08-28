@@ -41,6 +41,7 @@ test('Netlify skips extension-only changes and builds web-related changes', () =
     git(fixture, 'config', 'user.name', 'BugReceipt test');
     writeFixture(fixture, 'apps/web/index.ts', 'web v1\n');
     writeFixture(fixture, 'apps/extension/index.ts', 'extension v1\n');
+    writeFixture(fixture, 'netlify.toml', 'config v1\n');
     writeFixture(fixture, 'package.json', '{}\n');
     writeFixture(fixture, 'pnpm-lock.yaml', 'lockfileVersion: 9\n');
     writeFixture(fixture, 'pnpm-workspace.yaml', 'packages: []\n');
@@ -58,12 +59,22 @@ test('Netlify skips extension-only changes and builds web-related changes', () =
       'an extension-only change should stop the Netlify build',
     );
 
+    writeFixture(fixture, 'netlify.toml', 'config v2\n');
+    git(fixture, 'add', '.');
+    git(fixture, 'commit', '--quiet', '-m', 'deployment config change');
+    const deploymentConfigChange = git(fixture, 'rev-parse', 'HEAD');
+    assert.equal(
+      runIgnoreCommand(ignoreCommand, fixture, extensionOnly, deploymentConfigChange).status,
+      1,
+      'a Netlify configuration change should continue the build',
+    );
+
     writeFixture(fixture, 'apps/web/index.ts', 'web v2\n');
     git(fixture, 'add', '.');
     git(fixture, 'commit', '--quiet', '-m', 'web change');
     const webChange = git(fixture, 'rev-parse', 'HEAD');
     assert.equal(
-      runIgnoreCommand(ignoreCommand, fixture, extensionOnly, webChange).status,
+      runIgnoreCommand(ignoreCommand, fixture, deploymentConfigChange, webChange).status,
       1,
       'a landing-page change should continue the Netlify build',
     );
