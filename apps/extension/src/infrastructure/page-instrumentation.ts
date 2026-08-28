@@ -142,6 +142,7 @@ export function installRecorder(sessionId: string): void {
   const readResponseBody = async (response: Response): Promise<string | undefined> => {
     const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
     const isText =
+      contentType === '' ||
       contentType.includes('json') ||
       contentType.includes('text') ||
       contentType.includes('xml') ||

@@ -176,7 +176,7 @@ CI runs the same quality gate for pushes to `main` and pull requests. Tags match
 
 ## Landing-page deployment
 
-The public site is [bugreceipt.netlify.app](https://bugreceipt.netlify.app). `apps/web/netlify.toml` defines the reproducible Netlify contract:
+The public site is [bugreceipt.netlify.app](https://bugreceipt.netlify.app). The root `netlify.toml` defines the reproducible Netlify contract and pins the deployable workspace to `apps/web`:
 
 - build command: `pnpm --filter @bugreceipt/web build`;
 - Node.js 24 and pnpm 11.7.0;

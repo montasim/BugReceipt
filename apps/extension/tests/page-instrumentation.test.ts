@@ -65,4 +65,37 @@ describe('page evidence recorder', () => {
       responseBody: '{"ok":true}',
     });
   });
+
+  it('captures a fetch error response body when content-type is missing', async () => {
+    const postMessage = vi.spyOn(window, 'postMessage').mockImplementation(() => undefined);
+    const fetch = vi.fn().mockResolvedValue(
+      new Response(new TextEncoder().encode('{"error":"Invitation could not be created"}'), {
+        status: 500,
+      }),
+    );
+    window.fetch = fetch;
+    installRecorder('00000000-0000-4000-8000-000000000000');
+
+    await window.fetch('https://example.com/api/invitations', {
+      method: 'POST',
+      body: '{"email":"fixture@example.com"}',
+    });
+    await vi.waitFor(() =>
+      expect(
+        postMessage.mock.calls.some(
+          ([message]) => (message as { type?: string }).type === 'network',
+        ),
+      ).toBe(true),
+    );
+
+    const network = postMessage.mock.calls
+      .map(([message]) => message as { type?: string; event?: Record<string, unknown> })
+      .find((message) => message.type === 'network');
+    expect(network?.event).toMatchObject({
+      method: 'POST',
+      status: 500,
+      resourceType: 'fetch',
+      responseBody: '{"error":"Invitation could not be created"}',
+    });
+  });
 });

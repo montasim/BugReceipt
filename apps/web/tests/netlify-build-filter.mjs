@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 const webRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const repoRoot = resolve(webRoot, '../..');
 
 function git(cwd, ...args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
@@ -26,10 +27,12 @@ function runIgnoreCommand(command, cwd, cachedCommit, commit) {
 }
 
 test('Netlify skips extension-only changes and builds web-related changes', () => {
-  const config = readFileSync(join(webRoot, 'netlify.toml'), 'utf8');
+  const config = readFileSync(join(repoRoot, 'netlify.toml'), 'utf8');
+  assert.match(config, /^\s*base\s*=\s*"apps\/web"/m);
+  assert.match(config, /^\s*command\s*=\s*"pnpm --filter @bugreceipt\/web build"/m);
   assert.match(config, /^\s*publish\s*=\s*"dist\/client"/m);
   const ignoreCommand = config.match(/^\s*ignore\s*=\s*"([^"]+)"/m)?.[1];
-  assert.ok(ignoreCommand, 'apps/web/netlify.toml must define build.ignore');
+  assert.ok(ignoreCommand, 'netlify.toml must define build.ignore');
 
   const fixture = mkdtempSync(join(tmpdir(), 'reprokit-netlify-filter-'));
   try {
