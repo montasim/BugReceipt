@@ -12,15 +12,15 @@ colors:
 typography:
   display:
     fontFamily: 'Bricolage Grotesque Variable, system-ui, sans-serif'
-    fontSize: 'clamp(58px, 7.2vw, 105px)'
+    fontSize: 'clamp(32px, 3.2vw, 38px)'
     fontWeight: 700
-    lineHeight: 0.83
+    lineHeight: 1.08
     letterSpacing: '-0.04em'
   headline:
     fontFamily: 'Bricolage Grotesque Variable, system-ui, sans-serif'
-    fontSize: 'clamp(46px, 6vw, 80px)'
+    fontSize: 'clamp(22px, 2vw, 24px)'
     fontWeight: 700
-    lineHeight: 0.94
+    lineHeight: 1.3
     letterSpacing: '-0.04em'
   body:
     fontFamily: 'Bricolage Grotesque Variable, system-ui, sans-serif'
@@ -119,7 +119,7 @@ The palette reads like a cool technical document marked up with two deliberate d
 
 - **Display:** Very large, tightly tracked, and compressed vertically; reserve it for the dominant landing statement.
 - **Headline:** Large, tightly tracked section statements with compact line height.
-- **Title:** Strong Bricolage titles in the 20–29px range for evidence records, workflow steps, and disclosures.
+- **Title:** Strong Bricolage titles in the 18–20px range for evidence records, workflow steps, and disclosures.
 - **Body:** Comfortable reading copy with a 1.6–1.65 line height and restrained line lengths around 520–680px.
 - **Label:** Small mono text, usually uppercase with tracked letters, for navigation, numbers, statuses, versions, and boundaries.
 
