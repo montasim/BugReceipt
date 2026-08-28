@@ -18,11 +18,14 @@ describe('extension landing page', () => {
 
   it('loads the BugReceipt favicon and SupportKori widget from the root document', () => {
     const source = readFileSync(new URL('../src/routes/__root.tsx', import.meta.url), 'utf8');
+    const styles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
 
     expect(source).toContain('/brand/bugreceipt-mark.svg');
     expect(source).toContain('/brand/bugreceipt-32.png');
     expect(source).toContain('/brand/bugreceipt-180.png');
     expect(source).toContain('https://supportkori.com/widget.js');
     expect(source).toContain('data-id="montasim"');
+    expect(styles).toContain('.sk-widget-btn');
+    expect(styles).toContain('color: white !important');
   });
 });
