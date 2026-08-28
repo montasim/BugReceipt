@@ -48,13 +48,14 @@ test('Netlify skips extension-only changes and builds web-related changes', () =
     git(fixture, 'add', '.');
     git(fixture, 'commit', '--quiet', '-m', 'initial');
     const initial = git(fixture, 'rev-parse', 'HEAD');
+    const buildBase = join(fixture, 'apps/web');
 
     writeFixture(fixture, 'apps/extension/index.ts', 'extension v2\n');
     git(fixture, 'add', '.');
     git(fixture, 'commit', '--quiet', '-m', 'extension only');
     const extensionOnly = git(fixture, 'rev-parse', 'HEAD');
     assert.equal(
-      runIgnoreCommand(ignoreCommand, fixture, initial, extensionOnly).status,
+      runIgnoreCommand(ignoreCommand, buildBase, initial, extensionOnly).status,
       0,
       'an extension-only change should stop the Netlify build',
     );
@@ -64,7 +65,7 @@ test('Netlify skips extension-only changes and builds web-related changes', () =
     git(fixture, 'commit', '--quiet', '-m', 'deployment config change');
     const deploymentConfigChange = git(fixture, 'rev-parse', 'HEAD');
     assert.equal(
-      runIgnoreCommand(ignoreCommand, fixture, extensionOnly, deploymentConfigChange).status,
+      runIgnoreCommand(ignoreCommand, buildBase, extensionOnly, deploymentConfigChange).status,
       1,
       'a Netlify configuration change should continue the build',
     );
@@ -74,7 +75,7 @@ test('Netlify skips extension-only changes and builds web-related changes', () =
     git(fixture, 'commit', '--quiet', '-m', 'web change');
     const webChange = git(fixture, 'rev-parse', 'HEAD');
     assert.equal(
-      runIgnoreCommand(ignoreCommand, fixture, deploymentConfigChange, webChange).status,
+      runIgnoreCommand(ignoreCommand, buildBase, deploymentConfigChange, webChange).status,
       1,
       'a landing-page change should continue the Netlify build',
     );
@@ -84,7 +85,7 @@ test('Netlify skips extension-only changes and builds web-related changes', () =
     git(fixture, 'commit', '--quiet', '-m', 'workspace change');
     const workspaceChange = git(fixture, 'rev-parse', 'HEAD');
     assert.equal(
-      runIgnoreCommand(ignoreCommand, fixture, webChange, workspaceChange).status,
+      runIgnoreCommand(ignoreCommand, buildBase, webChange, workspaceChange).status,
       1,
       'a shared workspace change should continue the Netlify build',
     );
