@@ -168,9 +168,6 @@ nav a:hover {
   border: 1px solid var(--line);
   background: var(--paper);
 }
-.sk-widget-btn {
-  color: white !important;
-}
 .boundary-line {
   margin-top: 26px;
   color: var(--muted);
