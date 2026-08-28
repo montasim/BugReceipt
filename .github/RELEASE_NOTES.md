@@ -1,25 +1,37 @@
-## What’s new in v0.1.0
+## Summary
 
-- Added a persistent Chrome side panel that remains open while a user reproduces a browser problem.
-- Added selected-tab screen recording without microphone or tab audio, with a final screenshot fallback when Chrome cannot record video.
-- Added locally filtered console and network evidence, including logs, errors, fetch, XHR, and page-resource activity.
-- Added manual reproduction steps, browser and page context, expected behavior, and actual behavior in one reviewable report.
-- Added local report ZIP export containing `issue.md` and matching visual evidence.
-- Added optional report email delivery through the configured BugReceipt server and Resend, triggered only by an explicit user action.
+BugReceipt v0.1.1 completes the product rename from ReproKit and ships the first BugReceipt-branded Chrome archive. The extension keeps the same local-first capture and review workflow while the landing page, installation guidance, social preview, and repository metadata now share one verified identity.
+
+## Highlights
+
+- **BugReceipt identity:** Renamed extension, workspace packages, documentation, landing page, and release packaging from ReproKit to BugReceipt.
+- **Clearer installation path:** Added a dedicated extension landing page with current Chrome requirements, archive contents, privacy boundaries, and GitHub Release installation steps.
+- **Shareable project preview:** Added crawler-visible canonical, Open Graph, and Twitter Card metadata backed by a 1200×630 BugReceipt PNG.
+- **Repository trust paths:** Added contribution, support, private security-reporting, issue-template, and pull-request guidance.
+- **Interface polish:** Refined landing-page typography and spacing, added the SupportKori widget, and aligned its contrast with the BugReceipt palette.
 
 ## Install in Chrome
 
-1. Download the Chrome ZIP and `SHA256SUMS.txt` attached to this release.
-2. Place both files in the same folder and verify the archive:
+1. Download `BugReceipt-v0.1.1-chrome-unpacked.zip` and `SHA256SUMS.txt` from this release.
+2. Put both files in the same directory and verify the archive:
 
    ```bash
    sha256sum --check SHA256SUMS.txt
    ```
 
-3. Extract the ZIP to a permanent folder.
-4. Open `chrome://extensions` in Chrome 120 or later.
-5. Enable **Developer mode**.
-6. Select **Load unpacked** and choose the extracted folder containing `manifest.json`.
-7. Pin BugReceipt to the Chrome toolbar and open it on a normal HTTP or HTTPS page.
+3. Extract the ZIP to a folder you will keep.
+4. Open `chrome://extensions`, enable **Developer mode**, and choose **Load unpacked**.
+5. Select the extracted folder containing `manifest.json`, then pin BugReceipt.
 
-Chrome loads BugReceipt from the extracted folder, so do not delete that folder while the extension is installed. GitHub installations do not update automatically; download, verify, and load each newer release when one becomes available.
+GitHub unpacked installations do not update automatically. If v0.1.0 is already installed under the ReproKit name, load the v0.1.1 folder as a new unpacked build and remove the older entry after confirming the new installation works.
+
+## Verification
+
+- `pnpm check` — format, lint, type, test, production build, and extension-package validation passed.
+- Release workflow — checks the ZIP layout, requires `manifest.json` at the archive root, and publishes `SHA256SUMS.txt` with the archive.
+
+## Links
+
+- [Landing page](https://bugreceipt.netlify.app)
+- [Source](https://github.com/montasim/BugReceipt)
+- [Full comparison](https://github.com/montasim/BugReceipt/compare/v0.1.0...v0.1.1)

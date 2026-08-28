@@ -1,9 +1,9 @@
 {
   "name": "bugreceipt-workspace",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
-  "description": "Privacy-first browser bug reproduction capture and export.",
+  "description": "Capture privacy-filtered browser bug reproduction evidence from a persistent Chrome side panel.",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",

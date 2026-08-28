@@ -12,7 +12,7 @@ describe('extension landing page', () => {
     expect(source).toContain('Download BugReceipt');
     expect(source).toContain('Load unpacked');
     expect(source).toContain('What does BugReceipt capture?');
-    expect(source).toContain('BugReceipt-v0.1.0-chrome-unpacked.zip');
+    expect(source).toContain('BugReceipt-v0.1.1-chrome-unpacked.zip');
     expect(source).toContain('manifest.json');
   });
 
@@ -27,5 +27,16 @@ describe('extension landing page', () => {
     expect(source).toContain('data-id="montasim"');
     expect(styles).toContain('.sk-widget-btn');
     expect(styles).toContain('color: white !important');
+  });
+
+  it('publishes crawler-visible social preview metadata', () => {
+    const source = readFileSync(new URL('../src/routes/__root.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain("const siteUrl = 'https://bugreceipt.netlify.app'");
+    expect(source).toContain("property: 'og:image'");
+    expect(source).toContain("content: '1200'");
+    expect(source).toContain("content: '630'");
+    expect(source).toContain("name: 'twitter:card', content: 'summary_large_image'");
+    expect(source).toContain("rel: 'canonical'");
   });
 });

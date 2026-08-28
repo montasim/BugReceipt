@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#eef3f5"/>
+  <rect x="56" y="54" width="1088" height="522" fill="#f8fbfc" stroke="#bacbd2" stroke-width="2"/>
+  <rect x="56" y="54" width="12" height="522" fill="#ff5c3a"/>
+
+  <g transform="translate(112 104) skewX(-9)">
+    <rect width="48" height="8" fill="#102332"/>
+    <rect y="14" width="36" height="8" fill="#ff5c3a"/>
+    <rect y="28" width="23" height="8" fill="#1f9fae"/>
+  </g>
+  <text x="180" y="137" fill="#102332" font-family="Arial, sans-serif" font-size="34" font-weight="700">BugReceipt</text>
+  <circle cx="875" cy="124" r="7" fill="#1f9fae"/>
+  <text x="895" y="131" fill="#61737d" font-family="monospace" font-size="16" font-weight="700" letter-spacing="1.5">LOCAL-FIRST · REVIEWABLE</text>
+
+  <text x="112" y="266" fill="#102332" font-family="Arial, sans-serif" font-size="74" font-weight="700" letter-spacing="-3">Turn “it broke” into</text>
+  <text x="112" y="348" fill="#ff5c3a" font-family="Arial, sans-serif" font-size="78" font-style="italic" font-weight="600" letter-spacing="-3">reproducible.</text>
+
+  <text x="112" y="425" fill="#61737d" font-family="Arial, sans-serif" font-size="27">Capture steps, console, network, and screen evidence</text>
+  <text x="112" y="463" fill="#61737d" font-family="Arial, sans-serif" font-size="27">in one privacy-filtered browser report.</text>
+
+  <g transform="translate(112 510)">
+    <rect width="195" height="42" fill="#102332"/>
+    <text x="20" y="28" fill="#ffffff" font-family="monospace" font-size="16" font-weight="700">SCREEN RECORDING</text>
+    <rect x="207" width="145" height="42" fill="#dce8ec"/>
+    <text x="227" y="28" fill="#102332" font-family="monospace" font-size="16" font-weight="700">CONSOLE + NET</text>
+    <rect x="364" width="145" height="42" fill="#dce8ec"/>
+    <text x="384" y="28" fill="#102332" font-family="monospace" font-size="16" font-weight="700">LOCAL EXPORT</text>
+  </g>
+</svg>
