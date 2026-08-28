@@ -10,7 +10,7 @@
 
 BugReceipt is a local-first Chrome extension for people reporting web application bugs and the developers who must reproduce them. A persistent side panel records the selected tab, collects bounded console and network evidence, accepts manual reproduction steps, and opens a review page where every field can be edited or removed before export or explicit email delivery.
 
-**Status:** version `0.1.1` is a public pre-release for Chrome 120 and newer. It is distributed as a checksummed, unpacked extension archive through GitHub Releases.
+**Status:** version `0.1.2` is a public pre-release for Chrome 120 and newer. It is distributed as a checksummed, unpacked extension archive through GitHub Releases.
 
 ## Why BugReceipt?
 
@@ -201,7 +201,7 @@ The site requires the server-side Resend variables only when report email delive
 
 ## Releases and verification
 
-Release tags are immutable evidence. Version `v0.1.1` is the first BugReceipt-branded archive. The historical `v0.1.0` tag and attached archive remain unchanged even though the release display now uses the BugReceipt product name.
+Release tags are immutable evidence. Version `v0.1.2` is the current BugReceipt archive. The historical `v0.1.0` and `v0.1.1` tags and attached archives remain unchanged.
 
 For any release, download the ZIP and checksum into the same directory, then run:
 

@@ -109,7 +109,7 @@ function Home() {
             </div>
             <div className="bundle-trees">
               <code>
-                BugReceipt-v0.1.1-chrome-unpacked.zip
+                BugReceipt-v0.1.2-chrome-unpacked.zip
                 <span>manifest.json</span>
                 <span>sidepanel.html</span>
                 <span>review.html</span>
@@ -150,14 +150,13 @@ function Home() {
             <div className="privacy-list">
               <p>
                 <strong>Never captured</strong>
-                <span>
-                  Cookies, form values, keystrokes, storage, request bodies, or page HTML.
-                </span>
+                <span>Cookies, form values, keystrokes, browser storage, or page HTML.</span>
               </p>
               <p>
                 <strong>Filtered locally</strong>
                 <span>
-                  URL queries, email addresses, bearer tokens, and secret-like console fields.
+                  Text and JSON request or response bodies, URL queries, email addresses, bearer
+                  tokens, and secret-like fields.
                 </span>
               </p>
               <p>
@@ -184,7 +183,7 @@ function Home() {
             <a className="button primary" href={releaseUrl} target="_blank" rel="noreferrer">
               Download BugReceipt
             </a>
-            <small>Chrome 120+ · Version 0.1.1 · Developer mode installation</small>
+            <small>Chrome 120+ · Version 0.1.2 · Developer mode installation</small>
           </div>
           <ol className="install-steps">
             <InstallStep number="01" title="Download and extract">
