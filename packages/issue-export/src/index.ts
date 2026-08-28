@@ -1,4 +1,4 @@
-import type { CaptureSession } from '@reprokit/capture-model';
+import type { CaptureSession } from '@bugreceipt/capture-model';
 
 export function getIssueValidationErrors(session: CaptureSession): string[] {
   const errors: string[] = [];
@@ -56,7 +56,7 @@ ${session.actualBehavior || '_Not provided._'}
 - Page: ${session.page?.url || session.origin}
 - Browser: ${session.environment?.userAgent || 'Unknown'}
 - Platform: ${session.environment?.platform || 'Unknown'}
-- ReproKit: ${session.environment?.reproKitVersion || 'Unknown'}
+- BugReceipt: ${session.environment?.reproKitVersion || 'Unknown'}
 
 ## Console messages
 
@@ -72,6 +72,6 @@ ${network.replaceAll('```', '` ` `')}
 ${visualEvidence}
 
 ---
-Captured locally with ReproKit. Review this report before publishing.
+Captured locally with BugReceipt. Review this report before publishing.
 `;
 }

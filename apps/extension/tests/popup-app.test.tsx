@@ -1,4 +1,4 @@
-import type { CaptureSession, RuntimeRequest, RuntimeResponse } from '@reprokit/capture-model';
+import type { CaptureSession, RuntimeRequest, RuntimeResponse } from '@bugreceipt/capture-model';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendRuntimeMessage } from '../src/application/protocol';
@@ -78,10 +78,10 @@ describe('capture popup', () => {
   it('shows the white product header with a SupportKori action', async () => {
     render(<PopupApp />);
 
-    const support = await screen.findByRole('link', { name: 'Support ReproKit on SupportKori' });
+    const support = await screen.findByRole('link', { name: 'Support BugReceipt on SupportKori' });
     expect(support.getAttribute('href')).toBe('https://www.supportkori.com/montasim');
     expect(support.getAttribute('target')).toBe('_blank');
-    expect(screen.getByLabelText('ReproKit')).toBeDefined();
+    expect(screen.getByLabelText('BugReceipt')).toBeDefined();
   });
 
   it('starts capture with the tab explicitly selected by the user', async () => {

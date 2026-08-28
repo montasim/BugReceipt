@@ -33,16 +33,16 @@ export async function handleReportEmailRequest(
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
   if (!isAllowedOrigin(request.headers.get('origin'))) {
     return Response.json(
-      { error: 'This ReproKit origin is not allowed.' },
+      { error: 'This BugReceipt origin is not allowed.' },
       { status: 403, headers },
     );
   }
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.REPROKIT_REPORT_FROM;
-  const to = process.env.REPROKIT_REPORT_TO;
+  const from = process.env.BUGRECEIPT_REPORT_FROM || process.env.REPROKIT_REPORT_FROM;
+  const to = process.env.BUGRECEIPT_REPORT_TO || process.env.REPROKIT_REPORT_TO;
   if (!apiKey || !from || !to) {
     return Response.json(
-      { error: 'Report email is not configured on the ReproKit server.' },
+      { error: 'Report email is not configured on the BugReceipt server.' },
       { status: 503, headers },
     );
   }
@@ -90,7 +90,7 @@ export async function handleReportEmailRequest(
 
     const attachments = [
       {
-        filename: 'reprokit-report.md',
+        filename: 'bugreceipt-report.md',
         content: Buffer.from(report, 'utf8'),
       },
     ];
@@ -118,12 +118,12 @@ export async function handleReportEmailRequest(
       {
         from,
         to: recipients,
-        subject: `[ReproKit] ${subject}`,
+        subject: `[BugReceipt] ${subject}`,
         text: report,
         attachments,
       },
       {
-        idempotencyKey: `reprokit-${sessionId}-${createHash('sha256').update(report).digest('hex').slice(0, 16)}`,
+        idempotencyKey: `bugreceipt-${sessionId}-${createHash('sha256').update(report).digest('hex').slice(0, 16)}`,
       },
     );
     if (error || !data) {
@@ -154,7 +154,8 @@ function corsHeaders(request: Request): Record<string, string> {
 
 function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
-  const configured = process.env.REPROKIT_EXTENSION_ORIGIN;
+  const configured =
+    process.env.BUGRECEIPT_EXTENSION_ORIGIN || process.env.REPROKIT_EXTENSION_ORIGIN;
   if (configured) return origin === configured;
   return /^chrome-extension:\/\/[a-p]{32}$/.test(origin);
 }

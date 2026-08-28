@@ -11,13 +11,14 @@ export default defineConfig({
   }),
   manifest: ({ mode }) => {
     const reportEndpoint =
+      process.env.VITE_BUGRECEIPT_REPORT_ENDPOINT ||
       process.env.VITE_REPROKIT_REPORT_ENDPOINT ||
       (mode === 'development' ? LOCAL_REPORT_ENDPOINT : '');
     const reportOrigin = reportEndpoint ? `${new URL(reportEndpoint).origin}/*` : null;
 
     return {
-      name: 'ReproKit',
-      short_name: 'ReproKit',
+      name: 'BugReceipt',
+      short_name: 'BugReceipt',
       description: 'Capture a clear, privacy-filtered bug reproduction bundle.',
       minimum_chrome_version: '120',
       permissions: [
@@ -38,7 +39,7 @@ export default defineConfig({
         128: 'icon/128.png',
       },
       action: {
-        default_title: 'Capture a bug with ReproKit',
+        default_title: 'Capture a bug with BugReceipt',
         default_icon: {
           16: 'icon/16.png',
           32: 'icon/32.png',

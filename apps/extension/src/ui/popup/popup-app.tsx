@@ -1,4 +1,4 @@
-import type { CaptureSession } from '@reprokit/capture-model';
+import type { CaptureSession } from '@bugreceipt/capture-model';
 import { type FormEvent, useEffect, useState } from 'react';
 import { sendRuntimeMessage } from '../../application/protocol';
 import {
@@ -37,7 +37,7 @@ export function PopupApp() {
         if (!response.ok) setError(response.message);
       })
       .catch(() =>
-        setError('ReproKit could not read the active tab. Reopen the side panel and retry.'),
+        setError('BugReceipt could not read the active tab. Reopen the side panel and retry.'),
       )
       .finally(() => setBusy(false));
     return () => chrome.tabs.onActivated.removeListener(handleTabActivated);
@@ -45,12 +45,12 @@ export function PopupApp() {
 
   async function start() {
     if (activeTabId === null || !activeTabUrl) {
-      setError('ReproKit could not identify the page tab. Switch tabs and try again.');
+      setError('BugReceipt could not identify the page tab. Switch tabs and try again.');
       return;
     }
     const originPattern = getOriginPattern(activeTabUrl);
     if (!originPattern) {
-      setError('ReproKit can capture only regular web pages.');
+      setError('BugReceipt can capture only regular web pages.');
       return;
     }
     setError('');
@@ -107,7 +107,7 @@ export function PopupApp() {
       }
     } catch {
       await abortDesktopRecording(sessionId);
-      setError('ReproKit could not initialize this capture. Try again.');
+      setError('BugReceipt could not initialize this capture. Try again.');
     }
     setBusy(false);
   }
@@ -183,7 +183,7 @@ export function PopupApp() {
           href="https://www.supportkori.com/montasim"
           target="_blank"
           rel="noreferrer"
-          aria-label="Support ReproKit on SupportKori"
+          aria-label="Support BugReceipt on SupportKori"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
@@ -332,7 +332,7 @@ export function PopupApp() {
             <span>04 · Screen</span>
           </div>
           <p>
-            ReproKit captures only what happens after you start. You review everything before
+            BugReceipt captures only what happens after you start. You review everything before
             export.
           </p>
           <button

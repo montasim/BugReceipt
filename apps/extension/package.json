@@ -1,5 +1,5 @@
 {
-  "name": "@reprokit/extension",
+  "name": "@bugreceipt/extension",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -18,9 +18,9 @@
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.2.8",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
-    "@reprokit/capture-model": "workspace:*",
-    "@reprokit/issue-export": "workspace:*",
-    "@reprokit/privacy": "workspace:*",
+    "@bugreceipt/capture-model": "workspace:*",
+    "@bugreceipt/issue-export": "workspace:*",
+    "@bugreceipt/privacy": "workspace:*",
     "jszip": "3.10.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

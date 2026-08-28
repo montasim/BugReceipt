@@ -35,7 +35,7 @@ test('Netlify skips extension-only changes and builds web-related changes', () =
   try {
     git(fixture, 'init', '--quiet');
     git(fixture, 'config', 'user.email', 'test@example.com');
-    git(fixture, 'config', 'user.name', 'ReproKit test');
+    git(fixture, 'config', 'user.name', 'BugReceipt test');
     writeFixture(fixture, 'apps/web/index.ts', 'web v1\n');
     writeFixture(fixture, 'apps/extension/index.ts', 'extension v1\n');
     writeFixture(fixture, 'package.json', '{}\n');

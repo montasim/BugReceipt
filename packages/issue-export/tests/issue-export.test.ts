@@ -1,4 +1,4 @@
-import type { CaptureSession } from '@reprokit/capture-model';
+import type { CaptureSession } from '@bugreceipt/capture-model';
 import { describe, expect, it } from 'vitest';
 import { getIssueValidationErrors, renderGitHubIssue } from '../src/index';
 
@@ -25,7 +25,7 @@ describe('GitHub issue renderer', () => {
     const markdown = renderGitHubIssue(session);
     expect(markdown).toContain('# Checkout fails');
     expect(markdown).toContain('1. Pay');
-    expect(markdown).toContain('Captured locally with ReproKit');
+    expect(markdown).toContain('Captured locally with BugReceipt');
   });
 
   it('reports the fields that make an export incomplete', () => {

@@ -5,7 +5,7 @@ import { installDesktopRecorderBridge } from '../../src/infrastructure/desktop-r
 import { PopupApp } from '../../src/ui/popup/popup-app';
 
 const root = document.getElementById('root');
-if (!root) throw new Error('ReproKit side panel root is missing.');
+if (!root) throw new Error('BugReceipt side panel root is missing.');
 installDesktopRecorderBridge();
 
 ReactDOM.createRoot(root).render(

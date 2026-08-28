@@ -5,8 +5,8 @@ import {
   type CaptureSession,
   type NetworkEvent,
   type ReviewUpdate,
-} from '@reprokit/capture-model';
-import { filterPayload, filterText, filterUrl } from '@reprokit/privacy';
+} from '@bugreceipt/capture-model';
+import { filterPayload, filterText, filterUrl } from '@bugreceipt/privacy';
 
 const SESSION_KEY = 'reprokit:capture-session';
 
@@ -38,7 +38,7 @@ export function createSession(
   }
   const url = new URL(tab.url);
   if (!['http:', 'https:'].includes(url.protocol)) {
-    throw new Error('ReproKit can capture only regular web pages.');
+    throw new Error('BugReceipt can capture only regular web pages.');
   }
   const startedAt = new Date().toISOString();
   return {

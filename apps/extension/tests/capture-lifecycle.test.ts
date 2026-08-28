@@ -1,4 +1,4 @@
-import type { CaptureSession } from '@reprokit/capture-model';
+import type { CaptureSession } from '@bugreceipt/capture-model';
 import { describe, expect, it, vi } from 'vitest';
 import {
   interruptCaptureAfterTabClosed,

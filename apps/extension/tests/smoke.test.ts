@@ -1,4 +1,4 @@
-import { runtimeRequestSchema } from '@reprokit/capture-model';
+import { runtimeRequestSchema } from '@bugreceipt/capture-model';
 import { describe, expect, it } from 'vitest';
 
 describe('extension protocol', () => {

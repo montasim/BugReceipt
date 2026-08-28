@@ -3,6 +3,9 @@ import { handleReportEmailRequest } from '../src/server/report-email';
 
 const originalEnvironment = {
   RESEND_API_KEY: process.env.RESEND_API_KEY,
+  BUGRECEIPT_REPORT_FROM: process.env.BUGRECEIPT_REPORT_FROM,
+  BUGRECEIPT_REPORT_TO: process.env.BUGRECEIPT_REPORT_TO,
+  BUGRECEIPT_EXTENSION_ORIGIN: process.env.BUGRECEIPT_EXTENSION_ORIGIN,
   REPROKIT_REPORT_FROM: process.env.REPROKIT_REPORT_FROM,
   REPROKIT_REPORT_TO: process.env.REPROKIT_REPORT_TO,
   REPROKIT_EXTENSION_ORIGIN: process.env.REPROKIT_EXTENSION_ORIGIN,
@@ -11,9 +14,9 @@ const extensionOrigin = 'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 beforeEach(() => {
   process.env.RESEND_API_KEY = 'test-key';
-  process.env.REPROKIT_REPORT_FROM = 'ReproKit <reports@example.com>';
-  process.env.REPROKIT_REPORT_TO = 'maintainer@example.com';
-  process.env.REPROKIT_EXTENSION_ORIGIN = extensionOrigin;
+  process.env.BUGRECEIPT_REPORT_FROM = 'BugReceipt <reports@example.com>';
+  process.env.BUGRECEIPT_REPORT_TO = 'maintainer@example.com';
+  process.env.BUGRECEIPT_EXTENSION_ORIGIN = extensionOrigin;
 });
 
 afterEach(() => {
@@ -28,7 +31,7 @@ describe('report email endpoint', () => {
 
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({
-      error: 'Report email is not configured on the ReproKit server.',
+      error: 'Report email is not configured on the BugReceipt server.',
     });
   });
 
@@ -41,12 +44,12 @@ describe('report email endpoint', () => {
     await expect(response.json()).resolves.toEqual({ ok: true, id: 'email-1' });
     expect(sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: 'ReproKit <reports@example.com>',
+        from: 'BugReceipt <reports@example.com>',
         to: ['maintainer@example.com'],
-        subject: '[ReproKit] Checkout fails',
+        subject: '[BugReceipt] Checkout fails',
         text: '# Checkout fails',
       }),
-      expect.objectContaining({ idempotencyKey: expect.stringMatching(/^reprokit-/) }),
+      expect.objectContaining({ idempotencyKey: expect.stringMatching(/^bugreceipt-/) }),
     );
   });
 
@@ -64,7 +67,7 @@ function reportRequest(origin = extensionOrigin): Request {
   form.set('sessionId', '00000000-0000-4000-8000-000000000000');
   form.set('subject', 'Checkout fails');
   form.set('report', '# Checkout fails');
-  return new Request('https://reprokit.example/api/reports', {
+  return new Request('https://bugreceipt.example/api/reports', {
     method: 'POST',
     headers: { Origin: origin },
     body: form,

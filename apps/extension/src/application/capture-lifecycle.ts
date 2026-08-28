@@ -1,4 +1,4 @@
-import type { CaptureSession } from '@reprokit/capture-model';
+import type { CaptureSession } from '@bugreceipt/capture-model';
 
 type InterruptionReason = 'origin-changed' | 'tab-closed';
 type NavigationOutcome = 'ignored' | 'restored' | 'interrupted';

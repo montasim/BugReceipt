@@ -1,4 +1,4 @@
-import type { CaptureSession, RuntimeRequest, RuntimeResponse } from '@reprokit/capture-model';
+import type { CaptureSession, RuntimeRequest, RuntimeResponse } from '@bugreceipt/capture-model';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import JSZip from 'jszip';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -227,6 +227,6 @@ describe('review editor', () => {
     await screen.findByDisplayValue('Checkout fails');
     const emailButton = screen.getByRole('button', { name: 'Email unavailable' });
     expect((emailButton as HTMLButtonElement).disabled).toBe(true);
-    expect(emailButton.getAttribute('title')).toContain('VITE_REPROKIT_REPORT_ENDPOINT');
+    expect(emailButton.getAttribute('title')).toContain('VITE_BUGRECEIPT_REPORT_ENDPOINT');
   });
 });

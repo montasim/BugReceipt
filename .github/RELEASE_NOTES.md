@@ -5,7 +5,7 @@
 - Added locally filtered console and network evidence, including logs, errors, fetch, XHR, and page-resource activity.
 - Added manual reproduction steps, browser and page context, expected behavior, and actual behavior in one reviewable report.
 - Added local report ZIP export containing `issue.md` and matching visual evidence.
-- Added optional report email delivery through the configured ReproKit server and Resend, triggered only by an explicit user action.
+- Added optional report email delivery through the configured BugReceipt server and Resend, triggered only by an explicit user action.
 
 ## Install in Chrome
 
@@ -20,6 +20,6 @@
 4. Open `chrome://extensions` in Chrome 120 or later.
 5. Enable **Developer mode**.
 6. Select **Load unpacked** and choose the extracted folder containing `manifest.json`.
-7. Pin ReproKit to the Chrome toolbar and open it on a normal HTTP or HTTPS page.
+7. Pin BugReceipt to the Chrome toolbar and open it on a normal HTTP or HTTPS page.
 
-Chrome loads ReproKit from the extracted folder, so do not delete that folder while the extension is installed. GitHub installations do not update automatically; download, verify, and load each newer release when one becomes available.
+Chrome loads BugReceipt from the extracted folder, so do not delete that folder while the extension is installed. GitHub installations do not update automatically; download, verify, and load each newer release when one becomes available.

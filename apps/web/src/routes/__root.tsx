@@ -7,7 +7,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'ReproKit · Turn broken into reproducible' },
+      { title: 'BugReceipt · Turn broken into reproducible' },
       {
         name: 'description',
         content:
@@ -40,7 +40,7 @@ function NotFound() {
     <main className="not-found">
       <p>404 · No evidence here</p>
       <h1>This page was not captured.</h1>
-      <a href="/">Return to ReproKit</a>
+      <a href="/">Return to BugReceipt</a>
     </main>
   );
 }

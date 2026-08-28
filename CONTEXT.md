@@ -1,10 +1,10 @@
-# ReproKit domain language
+# BugReceipt domain language
 
 ## Terms
 
 ### Capture session
 
-A user-initiated, tab-scoped period during which ReproKit collects diagnostic events and manual reproduction steps. A persisted capture session is either `recording` or `ready-for-review`. A reviewed session records whether capture completed normally or ended because the tab changed origin or was closed. Discarding removes the session instead of persisting a separate status.
+A user-initiated, tab-scoped period during which BugReceipt collects diagnostic events and manual reproduction steps. A persisted capture session is either `recording` or `ready-for-review`. A reviewed session records whether capture completed normally or ended because the tab changed origin or was closed. Discarding removes the session instead of persisting a separate status.
 
 ### Diagnostic event
 
@@ -36,7 +36,7 @@ User-approved Markdown and visual-evidence files produced from a reviewed reprod
 
 ### Report delivery
 
-An explicit user action that sends a reviewed reproduction draft to the configured ReproKit server. The server owns the Resend credential and fixed recipient. Delivery is distinct from local export and changes the privacy boundary because selected evidence leaves the browser.
+An explicit user action that sends a reviewed reproduction draft to the configured BugReceipt server. The server owns the Resend credential and fixed recipient. Delivery is distinct from local export and changes the privacy boundary because selected evidence leaves the browser.
 
 ## Distinctions
 

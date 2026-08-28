@@ -1,5 +1,5 @@
-import type { CaptureSession } from '@reprokit/capture-model';
-import { getIssueValidationErrors, renderGitHubIssue } from '@reprokit/issue-export';
+import type { CaptureSession } from '@bugreceipt/capture-model';
+import { getIssueValidationErrors, renderGitHubIssue } from '@bugreceipt/issue-export';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { sendRuntimeMessage } from '../../application/protocol';
 import { createReportBundle, type ReportBundleVisual } from '../../infrastructure/report-bundle';
@@ -24,7 +24,7 @@ export function ReviewApp() {
   const [error, setError] = useState('');
   const [emailed, setEmailed] = useState(false);
   const exportBase = useMemo(
-    () => (session ? createExportBase(session) : 'reprokit-report'),
+    () => (session ? createExportBase(session) : 'bugreceipt-report'),
     [session],
   );
   const validationErrors = useMemo(
@@ -303,7 +303,7 @@ export function ReviewApp() {
       <main className="review-empty">
         <Brand />
         <p className="eyebrow">No reviewable capture</p>
-        <h1>{error || 'Start a capture from the ReproKit toolbar button.'}</h1>
+        <h1>{error || 'Start a capture from the BugReceipt toolbar button.'}</h1>
       </main>
     );
   }
@@ -353,7 +353,7 @@ export function ReviewApp() {
             title={
               emailConfigured
                 ? undefined
-                : 'Set VITE_REPROKIT_REPORT_ENDPOINT when building the extension.'
+                : 'Set VITE_BUGRECEIPT_REPORT_ENDPOINT when building the extension.'
             }
           >
             {emailed ? 'Report emailed' : emailConfigured ? 'Share by email' : 'Email unavailable'}
@@ -454,7 +454,7 @@ export function ReviewApp() {
               <dd>{new Date(session.startedAt).toLocaleString()}</dd>
             </div>
             <div>
-              <dt>ReproKit</dt>
+              <dt>BugReceipt</dt>
               <dd>{session.environment?.reproKitVersion}</dd>
             </div>
           </dl>
@@ -783,5 +783,5 @@ function createExportBase(session: CaptureSession): string {
     .replaceAll(/^-|-$/g, '')
     .slice(0, 48);
   const timestamp = session.startedAt.replaceAll(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
-  return `reprokit-${slug || 'bug-report'}-${timestamp}`;
+  return `bugreceipt-${slug || 'bug-report'}-${timestamp}`;
 }

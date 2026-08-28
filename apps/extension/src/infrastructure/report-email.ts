@@ -1,5 +1,7 @@
 const extensionEnvironment = import.meta.env as Record<string, unknown>;
-const configuredEndpoint = extensionEnvironment['VITE_REPROKIT_REPORT_ENDPOINT'];
+const configuredEndpoint =
+  extensionEnvironment['VITE_BUGRECEIPT_REPORT_ENDPOINT'] ??
+  extensionEnvironment['VITE_REPROKIT_REPORT_ENDPOINT'];
 const REPORT_ENDPOINT =
   typeof configuredEndpoint === 'string' && configuredEndpoint
     ? configuredEndpoint
@@ -20,7 +22,7 @@ export async function sendReportEmail(input: {
 }): Promise<{ visualAttached: boolean }> {
   if (!REPORT_ENDPOINT) {
     throw new Error(
-      'Email delivery is not configured in this extension build. Set VITE_REPROKIT_REPORT_ENDPOINT and rebuild.',
+      'Email delivery is not configured in this extension build. Set VITE_BUGRECEIPT_REPORT_ENDPOINT and rebuild.',
     );
   }
   const form = new FormData();

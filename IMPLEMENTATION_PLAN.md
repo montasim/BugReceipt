@@ -1,4 +1,4 @@
-# ReproKit MVP implementation plan
+# BugReceipt MVP implementation plan
 
 ## 1. Outcome
 
@@ -17,24 +17,24 @@ The landing page must explain the local-only privacy model, show the three-step 
 
 ## 2. Thoughtline technology audit
 
-ReproKit should begin from the conventions proven in the sibling Thoughtline project rather than assembling another extension toolchain from scratch. The audit found:
+BugReceipt should begin from the conventions proven in the sibling Thoughtline project rather than assembling another extension toolchain from scratch. The audit found:
 
-| Area                 | Thoughtline technology                                                                                 | ReproKit decision                                                                    |
-| -------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| Workspace            | pnpm 11 monorepo, Node 24+, ESM                                                                        | Adopt the same workspace and runtime baseline                                        |
-| Extension build      | WXT 0.20, Manifest V3, Vite 8                                                                          | Adopt WXT; remove the hand-written Vite extension build from the earlier plan        |
-| Extension UI         | React 19, TypeScript 6 strict mode                                                                     | Adopt                                                                                |
-| Styling              | Tailwind CSS 4 with CSS-variable tokens                                                                | Adopt for extension and landing page                                                 |
-| UI foundations       | Locally owned Radix/shadcn primitives, `class-variance-authority`, `clsx`, `tailwind-merge`, Hugeicons | Adopt only primitives used by ReproKit; do not copy Thoughtline product compositions |
-| Forms and validation | React Hook Form, Zod 4, shared runtime schemas                                                         | Adopt; Zod schemas are authoritative at messages, storage, forms, and export seams   |
-| Unit/UI tests        | Vitest 4, happy-dom, Testing Library                                                                   | Adopt                                                                                |
-| Browser tests        | Playwright Chromium, serial extension workers, traces/screenshots on failure, axe checks               | Adopt                                                                                |
-| Landing page         | TanStack Start/Router, React, Vite, Tailwind, Netlify                                                  | Adopt to keep deployment and maintenance consistent with Thoughtline                 |
-| Quality gates        | ESLint, Prettier, Husky, lint-staged, strict TypeScript                                                | Adopt                                                                                |
-| Distribution         | WXT zip, tag-triggered GitHub Release, SHA-256 checksums                                               | Adopt                                                                                |
-| CI                   | GitHub Actions, frozen pnpm install, full checks plus Chromium UI tests                                | Adopt                                                                                |
+| Area                 | Thoughtline technology                                                                                 | BugReceipt decision                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| Workspace            | pnpm 11 monorepo, Node 24+, ESM                                                                        | Adopt the same workspace and runtime baseline                                          |
+| Extension build      | WXT 0.20, Manifest V3, Vite 8                                                                          | Adopt WXT; remove the hand-written Vite extension build from the earlier plan          |
+| Extension UI         | React 19, TypeScript 6 strict mode                                                                     | Adopt                                                                                  |
+| Styling              | Tailwind CSS 4 with CSS-variable tokens                                                                | Adopt for extension and landing page                                                   |
+| UI foundations       | Locally owned Radix/shadcn primitives, `class-variance-authority`, `clsx`, `tailwind-merge`, Hugeicons | Adopt only primitives used by BugReceipt; do not copy Thoughtline product compositions |
+| Forms and validation | React Hook Form, Zod 4, shared runtime schemas                                                         | Adopt; Zod schemas are authoritative at messages, storage, forms, and export seams     |
+| Unit/UI tests        | Vitest 4, happy-dom, Testing Library                                                                   | Adopt                                                                                  |
+| Browser tests        | Playwright Chromium, serial extension workers, traces/screenshots on failure, axe checks               | Adopt                                                                                  |
+| Landing page         | TanStack Start/Router, React, Vite, Tailwind, Netlify                                                  | Adopt to keep deployment and maintenance consistent with Thoughtline                   |
+| Quality gates        | ESLint, Prettier, Husky, lint-staged, strict TypeScript                                                | Adopt                                                                                  |
+| Distribution         | WXT zip, tag-triggered GitHub Release, SHA-256 checksums                                               | Adopt                                                                                  |
+| CI                   | GitHub Actions, frozen pnpm install, full checks plus Chromium UI tests                                | Adopt                                                                                  |
 
-Use Thoughtline as a configuration reference for workspace scripts, WXT output, CI, release packaging, Netlify build filtering, strict TypeScript flags, and Playwright diagnostics. ReproKit keeps its own domain modules, permissions, visual identity, and UI compositions.
+Use Thoughtline as a configuration reference for workspace scripts, WXT output, CI, release packaging, Netlify build filtering, strict TypeScript flags, and Playwright diagnostics. BugReceipt keeps its own domain modules, permissions, visual identity, and UI compositions.
 
 ## 3. Product decisions
 
@@ -86,7 +86,7 @@ No data leaves the browser in this MVP.
 - A “Copy issue Markdown” action supports pasting directly into GitHub.
 - Blob downloads should be initiated from the review page, avoiding the broad `downloads` permission.
 
-Direct GitHub/Linear creation, OAuth, a backend, `.reprokit.json`, network capture, automatic steps, and framework SDKs are post-MVP.
+Direct GitHub/Linear creation, OAuth, a backend, `.bugreceipt.json`, network capture, automatic steps, and framework SDKs are post-MVP.
 
 ### Landing page
 
@@ -117,7 +117,7 @@ The review page presents:
 
 - Issue title, expected behavior, and actual behavior.
 - Ordered manual steps.
-- Page URL, page title, capture time, browser version, operating-system family, and ReproKit version.
+- Page URL, page title, capture time, browser version, operating-system family, and BugReceipt version.
 - Filtered diagnostic events with per-event removal.
 - Screenshot preview with Retake and Remove.
 - Redaction summary and a persistent “Nothing is uploaded” message.
@@ -133,7 +133,7 @@ The user copies Markdown, downloads `issue.md`, downloads `screenshot.png`, or d
 Use a small monorepo so domain logic is independently testable and later reusable by the SDK/CLI.
 
 ```text
-reprokit/
+bugreceipt/
 ├── apps/
 │   ├── extension/
 │   │   ├── entrypoints/           # thin WXT background/content/popup/review entrypoints
@@ -200,7 +200,7 @@ Do not create adapter interfaces for browser APIs until a second implementation 
 ### Runtime responsibilities
 
 - **Injected MAIN-world script:** wraps selected console methods without changing their return behavior; listens to `error` and `unhandledrejection`; performs defensive, bounded serialization; posts tagged events.
-- **Isolated content script:** accepts only messages with the exact ReproKit tag/version and current window source, validates their schema, and forwards them to the extension.
+- **Isolated content script:** accepts only messages with the exact BugReceipt tag/version and current window source, validates their schema, and forwards them to the extension.
 - **Background service worker:** owns commands and state transitions, batches event persistence, reacts to navigation/tab closure, updates the badge, and opens review.
 - **Popup:** sends commands and renders session state. It contains no capture or export logic.
 - **Review page:** edits the draft, invokes the privacy and export modules, previews artifacts, and initiates Blob downloads.
@@ -208,11 +208,11 @@ Do not create adapter interfaces for browser APIs until a second implementation 
 
 Persist bounded JSON session state in `chrome.storage.session`, not service-worker globals. Capture the screenshot at stop/review time and store its Blob in extension-owned IndexedDB so a large PNG cannot exhaust the storage-session quota; keep only the current draft and screenshot. Enforce initial limits of 500 diagnostic events, 32 KiB per event, and 2 MiB total serialized diagnostics; report dropped/truncated data in the draft.
 
-All cross-context messages, storage records, form submissions, and export inputs use shared Zod schemas with inferred TypeScript types. Type assertions are not validation. This follows Thoughtline's strongest reusable pattern and is especially important because ReproKit accepts page-world messages from an untrusted tab.
+All cross-context messages, storage records, form submissions, and export inputs use shared Zod schemas with inferred TypeScript types. Type assertions are not validation. This follows Thoughtline's strongest reusable pattern and is especially important because BugReceipt accepts page-world messages from an untrusted tab.
 
 ## 6. Data contracts
 
-Start with schema version `1` even though `.reprokit.json` export is deferred.
+Start with schema version `1` even though `.bugreceipt.json` export is deferred.
 
 ```ts
 type ReproductionDraft = {
@@ -260,7 +260,7 @@ Runtime validation is required at every cross-context message seam. Use discrimi
 - pnpm 11 workspace on Node 24+ with `apps/extension`, `apps/web`, and `packages/*`.
 - WXT, React 19, TypeScript strict mode, Tailwind 4, Zod 4, React Hook Form, only the required Radix primitives, ESLint, Prettier, Vitest, Testing Library, Playwright, and axe.
 - Loadable MV3 extension with popup, background worker, content script, and review entrypoints.
-- TanStack Start landing route with the shared ReproKit brand foundation.
+- TanStack Start landing route with the shared BugReceipt brand foundation.
 - Deterministic broken-web-app fixture.
 - Husky/lint-staged and root scripts matching Thoughtline's `format:check -> lint -> typecheck -> test -> build` quality path.
 - CI for both apps, extension Chromium tests, and frozen-lockfile installation.
@@ -402,7 +402,7 @@ Expected focused implementation time: roughly 12–17 engineering days.
 
 Prioritize only after observing real reports:
 
-1. Versioned `.reprokit.json` import/export and a CLI renderer/validator.
+1. Versioned `.bugreceipt.json` import/export and a CLI renderer/validator.
 2. Privacy-filtered failed-network metadata, excluding bodies and credentials.
 3. Optional user-action capture and generated steps.
 4. GitHub issue creation through least-privilege authentication; Linear adapter second, making the publishing seam real.

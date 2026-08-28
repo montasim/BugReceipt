@@ -1,5 +1,5 @@
 ---
-name: ReproKit
+name: BugReceipt
 description: Evidence-led browser diagnostics presented as a precise technical review document.
 colors:
   ink: '#102332'
@@ -60,13 +60,13 @@ components:
     padding: '{spacing.control}'
 ---
 
-# Design System: ReproKit
+# Design System: BugReceipt
 
 ## Overview
 
 **Creative North Star: "The Evidence Desk"**
 
-ReproKit feels like a carefully assembled technical review copy: cool paper and fog surfaces, deep ink structure, and diagnostic annotations that make evidence easy to inspect. The identity is editorial in scale but operational in detail, balancing oversized, tightly set headlines with compact mono metadata.
+BugReceipt feels like a carefully assembled technical review copy: cool paper and fog surfaces, deep ink structure, and diagnostic annotations that make evidence easy to inspect. The identity is editorial in scale but operational in detail, balancing oversized, tightly set headlines with compact mono metadata.
 
 The system stays flat and document-like by default. Thin rules, numbered ledgers, file trees, and square evidence panels carry the structure; limited ambient shadows identify the few objects that behave like physical review artifacts. Teal traces progress and trustworthy diagnostic state, while coral signals action, exceptions, and human attention.
 
@@ -149,7 +149,7 @@ The system is flat by default. Borders, dark tonal fields, and alternating paper
 
 ## Shapes
 
-ReproKit uses square corners throughout. Buttons, evidence panels, code blocks, ledgers, and disclosure rows rely on straight edges, one-pixel rules, and occasional heavy top strokes. The skewed three-bar brand mark and the evidence preview's slight desktop rotation are the rare angled silhouettes; the preview returns to an unrotated rectangle on narrow screens.
+BugReceipt uses square corners throughout. Buttons, evidence panels, code blocks, ledgers, and disclosure rows rely on straight edges, one-pixel rules, and occasional heavy top strokes. The skewed three-bar brand mark and the evidence preview's slight desktop rotation are the rare angled silhouettes; the preview returns to an unrotated rectangle on narrow screens.
 
 **The Squared Evidence Rule.** Keep interactive controls and proof containers unrounded so the interface reads as technical documentation rather than a soft consumer dashboard.
 

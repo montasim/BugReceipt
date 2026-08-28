@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 export const Route = createFileRoute('/')({ component: Home });
 
-const releaseUrl = 'https://github.com/montasim/ReproKit/releases/latest';
+const releaseUrl = 'https://github.com/montasim/BugReceipt/releases/latest';
 
 const capturedEvidence = [
   ['Screen recording', 'The selected tab’s pixels, without microphone or tab audio.'],
@@ -14,7 +14,7 @@ const capturedEvidence = [
 
 const questions = [
   {
-    question: 'What does ReproKit capture?',
+    question: 'What does BugReceipt capture?',
     answer:
       'Only activity collected after you start: the selected tab’s video, console messages, network activity, page details, and any steps you add manually.',
   },
@@ -39,8 +39,8 @@ function Home() {
   return (
     <>
       <header className="site-header">
-        <a className="brand" href="#top" aria-label="ReproKit home">
-          <Mark /> ReproKit
+        <a className="brand" href="#top" aria-label="BugReceipt home">
+          <Mark /> BugReceipt
         </a>
         <nav aria-label="Main navigation">
           <a href="#details">Details</a>
@@ -61,7 +61,7 @@ function Home() {
             </p>
             <div className="hero-actions">
               <a className="button primary" href={releaseUrl} target="_blank" rel="noreferrer">
-                Download ReproKit
+                Download BugReceipt
               </a>
               <a className="button secondary" href="#details">
                 Explore what it captures
@@ -84,7 +84,7 @@ function Home() {
           <div className="details-heading">
             <h2>The evidence developers ask for, already together.</h2>
             <p>
-              ReproKit follows the failure across pixels, browser activity, and human context. The
+              BugReceipt follows the failure across pixels, browser activity, and human context. The
               result is one reviewable report instead of a screenshot with no explanation.
             </p>
           </div>
@@ -99,24 +99,24 @@ function Home() {
               </div>
             ))}
           </dl>
-          <div className="bundle-proof" aria-label="ReproKit download and report contents">
+          <div className="bundle-proof" aria-label="BugReceipt download and report contents">
             <div>
               <strong>Know what is inside each download.</strong>
               <p>
                 The GitHub release includes the complete extension package and its checksum.
-                ReproKit then keeps each bug report and its visual evidence together locally.
+                BugReceipt then keeps each bug report and its visual evidence together locally.
               </p>
             </div>
             <div className="bundle-trees">
               <code>
-                ReproKit-v0.1.0-chrome-unpacked.zip
+                BugReceipt-v0.1.0-chrome-unpacked.zip
                 <span>manifest.json</span>
                 <span>sidepanel.html</span>
                 <span>review.html</span>
                 <span>scripts + icons</span>
               </code>
               <code>
-                reprokit-report.zip
+                bugreceipt-report.zip
                 <span>issue.md</span>
                 <span>recording.webm</span>
               </code>
@@ -130,7 +130,7 @@ function Home() {
           </div>
           <ol>
             <WorkflowStep number="01" title="Start at the failure">
-              Open ReproKit on the affected tab. Capture begins only after your click.
+              Open BugReceipt on the affected tab. Capture begins only after your click.
             </WorkflowStep>
             <WorkflowStep number="02" title="Reproduce and annotate">
               Repeat the bug and add the human steps that console output cannot explain.
@@ -182,7 +182,7 @@ function Home() {
               build. Keep the extracted folder in place after installation.
             </p>
             <a className="button primary" href={releaseUrl} target="_blank" rel="noreferrer">
-              Download ReproKit
+              Download BugReceipt
             </a>
             <small>Chrome 120+ · Version 0.1.0 · Developer mode installation</small>
           </div>
@@ -195,7 +195,7 @@ function Home() {
               and select the extracted folder.
             </InstallStep>
             <InstallStep number="03" title="Pin and capture">
-              Pin ReproKit to the toolbar, open a normal website, and click it to keep the capture
+              Pin BugReceipt to the toolbar, open a normal website, and click it to keep the capture
               panel open on the right.
             </InstallStep>
           </ol>
@@ -222,14 +222,14 @@ function Home() {
             next developer enough evidence to act.
           </p>
           <a className="button primary" href={releaseUrl} target="_blank" rel="noreferrer">
-            Download ReproKit for Chrome
+            Download BugReceipt for Chrome
           </a>
         </section>
       </main>
       <footer>
         <div className="shell">
           <span>
-            <Mark /> ReproKit
+            <Mark /> BugReceipt
           </span>
           <span className="footer-links">
             <a href="#details">Details</a>
@@ -274,7 +274,7 @@ function Mark() {
 
 function EvidencePreview() {
   return (
-    <div className="evidence-preview" aria-label="ReproKit capture review preview">
+    <div className="evidence-preview" aria-label="BugReceipt capture review preview">
       <div className="preview-top">
         <span>Capture / checkout</span>
         <b>Local only</b>

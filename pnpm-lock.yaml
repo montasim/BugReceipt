@@ -20,13 +20,13 @@ importers:
       '@fontsource-variable/jetbrains-mono':
         specifier: ^5.2.8
         version: 5.3.0
-      '@reprokit/capture-model':
+      '@bugreceipt/capture-model':
         specifier: workspace:*
         version: link:../../packages/capture-model
-      '@reprokit/issue-export':
+      '@bugreceipt/issue-export':
         specifier: workspace:*
         version: link:../../packages/issue-export
-      '@reprokit/privacy':
+      '@bugreceipt/privacy':
         specifier: workspace:*
         version: link:../../packages/privacy
       jszip:
@@ -179,7 +179,7 @@ importers:
 
   packages/issue-export:
     dependencies:
-      '@reprokit/capture-model':
+      '@bugreceipt/capture-model':
         specifier: workspace:*
         version: link:../capture-model
     devDependencies:

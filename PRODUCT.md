@@ -1,8 +1,8 @@
-# ReproKit product truth
+# BugReceipt product truth
 
 ## Purpose
 
-ReproKit turns incomplete browser bug reports into privacy-filtered reproduction evidence that a developer can review and act on.
+BugReceipt turns incomplete browser bug reports into privacy-filtered reproduction evidence that a developer can review and act on.
 
 ## Audience
 

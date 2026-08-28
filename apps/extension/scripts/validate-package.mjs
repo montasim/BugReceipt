@@ -4,7 +4,7 @@ import { stdout } from 'node:process';
 
 const output = resolve(import.meta.dirname, '../.output');
 const manifest = JSON.parse(await readFile(resolve(output, 'manifest.json'), 'utf8'));
-const expectedTitle = 'Capture a bug with ReproKit';
+const expectedTitle = 'Capture a bug with BugReceipt';
 const iconSizes = ['16', '32', '48', '128'];
 const requiredPermissions = ['clipboardWrite', 'desktopCapture', 'sidePanel', 'tabs'];
 const requiredOptionalOrigins = ['http://*/*', 'https://*/*'];
@@ -14,7 +14,7 @@ if (manifest.action?.default_title !== expectedTitle) {
 }
 
 if (manifest.side_panel?.default_path !== 'sidepanel.html') {
-  throw new Error('The persistent ReproKit side panel is not configured.');
+  throw new Error('The persistent BugReceipt side panel is not configured.');
 }
 
 await access(resolve(output, 'sidepanel.html'));

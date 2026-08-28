@@ -1,5 +1,5 @@
 {
-  "name": "@reprokit/issue-export",
+  "name": "@bugreceipt/issue-export",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,7 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@reprokit/capture-model": "workspace:*"
+    "@bugreceipt/capture-model": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.3",

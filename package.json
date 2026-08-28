@@ -1,5 +1,5 @@
 {
-  "name": "reprokit-workspace",
+  "name": "bugreceipt-workspace",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,30 +7,30 @@
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/montasim/ReproKit.git"
+    "url": "git+https://github.com/montasim/BugReceipt.git"
   },
   "bugs": {
-    "url": "https://github.com/montasim/ReproKit/issues"
+    "url": "https://github.com/montasim/BugReceipt/issues"
   },
-  "homepage": "https://reprokit-679.netlify.app",
+  "homepage": "https://bugreceipt.netlify.app",
   "packageManager": "pnpm@11.7.0",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
     "dev": "pnpm dev:extension",
-    "dev:extension": "pnpm --filter @reprokit/extension dev",
-    "dev:web": "pnpm --filter @reprokit/web dev",
+    "dev:extension": "pnpm --filter @bugreceipt/extension dev",
+    "dev:web": "pnpm --filter @bugreceipt/web dev",
     "build": "pnpm -r --if-present build",
-    "build:extension": "pnpm --filter @reprokit/extension build",
-    "build:web": "pnpm --filter @reprokit/web build",
+    "build:extension": "pnpm --filter @bugreceipt/extension build",
+    "build:web": "pnpm --filter @bugreceipt/web build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm --filter @reprokit/extension validate:package",
-    "release:zip": "pnpm --filter @reprokit/extension zip"
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm --filter @bugreceipt/extension validate:package",
+    "release:zip": "pnpm --filter @bugreceipt/extension zip"
   },
   "devDependencies": {
     "prettier": "^3.9.5"

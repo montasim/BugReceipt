@@ -4,7 +4,7 @@ import {
   runtimeRequestSchema,
   type RuntimeRequest,
   type RuntimeResponse,
-} from '@reprokit/capture-model';
+} from '@bugreceipt/capture-model';
 import { defineBackground } from 'wxt/utils/define-background';
 import {
   appendDiagnostic,
@@ -58,7 +58,7 @@ export default defineBackground(() => {
           ok: false,
           code: 'capture-failed',
           message:
-            error instanceof Error ? error.message : 'ReproKit could not complete that action.',
+            error instanceof Error ? error.message : 'BugReceipt could not complete that action.',
         });
       });
       return true;
