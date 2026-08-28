@@ -15,4 +15,14 @@ describe('extension landing page', () => {
     expect(source).toContain('BugReceipt-v0.1.0-chrome-unpacked.zip');
     expect(source).toContain('manifest.json');
   });
+
+  it('loads the BugReceipt favicon and SupportKori widget from the root document', () => {
+    const source = readFileSync(new URL('../src/routes/__root.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('/brand/bugreceipt-mark.svg');
+    expect(source).toContain('/brand/bugreceipt-32.png');
+    expect(source).toContain('/brand/bugreceipt-180.png');
+    expect(source).toContain('https://supportkori.com/widget.js');
+    expect(source).toContain('data-id="montasim"');
+  });
 });

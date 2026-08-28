@@ -15,7 +15,25 @@ export const Route = createRootRoute({
       },
       { name: 'theme-color', content: '#eef3f5' },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'stylesheet', href: appCss },
+      {
+        rel: 'icon',
+        href: '/brand/bugreceipt-mark.svg',
+        type: 'image/svg+xml',
+      },
+      {
+        rel: 'icon',
+        href: '/brand/bugreceipt-32.png',
+        type: 'image/png',
+        sizes: '32x32',
+      },
+      {
+        rel: 'apple-touch-icon',
+        href: '/brand/bugreceipt-180.png',
+        sizes: '180x180',
+      },
+    ],
   }),
   shellComponent: RootDocument,
   notFoundComponent: NotFound,
@@ -30,6 +48,14 @@ function RootDocument({ children }: { children: ReactNode }) {
       <body>
         {children}
         <Scripts />
+        <script
+          async
+          src="https://supportkori.com/widget.js"
+          data-id="montasim"
+          data-message="Support me"
+          data-color="#ff5c3a"
+          data-position="right"
+        />
       </body>
     </html>
   );
