@@ -20,8 +20,9 @@ A screenshot rarely explains how a failure happened. BugReceipt keeps the human 
 - Capture console logs, warnings, errors, uncaught exceptions, and rejected promises after recording starts.
 - Capture fetch, XHR, and page-resource requests with method, status, duration, URL, and bounded text/JSON bodies where supported.
 - Add and reorder manual reproduction steps while the failure is visible.
-- Review and remove individual console, network, step, and visual-evidence items.
-- Export a Markdown report and matching WebM or fallback screenshot locally.
+- Scrub a completed recording, save a specific frame as timestamped PNG evidence, and annotate that frame locally.
+- Review or remove individual console, network, step, and visual-evidence items, and highlight exact console or network text that matters.
+- Export a Markdown report with visible diagnostic highlight markers and its WebM, selected frame, or fallback screenshot as a ZIP or as individual files in a report folder under Downloads.
 - Send a reviewed report through the configured Resend endpoint only after an explicit user action.
 
 BugReceipt does not currently provide Chrome Web Store installation, Firefox or Safari support, automatic interaction steps, feature-flag or application-version SDK capture, WebSocket frames, or authenticated GitHub/Linear issue creation.
@@ -60,7 +61,7 @@ pnpm build:extension
 
 Load `apps/extension/.output` through Chrome's **Load unpacked** action. A successful build contains `manifest.json`, the persistent `sidepanel.html`, the review page, scripts, and icons.
 
-The manifest requests `activeTab`, `clipboardWrite`, `desktopCapture`, `scripting`, `sidePanel`, `storage`, and `tabs`. Site access is optional and requested for the current origin when capture begins; report-server access is included only when a production endpoint is configured at build time.
+The manifest requests `activeTab`, `clipboardWrite`, `desktopCapture`, `downloads`, `scripting`, `sidePanel`, `storage`, and `tabs`. The `downloads` permission lets folder export save reviewed files beneath Chrome's Downloads directory. Site access is optional and requested for the current origin when capture begins; report-server access is included only when a production endpoint is configured at build time.
 
 ## Capture and export a bug
 
@@ -69,15 +70,15 @@ The manifest requests `activeTab`, `clipboardWrite`, `desktopCapture`, `scriptin
 3. Choose the affected tab in Chrome's share dialog and approve site access when requested.
 4. Reproduce the problem and add concise manual steps.
 5. Select **Stop & review**.
-6. Review the title, expected and actual behavior, steps, console entries, network entries, and visual evidence.
-7. Remove anything that should not be shared, then save the edited draft.
-8. Download the report bundle, copy the Markdown, or explicitly share the reviewed report by email.
+6. Review the title, expected and actual behavior, steps, console entries, network entries, and visual evidence. To highlight one moment, move the recording playhead and select **Capture frame**, then annotate the saved image if needed.
+7. In the Console or Network tab, select **Annotate text** and drag across the exact evidence to preserve as a highlight. Remove anything that should not be shared.
+8. Download the report as a ZIP or as individual files in a named folder under Downloads, copy the Markdown, or explicitly share the reviewed report by email.
 
 Same-origin reloads continue the session. Cross-origin navigation or closing the selected tab ends capture and preserves the evidence collected so far with an interruption reason.
 
 ## Privacy and trust boundary
 
-Captured evidence stays in extension-owned browser storage until the user deletes it, starts another capture, downloads it, or explicitly emails it. BugReceipt does not directly collect:
+Captured evidence and annotations stay in extension-owned browser storage until the user deletes them, starts another capture, downloads them, or explicitly emails them. BugReceipt does not directly collect:
 
 - page HTML or DOM snapshots;
 - cookies, local storage, or session storage;
@@ -148,7 +149,7 @@ flowchart LR
     F --> H[Explicit Resend delivery]
 ```
 
-The background worker owns the capture lifecycle and session transitions. Page instrumentation forwards bounded console and network events through an isolated bridge. Filtered session data lives in extension storage; recording and screenshot blobs live in extension-owned IndexedDB. Review edits return through the background protocol before export or email delivery.
+The background worker owns the capture lifecycle and session transitions. Page instrumentation forwards bounded console and network events through an isolated bridge. Filtered session data lives in extension storage; recording, selected-frame, fallback-screenshot, and annotation data live in extension-owned IndexedDB. Review edits return through the background protocol before export or email delivery.
 
 See [CONTEXT.md](CONTEXT.md) for the domain vocabulary and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the staged architecture record. The implementation is authoritative where the plan still describes earlier screenshot-only or local-only behavior.
 

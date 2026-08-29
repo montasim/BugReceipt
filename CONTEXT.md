@@ -30,9 +30,13 @@ The complete local, editable result assembled from a capture session: summary, m
 
 The local transformation that removes or masks sensitive values before captured diagnostics, steps, and edited review fields are persisted. Only persisted, filtered values can be exported. The filter is deterministic and reports what it changed.
 
+### Evidence annotation
+
+A user-authored, local overlay that calls attention to reviewed evidence without changing the captured source. Frame annotations are flattened into exported PNG files. Console and network text annotations preserve exact character ranges and appear in exported Markdown as explicit double-bracket markers.
+
 ### Export
 
-User-approved Markdown and visual-evidence files produced from a reviewed reproduction draft. Export does not upload, create a remote issue, or change the stored session state.
+User-approved Markdown and visual-evidence files produced from a reviewed reproduction draft, including its saved evidence annotations. Export does not upload, create a remote issue, or change the stored session state.
 
 ### Report delivery
 
