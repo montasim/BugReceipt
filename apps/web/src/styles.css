@@ -42,6 +42,55 @@ a {
   outline: 3px solid var(--trace);
   outline-offset: 4px;
 }
+
+body .sk-widget-btn {
+  min-height: 44px;
+  gap: 10px;
+  padding: 11px 16px;
+  border: 1px solid var(--signal);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--signal);
+  box-shadow: none;
+  font-family: 'Bricolage Grotesque Variable', system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+body .sk-widget-btn:hover {
+  background: var(--signal);
+  color: white;
+  transform: translateY(-1px);
+}
+
+body .sk-widget-btn:focus-visible {
+  outline: 3px solid var(--trace);
+  outline-offset: 4px;
+}
+
+body .sk-widget-btn svg {
+  width: 18px;
+  height: 18px;
+  color: var(--signal);
+}
+
+body .sk-widget-btn:hover svg {
+  color: white;
+}
+
+@media (max-width: 680px) {
+  body .sk-widget-iframe-container {
+    right: 15px;
+    left: 15px;
+    bottom: calc(env(safe-area-inset-bottom) + 72px);
+    width: auto;
+    height: min(550px, calc(100dvh - env(safe-area-inset-bottom) - 96px));
+  }
+}
 .shell {
   width: min(1280px, calc(100% - 48px));
   margin-inline: auto;

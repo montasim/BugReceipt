@@ -29,10 +29,11 @@ describe('extension landing page', () => {
     expect(source).toContain('/brand/bugreceipt-180.png');
     expect(source).toContain('https://www.supportkori.com/widget.js');
     expect(source).toContain('data-id="montasim"');
-    expect(source).toContain('data-message="Support montasim"');
-    expect(source).toContain('data-color="#FFDD00"');
+    expect(source).toContain('data-message="Support"');
+    expect(source).toContain('data-color="#ff5c3a"');
     expect(source).toContain('data-position="right"');
-    expect(styles).not.toContain('.sk-widget-btn');
+    expect(styles).toContain('border: 1px solid var(--signal)');
+    expect(styles).toContain('color: var(--signal)');
   });
 
   it('publishes crawler-visible social preview metadata', () => {
