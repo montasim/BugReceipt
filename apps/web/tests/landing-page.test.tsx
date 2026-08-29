@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { NotFound, ServerError } from '../src/routes/__root';
 
 describe('extension landing page', () => {
   it('offers the packaged extension and explains how to install it', () => {
@@ -40,5 +42,29 @@ describe('extension landing page', () => {
     expect(source).toContain("content: '630'");
     expect(source).toContain("name: 'twitter:card', content: 'summary_large_image'");
     expect(source).toContain("rel: 'canonical'");
+  });
+
+  it('provides themed 404 and 500 recovery pages', () => {
+    const source = readFileSync(new URL('../src/routes/__root.tsx', import.meta.url), 'utf8');
+    const styles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
+
+    expect(source).toContain('notFoundComponent: NotFound');
+    expect(source).toContain('errorComponent: ServerError');
+    expect(source).toContain('code="404"');
+    expect(source).toContain('code="500"');
+    expect(source).toContain('Try again');
+    expect(source).toContain('Nothing uploaded');
+    expect(styles).toContain('.error-page');
+    expect(styles).toContain('.error-receipt');
+
+    const notFoundMarkup = renderToStaticMarkup(<NotFound />);
+    const serverErrorMarkup = renderToStaticMarkup(
+      <ServerError error={new Error('test failure')} reset={() => undefined} />,
+    );
+
+    expect(notFoundMarkup).toContain('This page left no trace.');
+    expect(notFoundMarkup).toContain('Status / 404');
+    expect(serverErrorMarkup).toContain('The page hit an unexpected failure.');
+    expect(serverErrorMarkup).toContain('Status / 500');
   });
 });

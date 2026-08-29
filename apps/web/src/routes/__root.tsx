@@ -1,4 +1,5 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router';
+import type { ErrorComponentProps } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import appCss from '../styles.css?url';
 
@@ -61,6 +62,7 @@ export const Route = createRootRoute({
   }),
   shellComponent: RootDocument,
   notFoundComponent: NotFound,
+  errorComponent: ServerError,
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
@@ -84,12 +86,106 @@ function RootDocument({ children }: { children: ReactNode }) {
   );
 }
 
-function NotFound() {
+export function NotFound() {
   return (
-    <main className="not-found">
-      <p>404 · No evidence here</p>
-      <h1>This page was not captured.</h1>
-      <a href="/">Return to BugReceipt</a>
-    </main>
+    <ErrorScreen
+      code="404"
+      title="This page left no trace."
+      description="The address does not match a BugReceipt page. Nothing was changed, captured, or sent."
+      rows={[
+        ['Requested resource', 'No matching page'],
+        ['Report state', 'No data changed'],
+        ['Recovery', 'Return to the landing page'],
+      ]}
+    >
+      <a className="button primary" href="/">
+        Return to BugReceipt
+      </a>
+    </ErrorScreen>
+  );
+}
+
+export function ServerError({ reset }: ErrorComponentProps) {
+  return (
+    <ErrorScreen
+      code="500"
+      title="The page hit an unexpected failure."
+      description="BugReceipt could not finish rendering this page. Retry once, or return home if the problem continues."
+      rows={[
+        ['Failure class', 'Unexpected application error'],
+        ['Privacy state', 'No diagnostic data sent'],
+        ['Recovery', 'Retry this page or return home'],
+      ]}
+    >
+      <button className="button primary" type="button" onClick={reset}>
+        Try again
+      </button>
+      <a className="button secondary" href="/">
+        Return home
+      </a>
+    </ErrorScreen>
+  );
+}
+
+function ErrorScreen({
+  code,
+  title: errorTitle,
+  description: errorDescription,
+  rows,
+  children,
+}: {
+  code: '404' | '500';
+  title: string;
+  description: string;
+  rows: ReadonlyArray<readonly [string, string]>;
+  children: ReactNode;
+}) {
+  return (
+    <div className="error-layout">
+      <header className="site-header error-header">
+        <a className="brand" href="/" aria-label="BugReceipt home">
+          <ErrorMark /> BugReceipt
+        </a>
+        <span>Recovery console</span>
+      </header>
+      <main className="error-page shell">
+        <section className="error-copy" aria-labelledby={`error-${code}-title`}>
+          <h1 id={`error-${code}-title`}>{errorTitle}</h1>
+          <p>{errorDescription}</p>
+          <div className="error-actions">{children}</div>
+        </section>
+        <article className="error-receipt" aria-label={`${code} recovery details`}>
+          <div className="error-receipt-top">
+            <span>System receipt</span>
+            <b>Status / {code}</b>
+          </div>
+          <strong className="error-code" aria-hidden="true">
+            {code}
+          </strong>
+          <dl>
+            {rows.map(([term, value]) => (
+              <div key={term}>
+                <dt>{term}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="error-receipt-footer">
+            <span>BugReceipt</span>
+            <span>Nothing uploaded</span>
+          </div>
+        </article>
+      </main>
+    </div>
+  );
+}
+
+function ErrorMark() {
+  return (
+    <i className="mark" aria-hidden="true">
+      <b />
+      <b />
+      <b />
+    </i>
   );
 }
