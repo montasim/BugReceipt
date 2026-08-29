@@ -5,6 +5,7 @@ import {
   type CaptureSession,
   type NetworkEvent,
   type ReviewUpdate,
+  type SelectedFrame,
 } from '@bugreceipt/capture-model';
 import { filterPayload, filterText, filterUrl } from '@bugreceipt/privacy';
 
@@ -204,6 +205,28 @@ export async function removeScreenshotReference(): Promise<CaptureSession> {
   const page = { ...session.page };
   delete page.screenshotBlobId;
   delete page.screenshotError;
+  return saveSession({ ...session, page });
+}
+
+export async function setSelectedFrame(frame: SelectedFrame): Promise<CaptureSession> {
+  const session = await requireSession('ready-for-review');
+  if (!session.page?.recording) {
+    throw new Error('A selected frame requires a reviewable screen recording.');
+  }
+  return saveSession({
+    ...session,
+    page: {
+      ...session.page,
+      selectedFrame: frame,
+    },
+  });
+}
+
+export async function removeSelectedFrameReference(): Promise<CaptureSession> {
+  const session = await requireSession('ready-for-review');
+  if (!session.page) return session;
+  const page = { ...session.page };
+  delete page.selectedFrame;
   return saveSession({ ...session, page });
 }
 

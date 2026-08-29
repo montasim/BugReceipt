@@ -6,7 +6,7 @@ const output = resolve(import.meta.dirname, '../.output');
 const manifest = JSON.parse(await readFile(resolve(output, 'manifest.json'), 'utf8'));
 const expectedTitle = 'Capture a bug with BugReceipt';
 const iconSizes = ['16', '32', '48', '128'];
-const requiredPermissions = ['clipboardWrite', 'desktopCapture', 'sidePanel', 'tabs'];
+const requiredPermissions = ['clipboardWrite', 'desktopCapture', 'downloads', 'sidePanel', 'tabs'];
 const requiredOptionalOrigins = ['http://*/*', 'https://*/*'];
 
 if (manifest.action?.default_title !== expectedTitle) {

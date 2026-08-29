@@ -5,6 +5,11 @@ const RECORDING_STORE_NAME = 'recordings';
 
 export async function saveScreenshot(dataUrl: string): Promise<string> {
   const blob = await (await fetch(dataUrl)).blob();
+  return saveScreenshotBlob(blob);
+}
+
+export async function saveScreenshotBlob(blob: Blob): Promise<string> {
+  if (blob.type !== 'image/png') throw new Error('Only PNG screenshots can be stored.');
   const id = crypto.randomUUID();
   const database = await openDatabase();
   await transactionPromise(database, 'readwrite', (store) => store.put(blob, id));

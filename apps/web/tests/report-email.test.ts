@@ -60,6 +60,32 @@ describe('report email endpoint', () => {
 
     expect(response.status).toBe(403);
   });
+
+  it('keeps a selected video frame under its Markdown-linked filename', async () => {
+    const sendEmail = vi.fn().mockResolvedValue({ data: { id: 'email-1' }, error: null });
+    const form = new FormData();
+    form.set('sessionId', '00000000-0000-4000-8000-000000000000');
+    form.set('subject', 'Checkout fails');
+    form.set('report', '# Checkout fails');
+    form.set('visual', new File(['selected-frame'], 'selected-frame.png', { type: 'image/png' }));
+    const request = new Request('https://bugreceipt.example/api/reports', {
+      method: 'POST',
+      headers: { Origin: extensionOrigin },
+      body: form,
+    });
+
+    const response = await handleReportEmailRequest(request, { sendEmail });
+
+    expect(response.status).toBe(200);
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attachments: expect.arrayContaining([
+          expect.objectContaining({ filename: 'selected-frame.png' }),
+        ]),
+      }),
+      expect.any(Object),
+    );
+  });
 });
 
 function reportRequest(origin = extensionOrigin): Request {

@@ -28,6 +28,39 @@ export const networkEventSchema = z.object({
   error: z.string().max(2_000).optional(),
 });
 
+export const evidenceTextAnnotationSchema = z
+  .object({
+    id: z.string().uuid(),
+    source: z.enum(['console', 'network']),
+    eventId: z.string().uuid(),
+    field: z.enum([
+      'message',
+      'method',
+      'status',
+      'duration',
+      'url',
+      'requestBody',
+      'responseBody',
+      'error',
+    ]),
+    start: z.number().int().nonnegative().max(32_768),
+    end: z.number().int().positive().max(32_768),
+    color: z.string().regex(/^#[0-9a-f]{6}$/i),
+  })
+  .refine((annotation) => annotation.end > annotation.start, {
+    message: 'A text annotation must include at least one character.',
+    path: ['end'],
+  });
+
+export const selectedFrameSchema = z.object({
+  blobId: z.string().uuid(),
+  mimeType: z.literal('image/png'),
+  sizeBytes: z.number().int().nonnegative(),
+  videoTimeMs: z.number().int().nonnegative().max(3_600_000),
+  width: z.number().int().positive().max(16_384),
+  height: z.number().int().positive().max(16_384),
+});
+
 export const captureSessionSchema = z.object({
   schemaVersion: z.literal(1),
   id: z.string().uuid(),
@@ -58,6 +91,7 @@ export const captureSessionSchema = z.object({
         })
         .optional(),
       recordingError: z.string().max(500).optional(),
+      selectedFrame: selectedFrameSchema.optional(),
       screenshotBlobId: z.string().uuid().optional(),
       screenshotError: z.string().max(500).optional(),
     })
@@ -79,7 +113,79 @@ export type CaptureSession = z.infer<typeof captureSessionSchema>;
 export type CaptureEndReason = NonNullable<CaptureSession['endReason']>;
 export type DiagnosticEvent = z.infer<typeof diagnosticEventSchema>;
 export type NetworkEvent = z.infer<typeof networkEventSchema>;
+export type EvidenceTextAnnotation = z.infer<typeof evidenceTextAnnotationSchema>;
 export type ReproductionStep = z.infer<typeof stepSchema>;
+export type SelectedFrame = z.infer<typeof selectedFrameSchema>;
+
+export interface CaptureEnvironmentDetails {
+  browser: string;
+  operatingSystem: string;
+  platform: string;
+  userAgent: string;
+}
+
+export function describeCaptureEnvironment(
+  environment: CaptureSession['environment'],
+): CaptureEnvironmentDetails {
+  const userAgent = environment?.userAgent || '';
+  const platform = environment?.platform || '';
+  return {
+    browser: describeBrowser(userAgent),
+    operatingSystem: describeOperatingSystem(userAgent, platform),
+    platform: platform || 'Unknown',
+    userAgent: userAgent || 'Unknown',
+  };
+}
+
+function describeBrowser(userAgent: string): string {
+  const candidates: Array<[name: string, pattern: RegExp]> = [
+    ['Microsoft Edge', /\bEdg(?:A|iOS)?\/([\d.]+)/],
+    ['Opera', /\b(?:OPR|Opera)\/([\d.]+)/],
+    ['Samsung Internet', /\bSamsungBrowser\/([\d.]+)/],
+    ['Firefox', /\b(?:Firefox|FxiOS)\/([\d.]+)/],
+    ['Chrome', /\b(?:Chrome|CriOS)\/([\d.]+)/],
+    ['Chromium', /\bChromium\/([\d.]+)/],
+    ['Safari', /\bVersion\/([\d.]+).*\bSafari\//],
+  ];
+
+  for (const [name, pattern] of candidates) {
+    const match = userAgent.match(pattern);
+    if (match?.[1]) return `${name} ${match[1]}`;
+  }
+  return 'Unknown';
+}
+
+function describeOperatingSystem(userAgent: string, platform: string): string {
+  const windows = userAgent.match(/\bWindows NT ([\d.]+)/);
+  if (windows?.[1]) {
+    const name =
+      {
+        '10.0': 'Windows 10 or 11',
+        '6.3': 'Windows 8.1',
+        '6.2': 'Windows 8',
+        '6.1': 'Windows 7',
+      }[windows[1]] ?? `Windows NT ${windows[1]}`;
+    return name;
+  }
+
+  const android = userAgent.match(/\bAndroid ([\d.]+)/);
+  if (android?.[1]) return `Android ${android[1]}`;
+
+  const chromeOs = userAgent.match(/\bCrOS [^ )]+ ([\d.]+)/);
+  if (chromeOs?.[1]) return `ChromeOS ${chromeOs[1]}`;
+
+  const ios = userAgent.match(/(?:CPU (?:iPhone )?OS|iPhone OS) ([\d_]+)/);
+  if (ios?.[1]) return `iOS ${ios[1].replaceAll('_', '.')}`;
+
+  const macOs = userAgent.match(/\bMac OS X ([\d_]+)/);
+  if (macOs?.[1]) return `macOS ${macOs[1].replaceAll('_', '.')}`;
+
+  if (/\bLinux\b/.test(userAgent)) return 'Linux';
+  if (/^Win/i.test(platform)) return 'Windows';
+  if (/^(?:Mac|iPhone|iPad|iPod)/i.test(platform)) return 'macOS or iOS';
+  if (/Linux/i.test(platform)) return 'Linux';
+  return 'Unknown';
+}
 
 export const reviewUpdateSchema = z.object({
   summary: z.string().trim().max(200),
@@ -102,6 +208,8 @@ export const runtimeRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('session:update-review') }).extend(reviewUpdateSchema.shape),
   z.object({ type: z.literal('session:remove-diagnostic'), id: z.string().uuid() }),
   z.object({ type: z.literal('session:remove-network'), id: z.string().uuid() }),
+  z.object({ type: z.literal('session:set-selected-frame'), frame: selectedFrameSchema }),
+  z.object({ type: z.literal('session:remove-selected-frame') }),
   z.object({ type: z.literal('session:remove-recording') }),
   z.object({ type: z.literal('session:remove-screenshot') }),
   z.object({ type: z.literal('session:stop') }),

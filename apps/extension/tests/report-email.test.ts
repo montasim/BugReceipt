@@ -50,4 +50,31 @@ describe('report email client', () => {
       }),
     ).rejects.toThrow('Report email is not configured.');
   });
+
+  it('preserves the selected frame filename for email delivery', async () => {
+    const frame = new Blob(['selected-frame'], { type: 'image/png' });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(frame))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await sendReportEmail({
+      sessionId: '00000000-0000-4000-8000-000000000000',
+      subject: 'Checkout fails',
+      markdown: '# Checkout fails',
+      visualUrl: 'blob:selected-frame',
+      visualFilename: 'selected-frame.png',
+    });
+
+    const [, init] = fetchMock.mock.calls[1] as [string, RequestInit];
+    const visual = (init.body as FormData).get('visual');
+    expect(visual).toBeInstanceOf(File);
+    expect((visual as File).name).toBe('selected-frame.png');
+  });
 });

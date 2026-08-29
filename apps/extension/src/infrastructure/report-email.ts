@@ -19,6 +19,7 @@ export async function sendReportEmail(input: {
   subject: string;
   markdown: string;
   visualUrl?: string;
+  visualFilename?: 'recording.webm' | 'selected-frame.png' | 'screenshot.png';
 }): Promise<{ visualAttached: boolean }> {
   if (!REPORT_ENDPOINT) {
     throw new Error(
@@ -33,7 +34,9 @@ export async function sendReportEmail(input: {
   if (input.visualUrl) {
     const visual = await (await fetch(input.visualUrl)).blob();
     if (visual.size <= MAX_EMAIL_VISUAL_BYTES) {
-      form.set('visual', visual, visual.type === 'image/png' ? 'screenshot.png' : 'recording.webm');
+      const filename =
+        input.visualFilename ?? (visual.type === 'image/png' ? 'screenshot.png' : 'recording.webm');
+      form.set('visual', new File([visual], filename, { type: visual.type }));
       visualAttached = true;
     }
   }

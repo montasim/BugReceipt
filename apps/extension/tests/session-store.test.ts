@@ -5,7 +5,9 @@ import {
   createSession,
   interruptSession,
   loadSession,
+  removeSelectedFrameReference,
   saveSession,
+  setSelectedFrame,
   updateReview,
 } from '../src/application/session-store';
 
@@ -114,6 +116,38 @@ describe('capture session store', () => {
     expect(interrupted.endReason).toBe('origin-changed');
     expect(interrupted.page?.url).toBe('https://example.com/checkout');
     expect(interrupted.stoppedAt).toBeDefined();
+  });
+
+  it('adds and removes selected frame metadata without removing the recording', async () => {
+    const active = createSession(makeTab({ url: 'https://example.com', title: 'Checkout' }));
+    await saveSession({
+      ...active,
+      status: 'ready-for-review',
+      stoppedAt: new Date().toISOString(),
+      page: {
+        ...active.page!,
+        recording: {
+          blobId: active.id,
+          mimeType: 'video/webm',
+          sizeBytes: 1_024,
+          durationMs: 10_000,
+        },
+      },
+    });
+
+    const withFrame = await setSelectedFrame({
+      blobId: '00000000-0000-4000-8000-000000000004',
+      mimeType: 'image/png',
+      sizeBytes: 512,
+      videoTimeMs: 3_067,
+      width: 1_280,
+      height: 720,
+    });
+    expect(withFrame.page?.selectedFrame?.videoTimeMs).toBe(3_067);
+
+    const withoutFrame = await removeSelectedFrameReference();
+    expect(withoutFrame.page?.selectedFrame).toBeUndefined();
+    expect(withoutFrame.page?.recording?.blobId).toBe(active.id);
   });
 });
 

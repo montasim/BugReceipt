@@ -96,7 +96,12 @@ export async function handleReportEmailRequest(
     ];
     if (visual instanceof File && visual.size > 0) {
       attachments.push({
-        filename: visual.type === 'image/png' ? 'screenshot.png' : 'recording.webm',
+        filename:
+          visual.type === 'image/png' && visual.name === 'selected-frame.png'
+            ? 'selected-frame.png'
+            : visual.type === 'image/png'
+              ? 'screenshot.png'
+              : 'recording.webm',
         content: Buffer.from(await visual.arrayBuffer()),
       });
     }

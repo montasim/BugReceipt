@@ -25,6 +25,7 @@ export default defineConfig({
         'activeTab',
         'clipboardWrite',
         'desktopCapture',
+        'downloads',
         'scripting',
         'sidePanel',
         'storage',

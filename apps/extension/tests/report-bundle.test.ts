@@ -7,7 +7,7 @@ describe('report bundle', () => {
     const video = new Blob(['captured-video'], { type: 'video/webm' });
     const bundle = await createReportBundle(
       '# Report\n\n[Open the screen recording](./recording.webm)',
-      { blob: video, filename: 'recording.webm' },
+      [{ blob: video, filename: 'recording.webm' }],
     );
     const archive = await JSZip.loadAsync(await bundle.arrayBuffer());
 
@@ -19,11 +19,24 @@ describe('report bundle', () => {
     const screenshot = new Blob(['captured-image'], { type: 'image/png' });
     const bundle = await createReportBundle(
       '# Report\n\n![Captured screenshot](./screenshot.png)',
-      { blob: screenshot, filename: 'screenshot.png' },
+      [{ blob: screenshot, filename: 'screenshot.png' }],
     );
     const archive = await JSZip.loadAsync(await bundle.arrayBuffer());
 
     expect(archive.file('issue.md')).not.toBeNull();
     expect(await archive.file('screenshot.png')?.async('string')).toBe('captured-image');
+  });
+
+  it('keeps a selected frame beside the full recording', async () => {
+    const video = new Blob(['captured-video'], { type: 'video/webm' });
+    const frame = new Blob(['selected-frame'], { type: 'image/png' });
+    const bundle = await createReportBundle('# Report', [
+      { blob: video, filename: 'recording.webm' },
+      { blob: frame, filename: 'selected-frame.png' },
+    ]);
+    const archive = await JSZip.loadAsync(await bundle.arrayBuffer());
+
+    expect(await archive.file('recording.webm')?.async('string')).toBe('captured-video');
+    expect(await archive.file('selected-frame.png')?.async('string')).toBe('selected-frame');
   });
 });

@@ -18,8 +18,10 @@ import {
   removeDiagnostic,
   removeNetworkEvent,
   removeRecordingReference,
+  removeSelectedFrameReference,
   removeScreenshotReference,
   saveSession,
+  setSelectedFrame,
   updateReview,
 } from '../src/application/session-store';
 import {
@@ -34,6 +36,7 @@ import {
 } from '../src/infrastructure/page-instrumentation';
 import { deleteScreenshot, saveScreenshot } from '../src/infrastructure/screenshot-store';
 import { deleteRecording } from '../src/infrastructure/recording-store';
+import { deleteAnnotationDocument } from '../src/infrastructure/annotation-store';
 
 type RecordingEvidence = NonNullable<
   NonNullable<NonNullable<Awaited<ReturnType<typeof loadSession>>>['page']>['recording']
@@ -113,6 +116,9 @@ async function handleRequest(
       const current = await loadSession();
       if (current?.status === 'recording') return { ok: true, session: current };
       if (current?.page?.screenshotBlobId) await deleteScreenshot(current.page.screenshotBlobId);
+      if (current?.page?.selectedFrame?.blobId) {
+        await deleteScreenshot(current.page.selectedFrame.blobId);
+      }
       if (current?.page?.recording?.blobId) await deleteRecording(current.page.recording.blobId);
       const tab = await chrome.tabs.get(request.tabId);
       if (!tab.active) {
@@ -159,6 +165,31 @@ async function handleRequest(
       return { ok: true, session: await removeDiagnostic(request.id) };
     case 'session:remove-network':
       return { ok: true, session: await removeNetworkEvent(request.id) };
+    case 'session:set-selected-frame': {
+      const session = await loadSession();
+      const previousBlobId = session?.page?.selectedFrame?.blobId;
+      const updated = await setSelectedFrame(request.frame);
+      if (previousBlobId && previousBlobId !== request.frame.blobId) {
+        await Promise.allSettled([
+          deleteScreenshot(previousBlobId),
+          deleteAnnotationDocument(previousBlobId),
+        ]);
+      }
+      return { ok: true, session: updated };
+    }
+    case 'session:remove-selected-frame': {
+      const session = await loadSession();
+      if (!session || session.status !== 'ready-for-review') {
+        throw new Error('No reviewable capture exists.');
+      }
+      if (session.page?.selectedFrame?.blobId) {
+        await Promise.allSettled([
+          deleteScreenshot(session.page.selectedFrame.blobId),
+          deleteAnnotationDocument(session.page.selectedFrame.blobId),
+        ]);
+      }
+      return { ok: true, session: await removeSelectedFrameReference() };
+    }
     case 'session:remove-recording': {
       const session = await loadSession();
       if (!session || session.status !== 'ready-for-review') {
@@ -221,6 +252,9 @@ async function handleRequest(
       );
       await chrome.action.setBadgeText({ text: '', tabId: session.tabId });
       await chrome.tabs.create({ url: chrome.runtime.getURL('/review.html') });
+      if (typeof chrome.sidePanel?.close === 'function') {
+        await chrome.sidePanel.close({ windowId: session.windowId }).catch(() => undefined);
+      }
       return { ok: true, session: finalized };
     }
     case 'session:discard': {
@@ -229,6 +263,12 @@ async function handleRequest(
         await Promise.allSettled([removeCapture(session.tabId), finishScreenRecording(session)]);
       }
       if (session?.page?.screenshotBlobId) await deleteScreenshot(session.page.screenshotBlobId);
+      if (session?.page?.selectedFrame?.blobId) {
+        await Promise.allSettled([
+          deleteScreenshot(session.page.selectedFrame.blobId),
+          deleteAnnotationDocument(session.page.selectedFrame.blobId),
+        ]);
+      }
       if (session?.page?.recording?.blobId) await deleteRecording(session.page.recording.blobId);
       if (session) await deleteRecording(session.id).catch(() => undefined);
       await clearSession();
