@@ -4,10 +4,19 @@ import { stdout } from 'node:process';
 
 const output = resolve(import.meta.dirname, '../.output');
 const manifest = JSON.parse(await readFile(resolve(output, 'manifest.json'), 'utf8'));
+const packageMetadata = JSON.parse(
+  await readFile(resolve(import.meta.dirname, '../package.json'), 'utf8'),
+);
 const expectedTitle = 'Capture a bug with BugReceipt';
 const iconSizes = ['16', '32', '48', '128'];
 const requiredPermissions = ['clipboardWrite', 'desktopCapture', 'downloads', 'sidePanel', 'tabs'];
 const requiredOptionalOrigins = ['http://*/*', 'https://*/*'];
+
+if (manifest.version !== packageMetadata.version) {
+  throw new Error(
+    `Extension version mismatch: manifest ${manifest.version ?? 'missing'}, package ${packageMetadata.version ?? 'missing'}`,
+  );
+}
 
 if (manifest.action?.default_title !== expectedTitle) {
   throw new Error(`Unexpected toolbar title: ${manifest.action?.default_title ?? 'missing'}`);

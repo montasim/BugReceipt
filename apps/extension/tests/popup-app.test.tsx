@@ -61,7 +61,7 @@ beforeEach(() => {
     action: { setBadgeText },
     runtime: {
       getURL: (path: string) => `chrome-extension://bugreceipt${path}`,
-      getManifest: () => ({ version: '0.1.2' }),
+      getManifest: () => ({ version: '0.1.3' }),
     },
     sidePanel: { close: closeSidePanel },
     windows: { update: updateWindow },
@@ -93,8 +93,8 @@ describe('capture popup', () => {
     const support = await screen.findByRole('link', { name: 'Support BugReceipt on SupportKori' });
     expect(support.getAttribute('href')).toBe('https://www.supportkori.com/montasim');
     expect(support.getAttribute('target')).toBe('_blank');
-    expect(screen.getByLabelText('BugReceipt version 0.1.2')).toBeDefined();
-    expect(screen.getByText('v0.1.2')).toBeDefined();
+    expect(screen.getByLabelText('BugReceipt version 0.1.3')).toBeDefined();
+    expect(screen.getByText('v0.1.3')).toBeDefined();
   });
 
   it('shows elapsed recording time from the persisted capture start', async () => {

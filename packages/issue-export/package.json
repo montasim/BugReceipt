@@ -1,6 +1,6 @@
 {
   "name": "@bugreceipt/issue-export",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "type": "module",
   "description": "Deterministic Markdown and report-bundle export for BugReceipt.",

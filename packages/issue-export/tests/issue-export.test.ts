@@ -23,7 +23,7 @@ const session: CaptureSession = {
   environment: {
     userAgent,
     platform: 'Win32',
-    reproKitVersion: '0.1.2',
+    reproKitVersion: '0.1.3',
   },
   filtering: { redactionCount: 0, droppedEventCount: 0 },
 };
@@ -44,7 +44,7 @@ describe('GitHub issue renderer', () => {
     expect(markdown).toContain('- Browser: Chrome 140.0.0.0');
     expect(markdown).toContain('- Platform: Win32');
     expect(markdown).toContain(`- User agent: ${userAgent}`);
-    expect(markdown).toContain('- BugReceipt: 0.1.2');
+    expect(markdown).toContain('- BugReceipt: 0.1.3');
   });
 
   it('reports the fields that make an export incomplete', () => {
