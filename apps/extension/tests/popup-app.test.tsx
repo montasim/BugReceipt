@@ -1,5 +1,5 @@
 import type { CaptureSession, RuntimeRequest, RuntimeResponse } from '@bugreceipt/capture-model';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendRuntimeMessage } from '../src/application/protocol';
 import { startDesktopRecording } from '../src/infrastructure/desktop-recorder';
@@ -32,6 +32,10 @@ const send = vi.mocked(sendRuntimeMessage);
 const startRecording = vi.mocked(startDesktopRecording);
 const updateTab = vi.fn().mockResolvedValue(undefined);
 const updateWindow = vi.fn().mockResolvedValue(undefined);
+const createTab = vi.fn().mockResolvedValue(undefined);
+const setBadgeText = vi.fn().mockResolvedValue(undefined);
+const closeSidePanel = vi.fn().mockResolvedValue(undefined);
+const queryTabs = vi.fn().mockResolvedValue([{ id: 9, url: 'https://example.com/dashboard' }]);
 const tabActivated = { addListener: vi.fn(), removeListener: vi.fn() };
 const requestPermission = vi.fn().mockResolvedValue(true);
 const containsPermission = vi.fn().mockResolvedValue(true);
@@ -49,10 +53,17 @@ beforeEach(() => {
   });
   vi.stubGlobal('chrome', {
     tabs: {
-      query: () => Promise.resolve([{ id: 9, url: 'https://example.com/dashboard' }]),
+      query: queryTabs,
+      create: createTab,
       update: updateTab,
       onActivated: tabActivated,
     },
+    action: { setBadgeText },
+    runtime: {
+      getURL: (path: string) => `chrome-extension://bugreceipt${path}`,
+      getManifest: () => ({ version: '0.1.2' }),
+    },
+    sidePanel: { close: closeSidePanel },
     windows: { update: updateWindow },
     permissions: { contains: containsPermission, request: requestPermission },
     desktopCapture: { chooseDesktopMedia },
@@ -61,6 +72,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.clearAllMocks();
   vi.unstubAllGlobals();
 });
@@ -81,7 +93,76 @@ describe('capture popup', () => {
     const support = await screen.findByRole('link', { name: 'Support BugReceipt on SupportKori' });
     expect(support.getAttribute('href')).toBe('https://www.supportkori.com/montasim');
     expect(support.getAttribute('target')).toBe('_blank');
-    expect(screen.getByLabelText('BugReceipt')).toBeDefined();
+    expect(screen.getByLabelText('BugReceipt version 0.1.2')).toBeDefined();
+    expect(screen.getByText('v0.1.2')).toBeDefined();
+  });
+
+  it('shows elapsed recording time from the persisted capture start', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-08-27T12:00:08.900Z'));
+    const schedule = vi.spyOn(window, 'setInterval');
+    render(<PopupApp />);
+
+    const timer = await screen.findByRole('timer', { name: 'Recording duration' });
+    await waitFor(() => expect(timer.textContent).toBe('00:08'));
+    expect(timer.getAttribute('datetime')).toBe('PT8S');
+
+    const tick = schedule.mock.calls.find(([, delay]) => delay === 1_000)?.[0];
+    expect(typeof tick).toBe('function');
+    now.mockReturnValue(Date.parse('2026-08-27T12:00:09.900Z'));
+    act(() => {
+      if (typeof tick === 'function') tick();
+    });
+    expect(timer.textContent).toBe('00:09');
+  });
+
+  it('does not open a duplicate review after the background stops the recording', async () => {
+    queryTabs.mockResolvedValueOnce([{ id: session.tabId, url: session.origin }]);
+    const readySession: CaptureSession = {
+      ...session,
+      status: 'ready-for-review',
+      stoppedAt: '2026-08-27T12:00:10.000Z',
+    };
+    send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> => {
+      if (request.type === 'session:get') return Promise.resolve({ ok: true, session });
+      if (request.type === 'session:stop') {
+        return Promise.resolve({ ok: true, session: readySession });
+      }
+      return Promise.resolve({ ok: true });
+    });
+    render(<PopupApp />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Stop & review' }));
+
+    await waitFor(() =>
+      expect(send).toHaveBeenCalledWith({
+        type: 'session:stop',
+      }),
+    );
+    expect(createTab).not.toHaveBeenCalled();
+    expect(closeSidePanel).not.toHaveBeenCalled();
+  });
+
+  it('closes the side panel when reopening a ready review', async () => {
+    const readySession: CaptureSession = {
+      ...session,
+      status: 'ready-for-review',
+      stoppedAt: '2026-08-27T12:00:10.000Z',
+    };
+    send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> =>
+      Promise.resolve(
+        request.type === 'session:get' ? { ok: true, session: readySession } : { ok: true },
+      ),
+    );
+    render(<PopupApp />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open review' }));
+
+    await waitFor(() =>
+      expect(createTab).toHaveBeenCalledWith({
+        url: 'chrome-extension://bugreceipt/review.html',
+      }),
+    );
+    expect(closeSidePanel).toHaveBeenCalledWith({ windowId: session.windowId });
   });
 
   it('starts capture with the tab explicitly selected by the user', async () => {

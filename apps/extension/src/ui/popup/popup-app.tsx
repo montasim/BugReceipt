@@ -6,6 +6,7 @@ import {
   startDesktopRecording,
 } from '../../infrastructure/desktop-recorder';
 import { Brand } from '../brand';
+import { SupportLink } from '../support-link';
 
 export function PopupApp() {
   const [session, setSession] = useState<CaptureSession | null>(null);
@@ -16,6 +17,7 @@ export function PopupApp() {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(true);
+  const [clockNow, setClockNow] = useState(() => Date.now());
 
   useEffect(() => {
     const readActiveTab = async () => {
@@ -42,6 +44,18 @@ export function PopupApp() {
       .finally(() => setBusy(false));
     return () => chrome.tabs.onActivated.removeListener(handleTabActivated);
   }, []);
+
+  const recordingStartedAt =
+    session?.status === 'recording' ? Date.parse(session.startedAt) : Number.NaN;
+  const recordingElapsedMs = Number.isFinite(recordingStartedAt)
+    ? Math.max(0, clockNow - recordingStartedAt)
+    : 0;
+
+  useEffect(() => {
+    if (!Number.isFinite(recordingStartedAt)) return;
+    const intervalId = window.setInterval(() => setClockNow(Date.now()), 1_000);
+    return () => window.clearInterval(intervalId);
+  }, [recordingStartedAt]);
 
   async function start() {
     if (activeTabId === null || !activeTabUrl) {
@@ -127,14 +141,14 @@ export function PopupApp() {
 
   async function stop() {
     setBusy(true);
+    setError('');
     const response = await sendRuntimeMessage({ type: 'session:stop' });
-    if (response.ok && 'session' in response) {
+    if (response.ok && 'session' in response && response.session) {
       setSession(response.session);
-      setBusy(false);
     } else if (!response.ok) {
       setError(response.message);
-      setBusy(false);
     }
+    setBusy(false);
   }
 
   async function discard() {
@@ -163,11 +177,23 @@ export function PopupApp() {
   async function openReview() {
     if (!session) return;
     setBusy(true);
-    await Promise.allSettled([
-      chrome.action.setBadgeText({ text: '', tabId: session.tabId }),
-      chrome.tabs.create({ url: chrome.runtime.getURL('/review.html') }),
-    ]);
+    setError('');
+    try {
+      await showReview(session);
+    } catch {
+      setError('The review could not be opened. Try again.');
+    }
     setBusy(false);
+  }
+
+  async function showReview(reviewSession: CaptureSession) {
+    await chrome.action
+      .setBadgeText({ text: '', tabId: reviewSession.tabId })
+      .catch(() => undefined);
+    await chrome.tabs.create({ url: chrome.runtime.getURL('/review.html') });
+    if (typeof chrome.sidePanel?.close === 'function') {
+      await chrome.sidePanel.close({ windowId: reviewSession.windowId }).catch(() => undefined);
+    }
   }
 
   const recordingElsewhere =
@@ -178,20 +204,7 @@ export function PopupApp() {
     <main className="popup-shell">
       <header className="popup-header panel-header">
         <Brand />
-        <a
-          className="support-link"
-          href="https://www.supportkori.com/montasim"
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Support BugReceipt on SupportKori"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8Z" />
-            <path d="M6 1v3M10 1v3M14 1v3" />
-          </svg>
-          Support
-        </a>
+        <SupportLink />
       </header>
       {busy && !session ? (
         <div className="empty-panel" aria-live="polite">
@@ -200,7 +213,17 @@ export function PopupApp() {
       ) : session?.status === 'recording' ? (
         <section className="capture-panel">
           <div className="recording-line">
-            <span className="recording-dot" />
+            <div className="recording-clock">
+              <time
+                className="recording-timer"
+                role="timer"
+                aria-label="Recording duration"
+                dateTime={`PT${Math.floor(recordingElapsedMs / 1_000)}S`}
+              >
+                {formatRecordingDuration(recordingElapsedMs)}
+              </time>
+              <span className="recording-dot" aria-hidden="true" />
+            </div>
             <div>
               <p className="eyebrow">
                 {recordingElsewhere ? 'Recording another tab' : 'Recording this tab'}
@@ -376,6 +399,18 @@ function getOriginPattern(urlString: string): string | null {
   } catch {
     return null;
   }
+}
+
+function formatRecordingDuration(elapsedMs: number): string {
+  const totalSeconds = Math.max(0, Math.floor(elapsedMs / 1_000));
+  const hours = Math.floor(totalSeconds / 3_600);
+  const minutes = Math.floor((totalSeconds % 3_600) / 60);
+  const seconds = totalSeconds % 60;
+  const minuteText = String(minutes).padStart(2, '0');
+  const secondText = String(seconds).padStart(2, '0');
+  return hours > 0
+    ? `${String(hours).padStart(2, '0')}:${minuteText}:${secondText}`
+    : `${minuteText}:${secondText}`;
 }
 
 function getInterruptionCopy(endReason: CaptureSession['endReason']) {
