@@ -6,6 +6,8 @@ playwright-report/
 test-results/
 apps/*/dist/
 apps/*/.netlify/
+apps/web/.tanstack/
+apps/web/deno.lock
 *.zip
 *.pem
 *.key
