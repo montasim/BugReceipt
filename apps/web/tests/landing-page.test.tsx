@@ -14,8 +14,10 @@ describe('extension landing page', () => {
     expect(source).toContain('Download BugReceipt');
     expect(source).toContain('Load unpacked');
     expect(source).toContain('What does BugReceipt capture?');
-    expect(source).toContain('BugReceipt-v0.1.2-chrome-unpacked.zip');
+    expect(source).toContain('BugReceipt-v0.1.3-chrome-unpacked.zip');
     expect(source).toContain('manifest.json');
+    expect(source).toContain('/brand/bugreceipt-review-latest.jpg');
+    expect(source).toContain('Current review workspace · Latest');
   });
 
   it('loads the BugReceipt favicon and SupportKori widget from the root document', () => {

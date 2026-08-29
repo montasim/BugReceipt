@@ -39,15 +39,17 @@ function Home() {
   return (
     <>
       <header className="site-header">
-        <a className="brand" href="#top" aria-label="BugReceipt home">
-          <Mark /> BugReceipt
-        </a>
-        <nav aria-label="Main navigation">
-          <a href="#details">Details</a>
-          <a href="#workflow">Workflow</a>
-          <a href="#privacy">Privacy</a>
-          <a href="#install">Install</a>
-        </nav>
+        <div className="site-header-inner">
+          <a className="brand" href="#top" aria-label="BugReceipt home">
+            <Mark /> BugReceipt
+          </a>
+          <nav aria-label="Main navigation">
+            <a href="#details">Details</a>
+            <a href="#workflow">Workflow</a>
+            <a href="#privacy">Privacy</a>
+            <a href="#install">Install</a>
+          </nav>
+        </div>
       </header>
       <main id="top">
         <section className="hero shell">
@@ -109,7 +111,7 @@ function Home() {
             </div>
             <div className="bundle-trees">
               <code>
-                BugReceipt-v0.1.2-chrome-unpacked.zip
+                BugReceipt-v0.1.3-chrome-unpacked.zip
                 <span>manifest.json</span>
                 <span>sidepanel.html</span>
                 <span>review.html</span>
@@ -183,7 +185,7 @@ function Home() {
             <a className="button primary" href={releaseUrl} target="_blank" rel="noreferrer">
               Download BugReceipt
             </a>
-            <small>Chrome 120+ · Version 0.1.2 · Developer mode installation</small>
+            <small>Chrome 120+ · Version 0.1.3 · Developer mode installation</small>
           </div>
           <ol className="install-steps">
             <InstallStep number="01" title="Download and extract">
@@ -273,36 +275,16 @@ function Mark() {
 
 function EvidencePreview() {
   return (
-    <div className="evidence-preview" aria-label="BugReceipt capture review preview">
-      <div className="preview-top">
-        <span>Capture / checkout</span>
-        <b>Local only</b>
-      </div>
-      <div className="preview-title">
-        <small>Issue report</small>
-        <strong>Checkout fails after payment</strong>
-      </div>
-      <div className="preview-row">
-        <i>01</i>
-        <span>Open the cart with two items</span>
-        <b>Step</b>
-      </div>
-      <div className="preview-row">
-        <i>02</i>
-        <span>Click “Complete payment”</span>
-        <b>Step</b>
-      </div>
-      <div className="preview-console">
-        <small>12:41:08 · ERROR</small>
-        <code>PaymentIntentError: status 409</code>
-        <em>[token REDACTED]</em>
-      </div>
-      <div className="preview-footer">
-        <span>2 steps</span>
-        <span>1 console error</span>
-        <span>1 screen recording</span>
-      </div>
-    </div>
+    <figure className="evidence-preview">
+      <img
+        src="/brand/bugreceipt-review-latest.jpg"
+        width="1905"
+        height="933"
+        alt="BugReceipt extension review workspace with the issue report, visual evidence, console, and network tabs"
+        fetchPriority="high"
+      />
+      <figcaption>Current review workspace · Latest</figcaption>
+    </figure>
   );
 }
 
