@@ -31,6 +31,6 @@ The user starts a tab-scoped capture from a persistent Chrome side panel, reprod
 ## Distribution
 
 - Chrome 120 and later is the current supported browser target.
-- Version 0.1.3 is prepared as a pre-release unpacked Chrome extension ZIP distributed through GitHub Releases.
+- Version 0.1.4 is prepared as a pre-release unpacked Chrome extension ZIP distributed through GitHub Releases.
 - Installation currently requires Chrome Developer mode and Load unpacked.
 - A public Chrome Web Store listing is not claimed.

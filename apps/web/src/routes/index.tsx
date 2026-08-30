@@ -111,7 +111,7 @@ function Home() {
             </div>
             <div className="bundle-trees">
               <code>
-                BugReceipt-v0.1.3-chrome-unpacked.zip
+                BugReceipt-v0.1.4-chrome-unpacked.zip
                 <span>manifest.json</span>
                 <span>sidepanel.html</span>
                 <span>review.html</span>
@@ -185,7 +185,7 @@ function Home() {
             <a className="button primary" href={releaseUrl} target="_blank" rel="noreferrer">
               Download BugReceipt
             </a>
-            <small>Chrome 120+ · Version 0.1.3 · Developer mode installation</small>
+            <small>Chrome 120+ · Version 0.1.4 · Developer mode installation</small>
           </div>
           <ol className="install-steps">
             <InstallStep number="01" title="Download and extract">

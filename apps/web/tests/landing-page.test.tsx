@@ -14,7 +14,7 @@ describe('extension landing page', () => {
     expect(source).toContain('Download BugReceipt');
     expect(source).toContain('Load unpacked');
     expect(source).toContain('What does BugReceipt capture?');
-    expect(source).toContain('BugReceipt-v0.1.3-chrome-unpacked.zip');
+    expect(source).toContain('BugReceipt-v0.1.4-chrome-unpacked.zip');
     expect(source).toContain('manifest.json');
     expect(source).toContain('/brand/bugreceipt-review-latest.jpg');
     expect(source).toContain('Current review workspace · Latest');
@@ -32,8 +32,10 @@ describe('extension landing page', () => {
     expect(source).toContain('data-message="Support"');
     expect(source).toContain('data-color="#ff5c3a"');
     expect(source).toContain('data-position="right"');
-    expect(styles).toContain('border: 1px solid var(--signal)');
-    expect(styles).toContain('color: var(--signal)');
+    expect(styles).toMatch(
+      /body \.sk-widget-btn \{[^}]*background: var\(--signal\);[^}]*color: white;/s,
+    );
+    expect(styles).toMatch(/body \.sk-widget-btn svg \{[^}]*color: white;/s);
   });
 
   it('publishes crawler-visible social preview metadata', () => {

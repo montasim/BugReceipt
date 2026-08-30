@@ -1,6 +1,6 @@
 {
   "name": "@bugreceipt/extension",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "type": "module",
   "description": "Capture a privacy-filtered bug reproduction bundle from the active tab.",

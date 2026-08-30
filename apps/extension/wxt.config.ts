@@ -6,13 +6,24 @@ import { defineConfig, type WxtViteConfig } from 'wxt';
 const LOCAL_REPORT_ENDPOINT = 'http://localhost:3000/api/reports';
 const WORKSPACE_ROOT = resolve(process.cwd(), '../..');
 
-function getConfiguredReportEndpoint(mode: string): string {
+export function getConfiguredReportEndpoint(mode: string): string {
   const workspaceEnvironment = loadEnv(mode, WORKSPACE_ROOT, '');
-  return (
+  const endpoint = (
     process.env.VITE_BUGRECEIPT_REPORT_ENDPOINT ||
     workspaceEnvironment.VITE_BUGRECEIPT_REPORT_ENDPOINT ||
     ''
   ).trim();
+  if (mode !== 'development' && isLocalReportEndpoint(endpoint)) return '';
+  return endpoint;
+}
+
+function isLocalReportEndpoint(endpoint: string): boolean {
+  if (!endpoint) return false;
+  try {
+    return ['localhost', '127.0.0.1', '::1'].includes(new URL(endpoint).hostname);
+  } catch {
+    return false;
+  }
 }
 
 export default defineConfig({

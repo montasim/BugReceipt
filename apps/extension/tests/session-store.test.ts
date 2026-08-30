@@ -18,7 +18,7 @@ beforeEach(() => {
   values.clear();
   vi.stubGlobal('chrome', {
     runtime: {
-      getManifest: () => ({ version: '0.1.3' }),
+      getManifest: () => ({ version: '0.1.4' }),
     },
     storage: {
       session: {
