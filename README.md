@@ -110,6 +110,7 @@ Load `apps/extension/.output` through Chrome's **Load unpacked** action. A succe
 8. Use **Annotate text** in Console or Network to preserve an exact diagnostic selection. Remove anything that should not be shared.
 9. Copy the Markdown, download the report as a ZIP, or save the individual files into one report folder under Downloads.
 10. Use **Share by email** only when the build has a configured report endpoint and the reviewed evidence is intended for that recipient.
+11. Use **Report an issue** in the review header to email a BugReceipt problem. The optional diagnosis checkbox attaches `diagnosis.md` only after explicit consent.
 
 Same-origin reloads continue the session. Cross-origin navigation or closing the selected tab ends capture and preserves the evidence collected up to that point with an interruption reason.
 
@@ -126,13 +127,15 @@ Console values and supported text or JSON network bodies are bounded before stor
 
 Filtering reduces risk; it cannot guarantee that every sensitive value will be recognized. Screen recordings can display personal or confidential information rendered by the page. Review every field, highlight, and visual artifact before sharing it.
 
-Email delivery is a separate network boundary. The reviewed Markdown and one visual artifact up to 4 MiB are sent to a fixed server-side recipient through Resend only after **Share by email** is selected. Larger visual artifacts remain local. The Resend key and recipient are never bundled into the extension.
+Email delivery is a separate network boundary. **Share by email** sends `issue.md` plus the same recording, selected frames, or screenshot included in the ZIP to a fixed server-side recipient through Resend. The complete email file set must total no more than 4 MiB; BugReceipt rejects larger sets instead of silently omitting evidence. The Resend key and recipient are never bundled into the extension.
+
+**Report an issue** sends the entered subject and description as `issue.md`. When **Include diagnosis report** is selected, BugReceipt also attaches `diagnosis.md` with the extension version, capture state, page and browser details, evidence counts, and locally filtered console and network metadata. It excludes recordings, screenshots, selected frames, and network request or response bodies.
 
 The manifest requests `activeTab`, `clipboardWrite`, `desktopCapture`, `downloads`, `scripting`, `sidePanel`, `storage`, and `tabs`. Site access is optional and requested for the current origin when capture begins. Report-server access is included only when a production endpoint is configured at build time.
 
 ## Configure email delivery
 
-Email is optional. Without a configured endpoint, the review page labels the action **Email unavailable** while local export remains available.
+Email is optional. Without a configured endpoint, the review page labels capture sharing **Email unavailable** and disables **Send email** in the issue form while local export remains available.
 
 Copy the safe template:
 
@@ -148,7 +151,7 @@ cp .env.example .env
 | `BUGRECEIPT_EXTENSION_ORIGIN`     | Installed production extension origin                       |
 | `VITE_BUGRECEIPT_REPORT_ENDPOINT` | Deployed `/api/reports` URL embedded in the extension build |
 
-For local development, the extension uses `http://localhost:3000/api/reports`. Production builds do not fall back to localhost. The endpoint accepts configured extension origins, limits each client to five requests per hour per running server instance, fixes recipients on the server, and uses the capture ID as the Resend idempotency key.
+For local development, the extension uses `http://localhost:3000/api/reports`. Production builds do not fall back to localhost. The endpoint accepts configured extension origins, limits each client to five requests per hour per running server instance, fixes recipients on the server, and derives the Resend idempotency key from the capture ID plus the complete email payload. Identical retries deduplicate, while edited reports or visual evidence can be sent as a new delivery.
 
 Never commit a real `.env` file or put Resend credentials in client-side configuration.
 
