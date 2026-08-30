@@ -49,8 +49,8 @@ body .sk-widget-btn {
   padding: 11px 16px;
   border: 1px solid var(--signal);
   border-radius: 0;
-  background: var(--paper);
-  color: var(--signal);
+  background: var(--signal);
+  color: white;
   box-shadow: none;
   font-family: 'Bricolage Grotesque Variable', system-ui, sans-serif;
   font-size: 0.8125rem;
@@ -62,9 +62,13 @@ body .sk-widget-btn {
 }
 
 body .sk-widget-btn:hover {
-  background: var(--signal);
+  background: #e8492b;
   color: white;
   transform: translateY(-1px);
+}
+
+body .sk-widget-btn:active {
+  transform: translateY(0);
 }
 
 body .sk-widget-btn:focus-visible {
@@ -75,10 +79,6 @@ body .sk-widget-btn:focus-visible {
 body .sk-widget-btn svg {
   width: 18px;
   height: 18px;
-  color: var(--signal);
-}
-
-body .sk-widget-btn:hover svg {
   color: white;
 }
 
