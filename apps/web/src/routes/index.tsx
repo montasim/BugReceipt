@@ -272,10 +272,10 @@ function Home() {
         </section>
 
         <section
-          className={cn(shell, 'scroll-mt-[76px] py-[clamp(4.5rem,7vw,6rem)] max-[620px]:py-16')}
+          className={cn(shell, 'scroll-mt-[76px] py-[clamp(6rem,9vw,8rem)] max-[620px]:py-16')}
           aria-labelledby="ledger-title"
         >
-          <div className="grid grid-cols-[1fr_minmax(360px,0.72fr)] items-end gap-[clamp(3rem,6vw,5rem)] border-b border-line pb-6 max-[900px]:grid-cols-1 max-[900px]:gap-8 max-[620px]:gap-6">
+          <div className="grid grid-cols-[1fr_minmax(360px,0.72fr)] items-end gap-[clamp(3rem,6vw,5rem)] border-b border-line pb-8 max-[900px]:grid-cols-1 max-[900px]:gap-8 max-[620px]:gap-6">
             <h2 className={sectionTitle} id="ledger-title">
               Every signal remains inspectable.
             </h2>
@@ -285,13 +285,13 @@ function Home() {
               the report before it leaves the browser.
             </p>
           </div>
-          <div className="grid grid-cols-[minmax(0,1.22fr)_minmax(390px,0.78fr)] items-start gap-12 pt-8 max-[1180px]:grid-cols-1 max-[620px]:pt-7">
+          <div className="grid grid-cols-[minmax(0,1.22fr)_minmax(390px,0.78fr)] items-start gap-12 pt-10 max-[1180px]:grid-cols-1 max-[620px]:pt-7">
             <ExtensionTour large />
             <ol className="m-0 list-none border-t border-ink p-0">
               {capturedEvidence.map(([label, meta, description], index) => (
                 <li
                   key={label}
-                  className="grid grid-cols-[46px_1fr] gap-4 border-b border-line py-5"
+                  className="grid grid-cols-[46px_1fr] gap-4 border-b border-line py-6"
                 >
                   <span className={cn(monoLabel, 'text-trace-text')}>
                     {String(index + 1).padStart(2, '0')}
@@ -314,7 +314,7 @@ function Home() {
         <section
           className={cn(
             shell,
-            'grid scroll-mt-[76px] grid-cols-[0.82fr_1.18fr] gap-[clamp(3rem,6vw,5rem)] border-t border-line py-[clamp(4.5rem,7vw,6rem)]',
+            'grid scroll-mt-[76px] grid-cols-[0.82fr_1.18fr] gap-[clamp(3rem,6vw,5rem)] border-t border-line py-[clamp(6rem,9vw,8rem)]',
             'max-[900px]:grid-cols-1 max-[900px]:gap-12 max-[620px]:py-16',
           )}
           id="install"
@@ -357,7 +357,7 @@ function Home() {
         </section>
 
         <section
-          className="scroll-mt-[76px] border-y border-line bg-paper py-[clamp(4rem,6vw,5rem)] max-[620px]:py-16"
+          className="scroll-mt-[76px] border-y border-line bg-paper py-[clamp(5rem,7vw,6rem)] max-[620px]:py-16"
           id="questions"
           aria-labelledby="questions-title"
         >
@@ -377,12 +377,12 @@ function Home() {
                   key={question}
                   open={index === 0}
                 >
-                  <summary className="relative cursor-pointer list-none py-5 pr-12 text-lg leading-[1.35] font-[720] focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-trace [&::-webkit-details-marker]:hidden">
+                  <summary className="relative cursor-pointer list-none py-6 pr-12 text-lg leading-[1.35] font-[720] focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-trace [&::-webkit-details-marker]:hidden">
                     {question}
-                    <span className="absolute top-[17px] right-[5px] text-[1.7rem] font-[430] text-signal-text group-open:hidden">
+                    <span className="absolute top-[21px] right-[5px] text-[1.7rem] font-[430] text-signal-text group-open:hidden">
                       +
                     </span>
-                    <span className="absolute top-[17px] right-[5px] hidden text-[1.7rem] font-[430] text-signal-text group-open:block">
+                    <span className="absolute top-[21px] right-[5px] hidden text-[1.7rem] font-[430] text-signal-text group-open:block">
                       −
                     </span>
                   </summary>
@@ -398,7 +398,7 @@ function Home() {
         <section
           className={cn(
             shell,
-            'flex scroll-mt-[76px] items-center justify-between gap-[clamp(3rem,6vw,5rem)] py-[clamp(4rem,6vw,5rem)]',
+            'flex scroll-mt-[76px] items-center justify-between gap-[clamp(3rem,6vw,5rem)] py-[clamp(5rem,7vw,6rem)]',
             'max-[900px]:flex-col max-[900px]:items-start max-[900px]:justify-center max-[900px]:gap-8',
             'max-[620px]:py-16',
           )}

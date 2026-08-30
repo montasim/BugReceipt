@@ -62,8 +62,8 @@ describe('extension landing page', () => {
   it('uses normalized responsive Tailwind spacing without oversized mobile sections', () => {
     const source = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
 
-    expect(source).toContain('py-[clamp(4.5rem,7vw,6rem)]');
-    expect(source).toContain('py-[clamp(4rem,6vw,5rem)]');
+    expect(source).toContain('py-[clamp(6rem,9vw,8rem)]');
+    expect(source).toContain('py-[clamp(5rem,7vw,6rem)]');
     expect(source).toContain('max-[620px]:py-16');
     expect(source).not.toContain('py-[125px]');
     expect(source).not.toContain('min-h-[400px]');
