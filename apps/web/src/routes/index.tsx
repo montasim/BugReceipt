@@ -184,7 +184,7 @@ function Home() {
                   <span
                     className={cn(
                       monoLabel,
-                      'text-trace-text max-[900px]:col-start-2',
+                      'block h-[18px] text-trace-text max-[900px]:col-start-2 max-[900px]:h-auto',
                       active && 'text-signal-text',
                     )}
                   >
@@ -192,7 +192,7 @@ function Home() {
                   </span>
                   <strong
                     className={cn(
-                      'mt-0.5 font-mono text-xs font-[650] text-trace-text max-[900px]:col-start-3 max-[900px]:row-start-1 max-[900px]:m-0',
+                      'mt-0.5 block h-5 font-mono text-xs font-[650] text-trace-text max-[900px]:col-start-3 max-[900px]:row-start-1 max-[900px]:m-0 max-[900px]:h-auto',
                       active && 'text-signal-text',
                     )}
                   >
@@ -200,13 +200,13 @@ function Home() {
                   </strong>
                   <i
                     className={cn(
-                      'my-[13px] mb-1 h-[17px] w-[17px] rounded-full border-[3px] border-trace bg-fog',
-                      'max-[900px]:row-span-2 max-[900px]:m-0',
+                      'absolute top-[45.5px] left-1/2 h-[17px] w-[17px] -translate-x-1/2 rounded-full border-[3px] border-trace bg-fog',
+                      'max-[900px]:static max-[900px]:translate-x-0 max-[900px]:row-span-2 max-[900px]:m-0',
                       active && 'border-signal',
                     )}
                     aria-hidden="true"
                   />
-                  <p className="m-0 max-w-[155px] text-[0.6875rem] leading-[1.45] text-ink max-[900px]:col-[2/-1] max-[900px]:row-start-2 max-[900px]:max-w-[450px]">
+                  <p className="m-0 mt-[30px] max-w-[155px] text-[0.6875rem] leading-[1.45] text-ink max-[900px]:col-[2/-1] max-[900px]:row-start-2 max-[900px]:mt-0 max-[900px]:max-w-[450px]">
                     {event.description}
                   </p>
                 </li>

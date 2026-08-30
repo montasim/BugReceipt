@@ -83,8 +83,8 @@ describe('extension landing page', () => {
   it('centers desktop progress nodes on the horizontal rail', () => {
     const source = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
 
-    expect(source).toContain('my-[13px] mb-1');
-    expect(source).toContain('max-[900px]:row-span-2 max-[900px]:m-0');
+    expect(source).toContain('absolute top-[45.5px] left-1/2');
+    expect(source).toContain('max-[900px]:static max-[900px]:translate-x-0 max-[900px]:row-span-2 max-[900px]:m-0');
   });
 
   it('loads the BugReceipt favicon and SupportKori widget from the root document', () => {
