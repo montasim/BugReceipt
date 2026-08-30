@@ -1,0 +1,53 @@
+{
+  "title": "Choose the new BugReceipt landing-page structure",
+  "question": "All three keep the current Evidence Desk palette and typography. Choose the composition that should govern the full redesign, combine elements in your note, or re-roll.",
+  "options": [
+    {
+      "id": "field-manual",
+      "label": "Field Manual Sequence",
+      "kicker": "THE ROLL",
+      "lineage": "technical field manuals and annotated review plates",
+      "thesis": "The page unfolds as a numbered operating manual for turning one failure into reviewable evidence.",
+      "palette": ["#102332", "#eef3f5", "#f8fbfc", "#1f9fae", "#ff5c3a"],
+      "materials": ["cool paper", "ruled evidence plates", "diagnostic annotations"],
+      "viewport": "A compact navigation rail sits above one oversized annotated plate: the benefit statement owns the left margin, the live extension workflow fills the center, and four evidence callouts lock to its edges.",
+      "risk": "Can feel instructional before persuasive unless the benefit remains the largest idea in the fold.",
+      "raised": [
+        {
+          "from": "split-flap concourse",
+          "raise": "Every evidence state gets a fixed, scannable row instead of floating feature copy."
+        },
+        {
+          "from": "Shibuya sleeve",
+          "raise": "A dense coral status band collides with the quiet paper field to make the first viewport memorable."
+        }
+      ],
+      "comp": "/home/montasim/Work/Personal/BugReceipt/.impeccable/mocks/decision/field-manual.webp"
+    },
+    {
+      "id": "failure-trace",
+      "label": "Failure Trace Timeline",
+      "lineage": "incident timelines and browser performance traces",
+      "thesis": "One uninterrupted diagnostic trace carries the visitor from record to inspect, remove, and export.",
+      "palette": ["#102332", "#eef3f5", "#f8fbfc", "#1f9fae", "#ff5c3a"],
+      "materials": ["timeline ticks", "evidence windows", "mono event labels"],
+      "viewport": "A tall benefit statement anchors the left third while a horizontal trace crosses the fold, docking the animated extension preview to the active event and previewing the later privacy and export checkpoints.",
+      "risk": "The trace must stay semantic and calm or it can become a decorative stepper.",
+      "comp": "/home/montasim/Work/Personal/BugReceipt/.impeccable/mocks/decision/failure-trace.webp"
+    },
+    {
+      "id": "triage-desk",
+      "label": "Triage Desk",
+      "lineage": "QA triage boards and incident review tables",
+      "thesis": "The first viewport behaves like a live triage desk where the report, evidence, and next action are visible together.",
+      "palette": ["#102332", "#eef3f5", "#f8fbfc", "#1f9fae", "#ff5c3a"],
+      "materials": ["structured columns", "dark evidence field", "status stamps"],
+      "viewport": "The headline forms a narrow top band; beneath it, an asymmetric three-column desk shows the issue summary, the live extension preview, and a compact local-export receipt with the download action embedded in the workflow.",
+      "risk": "Density can read like the application itself if the marketing hierarchy becomes too quiet.",
+      "comp": "/home/montasim/Work/Personal/BugReceipt/.impeccable/mocks/decision/triage-desk.webp"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "comp", "toggle": true },
+  "steer": true
+}

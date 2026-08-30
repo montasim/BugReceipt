@@ -45,7 +45,7 @@ spacing:
   control: '14px 18px'
   page-gutter: '24px'
   content-gap: '48px'
-  section: '130px'
+  section: '96px'
 components:
   button-primary:
     backgroundColor: '{colors.ink}'
@@ -135,9 +135,9 @@ The palette reads like a cool technical document marked up with two deliberate d
 
 ## Layout
 
-The primary shell is capped at 1280px and keeps 24px desktop gutters. Major sections commonly use 120–135px vertical breathing room, while ruled rows and component interiors use denser 13–28px spacing. Layouts favor asymmetric two-column grids that let editorial statements sit beside concrete proof.
+The primary shell is capped at 1280px and keeps 24px desktop gutters. Primary chapters use 72–96px of responsive vertical breathing room, supporting chapters use 64–80px, and ruled rows and component interiors use a denser 4px-derived scale from 8–28px. Layouts favor asymmetric two-column grids that let editorial statements sit beside concrete proof.
 
-At 900px, major two-column regions and three-column workflows collapse to one column, the trust strip stacks, and navigation retains only its final action-oriented link. At 560px, the shell gutter becomes 15px, hero actions stack full-width, major section padding reduces to 85px, and dense proof containers reduce their internal padding. These are system breakpoints, not instructions about the order of sections on future pages.
+At 900px, major two-column regions and three-column workflows collapse to one column, the trust strip stacks, and navigation retains only its final action-oriented link. At 560px, the shell gutter becomes 16px, hero actions stack full-width, major section padding reduces to 64px, and dense proof containers reduce their internal padding. These are system breakpoints, not instructions about the order of sections on future pages.
 
 **The Proof-Beside-Claim Rule.** When space permits, pair explanatory copy with an inspectable artifact, ledger, or procedure rather than another decorative content block.
 
