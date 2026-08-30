@@ -1,5 +1,7 @@
 import {
   captureSessionSchema,
+  getSelectedFrames,
+  MAX_SELECTED_FRAMES,
   reviewUpdateSchema,
   type CaptureEndReason,
   type CaptureSession,
@@ -208,25 +210,47 @@ export async function removeScreenshotReference(): Promise<CaptureSession> {
   return saveSession({ ...session, page });
 }
 
+export async function addSelectedFrame(frame: SelectedFrame): Promise<CaptureSession> {
+  const session = await requireSession('ready-for-review');
+  if (!session.page?.recording) {
+    throw new Error('A selected frame requires a reviewable screen recording.');
+  }
+  const selectedFrames = getSelectedFrames(session.page);
+  if (selectedFrames.length >= MAX_SELECTED_FRAMES) {
+    throw new Error(`A capture can include up to ${MAX_SELECTED_FRAMES} selected frames.`);
+  }
+  const page = {
+    ...session.page,
+    selectedFrames: [...selectedFrames, frame],
+  };
+  delete page.selectedFrame;
+  return saveSession({
+    ...session,
+    page,
+  });
+}
+
+/** @deprecated Use addSelectedFrame for multi-frame captures. */
 export async function setSelectedFrame(frame: SelectedFrame): Promise<CaptureSession> {
   const session = await requireSession('ready-for-review');
   if (!session.page?.recording) {
     throw new Error('A selected frame requires a reviewable screen recording.');
   }
-  return saveSession({
-    ...session,
-    page: {
-      ...session.page,
-      selectedFrame: frame,
-    },
-  });
+  const page = { ...session.page, selectedFrames: [frame] };
+  delete page.selectedFrame;
+  return saveSession({ ...session, page });
 }
 
-export async function removeSelectedFrameReference(): Promise<CaptureSession> {
+export async function removeSelectedFrameReference(blobId?: string): Promise<CaptureSession> {
   const session = await requireSession('ready-for-review');
   if (!session.page) return session;
   const page = { ...session.page };
+  const selectedFrames = blobId
+    ? getSelectedFrames(page).filter((frame) => frame.blobId !== blobId)
+    : [];
   delete page.selectedFrame;
+  if (selectedFrames.length > 0) page.selectedFrames = selectedFrames;
+  else delete page.selectedFrames;
   return saveSession({ ...session, page });
 }
 

@@ -30,6 +30,7 @@ type Gesture =
     };
 
 type AnnotationOverlayProps = {
+  ariaLabel?: string;
   document: AnnotationDocument;
   editing: boolean;
   tool: AnnotationTool;
@@ -42,6 +43,7 @@ type AnnotationOverlayProps = {
 };
 
 export function AnnotationOverlay({
+  ariaLabel = 'Selected frame annotation canvas',
   document,
   editing,
   tool,
@@ -192,7 +194,7 @@ export function AnnotationOverlay({
       viewBox={`0 0 ${document.imageWidth} ${document.imageHeight}`}
       preserveAspectRatio="none"
       role={editing ? 'application' : undefined}
-      aria-label={editing ? 'Selected frame annotation canvas' : undefined}
+      aria-label={editing ? ariaLabel : undefined}
       aria-hidden={editing ? undefined : true}
       onPointerDown={pointerDown}
       onPointerMove={pointerMove}

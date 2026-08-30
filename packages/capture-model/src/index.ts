@@ -61,6 +61,8 @@ export const selectedFrameSchema = z.object({
   height: z.number().int().positive().max(16_384),
 });
 
+export const MAX_SELECTED_FRAMES = 20;
+
 export const captureSessionSchema = z.object({
   schemaVersion: z.literal(1),
   id: z.string().uuid(),
@@ -91,6 +93,8 @@ export const captureSessionSchema = z.object({
         })
         .optional(),
       recordingError: z.string().max(500).optional(),
+      selectedFrames: z.array(selectedFrameSchema).max(MAX_SELECTED_FRAMES).optional(),
+      /** @deprecated Retained so captures saved before multi-frame support remain reviewable. */
       selectedFrame: selectedFrameSchema.optional(),
       screenshotBlobId: z.string().uuid().optional(),
       screenshotError: z.string().max(500).optional(),
@@ -116,6 +120,24 @@ export type NetworkEvent = z.infer<typeof networkEventSchema>;
 export type EvidenceTextAnnotation = z.infer<typeof evidenceTextAnnotationSchema>;
 export type ReproductionStep = z.infer<typeof stepSchema>;
 export type SelectedFrame = z.infer<typeof selectedFrameSchema>;
+
+export function getSelectedFrames(page: CaptureSession['page']): SelectedFrame[] {
+  if (!page) return [];
+  const frames = (page.selectedFrames ?? []).slice(0, MAX_SELECTED_FRAMES);
+  if (!page.selectedFrame || frames.some((frame) => frame.blobId === page.selectedFrame?.blobId)) {
+    return frames;
+  }
+  return [page.selectedFrame, ...frames].slice(0, MAX_SELECTED_FRAMES);
+}
+
+export function getSelectedFrameFilename(
+  index: number,
+  total: number,
+): 'selected-frame.png' | `selected-frame-${string}.png` {
+  return total <= 1
+    ? 'selected-frame.png'
+    : `selected-frame-${String(index + 1).padStart(2, '0')}.png`;
+}
 
 export interface CaptureEnvironmentDetails {
   browser: string;
@@ -208,8 +230,13 @@ export const runtimeRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('session:update-review') }).extend(reviewUpdateSchema.shape),
   z.object({ type: z.literal('session:remove-diagnostic'), id: z.string().uuid() }),
   z.object({ type: z.literal('session:remove-network'), id: z.string().uuid() }),
+  z.object({ type: z.literal('session:add-selected-frame'), frame: selectedFrameSchema }),
+  /** @deprecated Retained for review pages opened before multi-frame support. */
   z.object({ type: z.literal('session:set-selected-frame'), frame: selectedFrameSchema }),
-  z.object({ type: z.literal('session:remove-selected-frame') }),
+  z.object({
+    type: z.literal('session:remove-selected-frame'),
+    blobId: z.string().uuid().optional(),
+  }),
   z.object({ type: z.literal('session:remove-recording') }),
   z.object({ type: z.literal('session:remove-screenshot') }),
   z.object({ type: z.literal('session:stop') }),

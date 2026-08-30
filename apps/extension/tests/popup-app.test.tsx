@@ -2,6 +2,7 @@ import type { CaptureSession, RuntimeRequest, RuntimeResponse } from '@bugreceip
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendRuntimeMessage } from '../src/application/protocol';
+import { OFFENSIVE_LANGUAGE_ERROR } from '../src/application/content-moderation';
 import { startDesktopRecording } from '../src/infrastructure/desktop-recorder';
 import { PopupApp } from '../src/ui/popup/popup-app';
 
@@ -95,6 +96,40 @@ describe('capture popup', () => {
     expect(support.getAttribute('target')).toBe('_blank');
     expect(screen.getByLabelText('BugReceipt version 0.1.3')).toBeDefined();
     expect(screen.getByText('v0.1.3')).toBeDefined();
+  });
+
+  it('accepts a multiline manual step in a textarea', async () => {
+    queryTabs.mockResolvedValueOnce([{ id: session.tabId, url: session.origin }]);
+    render(<PopupApp />);
+
+    const step = await screen.findByLabelText<HTMLTextAreaElement>('What did you do?');
+    expect(step.tagName).toBe('TEXTAREA');
+    expect(step.getAttribute('rows')).toBe('3');
+
+    fireEvent.change(step, { target: { value: 'Opened settings\nChanged the plan' } });
+    expect(screen.getByText('32/1,000')).toBeDefined();
+    fireEvent.keyDown(step, { key: 'Enter', ctrlKey: true });
+
+    await waitFor(() =>
+      expect(send).toHaveBeenCalledWith({
+        type: 'session:add-step',
+        text: 'Opened settings\nChanged the plan',
+      }),
+    );
+  });
+
+  it('shows offensive-language feedback while typing and blocks the step action', async () => {
+    queryTabs.mockResolvedValueOnce([{ id: session.tabId, url: session.origin }]);
+    render(<PopupApp />);
+
+    const step = await screen.findByLabelText<HTMLTextAreaElement>('What did you do?');
+    fireEvent.change(step, { target: { value: 'This fucking form is broken' } });
+    fireEvent.keyDown(step, { key: 'Enter', ctrlKey: true });
+
+    expect(await screen.findByText(OFFENSIVE_LANGUAGE_ERROR)).toBeDefined();
+    expect(step.getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Add step' }).disabled).toBe(true);
+    expect(send.mock.calls.some(([request]) => request.type === 'session:add-step')).toBe(false);
   });
 
   it('shows elapsed recording time from the persisted capture start', async () => {

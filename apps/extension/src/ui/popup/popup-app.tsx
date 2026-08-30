@@ -7,6 +7,7 @@ import {
 } from '../../infrastructure/desktop-recorder';
 import { Brand } from '../brand';
 import { SupportLink } from '../support-link';
+import { useOffensiveLanguageValidation } from '../use-offensive-language-validation';
 
 export function PopupApp() {
   const [session, setSession] = useState<CaptureSession | null>(null);
@@ -18,6 +19,7 @@ export function PopupApp() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(true);
   const [clockNow, setClockNow] = useState(() => Date.now());
+  const stepModeration = useOffensiveLanguageValidation(step);
 
   useEffect(() => {
     const readActiveTab = async () => {
@@ -130,6 +132,12 @@ export function PopupApp() {
     event.preventDefault();
     if (!step.trim()) return;
     setBusy(true);
+    const moderationError = await stepModeration.validateNow();
+    if (moderationError) {
+      document.getElementById('step')?.focus();
+      setBusy(false);
+      return;
+    }
     const response = await sendRuntimeMessage({ type: 'session:add-step', text: step });
     if (response.ok && 'session' in response) {
       setSession(response.session);
@@ -277,27 +285,54 @@ export function PopupApp() {
                 </ol>
               )}
               <form className="step-form" onSubmit={(event) => void addStep(event)}>
-                <label htmlFor="step">What did you do?</label>
+                <div className="step-form-heading">
+                  <label htmlFor="step">What did you do?</label>
+                  <button
+                    className="add-step-button"
+                    type="submit"
+                    disabled={busy || !step.trim() || Boolean(stepModeration.error)}
+                    aria-label="Add step"
+                    title="Add step (Ctrl or Command + Enter)"
+                  >
+                    <span>Add step</span>
+                    <svg aria-hidden="true" viewBox="0 0 20 20">
+                      <path d="M10 4v12M4 10h12" />
+                    </svg>
+                  </button>
+                </div>
                 <div className="step-input-row">
-                  <input
+                  <textarea
                     id="step"
                     value={step}
                     onChange={(event) => setStep(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Enter' || (!event.ctrlKey && !event.metaKey)) return;
+                      event.preventDefault();
+                      event.currentTarget.form?.requestSubmit();
+                    }}
                     placeholder="Clicked Save"
                     maxLength={1_000}
+                    rows={3}
+                    aria-invalid={Boolean(stepModeration.error)}
+                    aria-busy={stepModeration.checking}
+                    aria-describedby={
+                      stepModeration.error
+                        ? 'step-character-count step-moderation-error'
+                        : 'step-character-count'
+                    }
                   />
-                  <button
-                    className="icon-button"
-                    type="submit"
-                    disabled={busy || !step.trim()}
-                    aria-label="Add step"
-                  >
-                    +
-                  </button>
                 </div>
+                <span className="step-character-count" id="step-character-count">
+                  {step.length}/1,000
+                </span>
+                {stepModeration.error ? (
+                  <p className="field-validation-error" id="step-moderation-error" role="status">
+                    {stepModeration.error}
+                  </p>
+                ) : null}
               </form>
 
-              <div className="popup-actions">
+              <div className="popup-actions capture-actions">
                 <button
                   className="button primary"
                   type="button"

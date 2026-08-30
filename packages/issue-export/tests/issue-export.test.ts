@@ -126,6 +126,29 @@ describe('GitHub issue renderer', () => {
     expect(markdown).toContain('[Open the screen recording](./recording.webm)');
   });
 
+  it('embeds every selected frame with stable numbered filenames', () => {
+    const markdown = renderGitHubIssue({
+      ...session,
+      page: {
+        url: 'https://example.com',
+        title: 'Checkout',
+        capturedAt: '2026-08-27T12:01:00.000Z',
+        selectedFrames: [3_067, 4_500].map((videoTimeMs) => ({
+          blobId: crypto.randomUUID(),
+          mimeType: 'image/png' as const,
+          sizeBytes: 512,
+          videoTimeMs,
+          width: 1_280,
+          height: 720,
+        })),
+      },
+    });
+
+    expect(markdown).toContain('## Selected video frames');
+    expect(markdown).toContain('![Frame 1 captured at 00:03.067](./selected-frame-01.png)');
+    expect(markdown).toContain('![Frame 2 captured at 00:04.500](./selected-frame-02.png)');
+  });
+
   it('includes console and network evidence in the report', () => {
     const markdown = renderGitHubIssue({
       ...session,

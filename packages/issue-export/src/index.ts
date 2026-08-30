@@ -1,5 +1,7 @@
 import {
   describeCaptureEnvironment,
+  getSelectedFrameFilename,
+  getSelectedFrames,
   type CaptureSession,
   type EvidenceTextAnnotation,
 } from '@bugreceipt/capture-model';
@@ -82,8 +84,15 @@ export function renderGitHubIssue(
   const textAnnotationLegend = activeTextAnnotations.length
     ? '\n_Annotated selections are wrapped in ⟦double brackets⟧._\n'
     : '';
-  const selectedFrameEvidence = session.page?.selectedFrame
-    ? `\n## Selected video frame\n\n![Frame captured at ${formatVideoTime(session.page.selectedFrame.videoTimeMs)}](./selected-frame.png)\n\n_Captured from the screen recording at ${formatVideoTime(session.page.selectedFrame.videoTimeMs)}._\n`
+  const selectedFrames = getSelectedFrames(session.page);
+  const selectedFrameEvidence = selectedFrames.length
+    ? `\n## Selected video ${selectedFrames.length === 1 ? 'frame' : 'frames'}\n\n${selectedFrames
+        .map((frame, index) => {
+          const time = formatVideoTime(frame.videoTimeMs);
+          const label = selectedFrames.length === 1 ? 'Frame' : `Frame ${index + 1}`;
+          return `![${label} captured at ${time}](./${getSelectedFrameFilename(index, selectedFrames.length)})\n\n_${label} captured from the screen recording at ${time}._`;
+        })
+        .join('\n\n')}\n`
     : '';
   const recordingEvidence = session.page?.recording
     ? `\n## Screen recording\n\n[Open the screen recording](./recording.webm)\n\n_Keep \`recording.webm\` beside this report. Upload it with the issue when publishing._\n`

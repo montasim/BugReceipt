@@ -1,4 +1,10 @@
-import { describeCaptureEnvironment, type CaptureSession } from '@bugreceipt/capture-model';
+import {
+  describeCaptureEnvironment,
+  getSelectedFrameFilename,
+  getSelectedFrames,
+  MAX_SELECTED_FRAMES,
+  type CaptureSession,
+} from '@bugreceipt/capture-model';
 import { getIssueValidationErrors, renderGitHubIssue } from '@bugreceipt/issue-export';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -16,17 +22,14 @@ import {
 import { sendRuntimeMessage } from '../../application/protocol';
 import { renderAnnotatedPng } from '../../application/render-annotations';
 import {
-  commitTextAnnotation,
   createTextAnnotationDocument,
   createTextAnnotationHistory,
   isTextAnnotationDocument,
-  redoTextAnnotation,
   removeTextAnnotationsForEvent,
-  undoTextAnnotation,
-  type TextAnnotation,
   type TextAnnotationHistory,
 } from '../../application/text-annotation-model';
 import {
+  deleteAnnotationDocument,
   getAnnotationDocument,
   saveAnnotationDocument,
 } from '../../infrastructure/annotation-store';
@@ -47,27 +50,47 @@ import {
 } from '../../infrastructure/text-annotation-store';
 import { Brand } from '../brand';
 import { SupportLink } from '../support-link';
+import { useOffensiveLanguageValidation } from '../use-offensive-language-validation';
 import { AnnotatedEvidenceText } from './annotated-evidence-text';
 import { AnnotateIcon } from './annotation-icons';
 import { AnnotationOverlay } from './annotation-overlay';
 import { AnnotationToolbar } from './annotation-toolbar';
-import { TextAnnotationToolbar } from './text-annotation-toolbar';
+import { ReportIssueControl } from './report-issue-control';
 
 type ArtifactState = 'loading' | 'ready' | 'missing' | 'failed';
 type EvidenceView = 'visual' | 'console' | 'network';
+type DiagnosticSource = Exclude<EvidenceView, 'visual'>;
+
+const EVIDENCE_ANNOTATION_WIDTH = 1_600;
+const EVIDENCE_ANNOTATION_HEIGHT = 720;
+
+function createEvidenceAnnotationHistories(): Record<DiagnosticSource, AnnotationHistory> {
+  return {
+    console: createAnnotationHistory(
+      createAnnotationDocument(EVIDENCE_ANNOTATION_WIDTH, EVIDENCE_ANNOTATION_HEIGHT),
+    ),
+    network: createAnnotationHistory(
+      createAnnotationDocument(EVIDENCE_ANNOTATION_WIDTH, EVIDENCE_ANNOTATION_HEIGHT),
+    ),
+  };
+}
 
 export function ReviewApp() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const downloadMenuRef = useRef<HTMLDivElement>(null);
   const downloadTriggerRef = useRef<HTMLButtonElement>(null);
   const annotationBaseline = useRef<AnnotationHistory | null>(null);
-  const textAnnotationBaseline = useRef<TextAnnotationHistory | null>(null);
+  const evidenceAnnotationBaseline = useRef<{
+    source: DiagnosticSource;
+    history: AnnotationHistory;
+  } | null>(null);
   const [session, setSession] = useState<CaptureSession | null>(null);
   const [recordingUrl, setRecordingUrl] = useState('');
   const [recordingState, setRecordingState] = useState<ArtifactState>('loading');
   const [selectedFrameUrl, setSelectedFrameUrl] = useState('');
   const [selectedFrameBlob, setSelectedFrameBlob] = useState<Blob | null>(null);
-  const [selectedFrameState, setSelectedFrameState] = useState<ArtifactState>('loading');
+  const [selectedFrameState, setSelectedFrameState] = useState<ArtifactState>('missing');
+  const [selectedFrameIndex, setSelectedFrameIndex] = useState(0);
   const [annotations, setAnnotations] = useState<AnnotationHistory>(() =>
     createAnnotationHistory(createAnnotationDocument(1, 1)),
   );
@@ -80,9 +103,18 @@ export function ReviewApp() {
   const [textAnnotations, setTextAnnotations] = useState<TextAnnotationHistory>(() =>
     createTextAnnotationHistory(createTextAnnotationDocument('')),
   );
-  const [isAnnotatingText, setIsAnnotatingText] = useState(false);
-  const [savingTextAnnotations, setSavingTextAnnotations] = useState(false);
-  const [textAnnotationColor, setTextAnnotationColor] = useState<AnnotationColor>('#e2a90a');
+  const [evidenceAnnotations, setEvidenceAnnotations] = useState<
+    Record<DiagnosticSource, AnnotationHistory>
+  >(createEvidenceAnnotationHistories);
+  const [annotatingEvidence, setAnnotatingEvidence] = useState<DiagnosticSource | null>(null);
+  const [savingEvidenceAnnotations, setSavingEvidenceAnnotations] = useState(false);
+  const [evidenceAnnotationTool, setEvidenceAnnotationTool] = useState<AnnotationTool>('border');
+  const [evidenceAnnotationColor, setEvidenceAnnotationColor] =
+    useState<AnnotationColor>('#ff5c3a');
+  const [evidenceAnnotationWidth, setEvidenceAnnotationWidth] = useState(6);
+  const [selectedEvidenceAnnotationId, setSelectedEvidenceAnnotationId] = useState<string | null>(
+    null,
+  );
   const [screenshotUrl, setScreenshotUrl] = useState('');
   const [screenshotState, setScreenshotState] = useState<ArtifactState>('loading');
   const [videoDuration, setVideoDuration] = useState(0);
@@ -97,28 +129,53 @@ export function ReviewApp() {
   const [emailed, setEmailed] = useState(false);
   const [evidenceView, setEvidenceView] = useState<EvidenceView>('visual');
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
+  const selectedFrames = useMemo(() => getSelectedFrames(session?.page), [session?.page]);
+  const activeSelectedFrameIndex = Math.min(
+    selectedFrameIndex,
+    Math.max(0, selectedFrames.length - 1),
+  );
+  const activeSelectedFrame = selectedFrames[activeSelectedFrameIndex] ?? null;
   const exportBase = useMemo(
     () => (session ? createExportBase(session) : 'bugreceipt-report'),
     [session],
   );
-  const validationErrors = useMemo(
+  const issueValidationErrors = useMemo(
     () => (session ? getIssueValidationErrors(session) : []),
     [session],
   );
+  const summaryModeration = useOffensiveLanguageValidation(session?.summary ?? '');
+  const expectedBehaviorModeration = useOffensiveLanguageValidation(
+    session?.expectedBehavior ?? '',
+  );
+  const actualBehaviorModeration = useOffensiveLanguageValidation(session?.actualBehavior ?? '');
+  const stepsModeration = useOffensiveLanguageValidation(stepsText);
+  const moderationFieldStates = [
+    { id: 'issue-summary', label: 'Issue title', ...summaryModeration },
+    {
+      id: 'expected-behavior',
+      label: 'Expected behavior',
+      ...expectedBehaviorModeration,
+    },
+    { id: 'actual-behavior', label: 'Actual behavior', ...actualBehaviorModeration },
+    { id: 'steps-to-reproduce', label: 'Steps to reproduce', ...stepsModeration },
+  ];
+  const moderationValidationErrors = moderationFieldStates.flatMap(({ error, label }) =>
+    error ? [`${label}: ${error}`] : [],
+  );
+  const validationErrors = [...issueValidationErrors, ...moderationValidationErrors];
   const exportReady = validationErrors.length === 0;
   const emailConfigured = isReportEmailConfigured();
   const annotationDocument = annotations.present;
   const annotationCount = annotationDocument.items.length;
   const textAnnotationDocument = textAnnotations.present;
-  const textAnnotationCount = textAnnotationDocument.items.length;
-  const consoleTextAnnotationCount = textAnnotationDocument.items.filter(
-    (annotation) => annotation.source === 'console',
-  ).length;
-  const networkTextAnnotationCount = textAnnotationDocument.items.filter(
-    (annotation) => annotation.source === 'network',
-  ).length;
+  const consoleAnnotationCount = evidenceAnnotations.console.present.items.length;
+  const networkAnnotationCount = evidenceAnnotations.network.present.items.length;
   const reviewActionsDisabled =
-    busy || isAnnotating || savingAnnotations || isAnnotatingText || savingTextAnnotations;
+    busy ||
+    isAnnotating ||
+    savingAnnotations ||
+    annotatingEvidence !== null ||
+    savingEvidenceAnnotations;
 
   useEffect(() => {
     const objectUrls: string[] = [];
@@ -138,6 +195,22 @@ export function ReviewApp() {
           ? storedTextAnnotations
           : createTextAnnotationDocument(response.session.id);
         setTextAnnotations(createTextAnnotationHistory(textDocument));
+        const [storedConsoleAnnotations, storedNetworkAnnotations] = await Promise.all([
+          getAnnotationDocument(
+            getEvidenceAnnotationTargetId(response.session.id, 'console'),
+          ).catch(() => null),
+          getAnnotationDocument(
+            getEvidenceAnnotationTargetId(response.session.id, 'network'),
+          ).catch(() => null),
+        ]);
+        const evidenceDocument = (stored: unknown) =>
+          isAnnotationDocument(stored, EVIDENCE_ANNOTATION_WIDTH, EVIDENCE_ANNOTATION_HEIGHT)
+            ? stored
+            : createAnnotationDocument(EVIDENCE_ANNOTATION_WIDTH, EVIDENCE_ANNOTATION_HEIGHT);
+        setEvidenceAnnotations({
+          console: createAnnotationHistory(evidenceDocument(storedConsoleAnnotations)),
+          network: createAnnotationHistory(evidenceDocument(storedNetworkAnnotations)),
+        });
         const recordingId = response.session.page?.recording?.blobId;
         if (recordingId) {
           const recording = await readRecording(recordingId);
@@ -151,28 +224,6 @@ export function ReviewApp() {
           }
         } else {
           setRecordingState(response.session.page?.recordingError ? 'failed' : 'missing');
-        }
-        const selectedFrameId = response.session.page?.selectedFrame?.blobId;
-        if (selectedFrameId) {
-          const selectedFrame = await readScreenshot(selectedFrameId);
-          if (selectedFrame) {
-            const frame = response.session.page?.selectedFrame;
-            const storedAnnotations = await getAnnotationDocument(selectedFrameId).catch(
-              () => null,
-            );
-            const document =
-              frame && isAnnotationDocument(storedAnnotations, frame.width, frame.height)
-                ? storedAnnotations
-                : createAnnotationDocument(frame?.width ?? 1, frame?.height ?? 1);
-            setAnnotations(createAnnotationHistory(document));
-            setSelectedFrameBlob(selectedFrame);
-            setSelectedFrameUrl(URL.createObjectURL(selectedFrame));
-            setSelectedFrameState('ready');
-          } else {
-            setSelectedFrameState('failed');
-          }
-        } else {
-          setSelectedFrameState('missing');
         }
         const blobId = response.session.page?.screenshotBlobId;
         if (!blobId) {
@@ -199,12 +250,58 @@ export function ReviewApp() {
     };
   }, []);
 
-  useEffect(
-    () => () => {
-      if (selectedFrameUrl) URL.revokeObjectURL(selectedFrameUrl);
-    },
-    [selectedFrameUrl],
-  );
+  useEffect(() => {
+    let disposed = false;
+    let objectUrl = '';
+
+    void (async () => {
+      await Promise.resolve();
+      if (disposed) return;
+      annotationBaseline.current = null;
+      setSelectedAnnotationId(null);
+      setIsAnnotating(false);
+
+      if (!activeSelectedFrame) {
+        setSelectedFrameUrl('');
+        setSelectedFrameBlob(null);
+        setSelectedFrameState('missing');
+        setAnnotations(createAnnotationHistory(createAnnotationDocument(1, 1)));
+        return;
+      }
+
+      setSelectedFrameUrl('');
+      setSelectedFrameBlob(null);
+      setSelectedFrameState('loading');
+      const [blob, storedAnnotations] = await Promise.all([
+        readScreenshot(activeSelectedFrame.blobId),
+        getAnnotationDocument(activeSelectedFrame.blobId).catch(() => null),
+      ]);
+      if (disposed) return;
+      if (!blob) {
+        setSelectedFrameState('failed');
+        return;
+      }
+      const document = isAnnotationDocument(
+        storedAnnotations,
+        activeSelectedFrame.width,
+        activeSelectedFrame.height,
+      )
+        ? storedAnnotations
+        : createAnnotationDocument(activeSelectedFrame.width, activeSelectedFrame.height);
+      objectUrl = URL.createObjectURL(blob);
+      setAnnotations(createAnnotationHistory(document));
+      setSelectedFrameBlob(blob);
+      setSelectedFrameUrl(objectUrl);
+      setSelectedFrameState('ready');
+    })().catch(() => {
+      if (!disposed) setSelectedFrameState('failed');
+    });
+
+    return () => {
+      disposed = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [activeSelectedFrame]);
 
   useEffect(() => {
     if (!isAnnotating) return;
@@ -299,17 +396,32 @@ export function ReviewApp() {
     return response.session;
   }
 
-  function revealFirstMissingField() {
+  function revealFirstInvalidField() {
     if (!session) return;
     const blankStepIndex = session.steps.findIndex((step) => !step.text.trim());
-    const target = !session.summary.trim()
-      ? document.getElementById('issue-summary')
+    const missingFieldId = !session.summary.trim()
+      ? 'issue-summary'
       : blankStepIndex >= 0
-        ? document.getElementById('steps-to-reproduce')
+        ? 'steps-to-reproduce'
         : null;
+    const moderationFieldId = moderationFieldStates.find(({ error }) => error)?.id;
+    const target = document.getElementById(missingFieldId ?? moderationFieldId ?? '');
     target?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
     target?.focus({ preventScroll: true });
-    setNotice('Complete the required fields shown in the report before exporting');
+    setNotice(
+      missingFieldId
+        ? 'Complete the required fields shown in the report before exporting'
+        : 'Revise the highlighted field before exporting',
+    );
+  }
+
+  function revealModerationError(errors: string[]) {
+    const invalidIndex = errors.findIndex(Boolean);
+    if (invalidIndex < 0) return;
+    const target = document.getElementById(moderationFieldStates[invalidIndex]?.id ?? '');
+    target?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    target?.focus({ preventScroll: true });
+    setNotice('Revise the highlighted field before exporting');
   }
 
   async function withPreparedExport(
@@ -317,12 +429,19 @@ export function ReviewApp() {
   ): Promise<void> {
     if (!session || busy) return;
     if (!exportReady) {
-      revealFirstMissingField();
+      revealFirstInvalidField();
       return;
     }
     setBusy(true);
     setError('');
     try {
+      const moderationErrors = await Promise.all(
+        moderationFieldStates.map(({ validateNow }) => validateNow()),
+      );
+      if (moderationErrors.some(Boolean)) {
+        revealModerationError(moderationErrors);
+        return;
+      }
       const saved = dirty ? await persistReview(session) : session;
       if (saved) await action(saved);
     } finally {
@@ -350,7 +469,12 @@ export function ReviewApp() {
         'The console entry was removed, but its saved text annotations could not be cleaned up.',
       ),
     );
-    setNotice('Console entry removed');
+    const clearedAnnotations = await clearEvidenceAnnotations('console');
+    setNotice(
+      clearedAnnotations
+        ? 'Console entry removed; visual annotations cleared because the evidence layout changed'
+        : 'Console entry removed',
+    );
   }
 
   async function removeNetworkEvent(id: string) {
@@ -373,7 +497,12 @@ export function ReviewApp() {
         'The network entry was removed, but its saved text annotations could not be cleaned up.',
       ),
     );
-    setNotice('Network entry removed');
+    const clearedAnnotations = await clearEvidenceAnnotations('network');
+    setNotice(
+      clearedAnnotations
+        ? 'Network entry removed; visual annotations cleared because the evidence layout changed'
+        : 'Network entry removed',
+    );
   }
 
   async function removeScreenshot() {
@@ -400,6 +529,10 @@ export function ReviewApp() {
   async function saveCurrentFrame() {
     const video = videoRef.current;
     if (!video || busy || capturingFrame || !session) return;
+    if (selectedFrames.length >= MAX_SELECTED_FRAMES) {
+      setNotice(`This capture already has the maximum of ${MAX_SELECTED_FRAMES} frames`);
+      return;
+    }
     setBusy(true);
     setCapturingFrame(true);
     setError('');
@@ -409,7 +542,7 @@ export function ReviewApp() {
       const captured = await captureVideoFrame(video, currentTime, videoDuration);
       savedBlobId = await saveScreenshotBlob(captured.blob);
       const response = await sendRuntimeMessage({
-        type: 'session:set-selected-frame',
+        type: 'session:add-selected-frame',
         frame: {
           blobId: savedBlobId,
           mimeType: 'image/png',
@@ -424,18 +557,14 @@ export function ReviewApp() {
         setError(response.message);
         return;
       }
-      if ('session' in response && response.session) setSession(response.session);
+      if ('session' in response && response.session) {
+        setSession(response.session);
+        setSelectedFrameIndex(getSelectedFrames(response.session.page).length - 1);
+      }
       setVideoTime(captured.videoTimeMs / 1_000);
-      setSelectedFrameBlob(captured.blob);
-      setSelectedFrameUrl(URL.createObjectURL(captured.blob));
-      setSelectedFrameState('ready');
-      setAnnotations(
-        createAnnotationHistory(createAnnotationDocument(captured.width, captured.height)),
+      setNotice(
+        `Frame ${selectedFrames.length + 1} of ${MAX_SELECTED_FRAMES} saved at ${formatVideoTime(captured.videoTimeMs)}`,
       );
-      annotationBaseline.current = null;
-      setSelectedAnnotationId(null);
-      setIsAnnotating(false);
-      setNotice(`Frame at ${formatVideoTime(captured.videoTimeMs)} saved locally`);
     } catch (reason) {
       if (savedBlobId) await deleteScreenshot(savedBlobId).catch(() => undefined);
       setError(
@@ -450,24 +579,30 @@ export function ReviewApp() {
   }
 
   async function removeSelectedFrame() {
-    if (busy || !session) return;
+    if (busy || !session || !activeSelectedFrame) return;
     setBusy(true);
     setError('');
-    const response = await sendRuntimeMessage({ type: 'session:remove-selected-frame' });
+    const response = await sendRuntimeMessage({
+      type: 'session:remove-selected-frame',
+      blobId: activeSelectedFrame.blobId,
+    });
     setBusy(false);
     if (!response.ok) {
       setError(response.message);
       return;
     }
-    if ('session' in response && response.session) setSession(response.session);
-    setSelectedFrameUrl('');
-    setSelectedFrameBlob(null);
-    setSelectedFrameState('missing');
-    setAnnotations(createAnnotationHistory(createAnnotationDocument(1, 1)));
-    annotationBaseline.current = null;
-    setSelectedAnnotationId(null);
-    setIsAnnotating(false);
-    setNotice('Selected video frame removed');
+    if ('session' in response && response.session) {
+      const remainingFrames = getSelectedFrames(response.session.page);
+      setSession(response.session);
+      setSelectedFrameIndex(
+        Math.min(activeSelectedFrameIndex, Math.max(0, remainingFrames.length - 1)),
+      );
+      setNotice(
+        remainingFrames.length > 0
+          ? `Frame removed; ${remainingFrames.length} ${remainingFrames.length === 1 ? 'frame remains' : 'frames remain'}`
+          : 'Selected video frame removed',
+      );
+    }
   }
 
   function beginAnnotating() {
@@ -500,7 +635,7 @@ export function ReviewApp() {
   }
 
   async function finishAnnotating() {
-    const frameId = session?.page?.selectedFrame?.blobId;
+    const frameId = activeSelectedFrame?.blobId;
     if (!frameId || savingAnnotations) return;
     setSavingAnnotations(true);
     setError('');
@@ -534,69 +669,98 @@ export function ReviewApp() {
     setAnnotations((history) => commitAnnotation(history, { type: 'replace', annotation }));
   }
 
-  function beginTextAnnotating(source: 'console' | 'network') {
+  function updateEvidenceAnnotationHistory(
+    source: DiagnosticSource,
+    update: (history: AnnotationHistory) => AnnotationHistory,
+  ) {
+    setEvidenceAnnotations((current) => ({
+      ...current,
+      [source]: update(current[source]),
+    }));
+  }
+
+  function beginEvidenceAnnotating(source: DiagnosticSource) {
     const hasEvidence =
       source === 'console' ? session?.diagnostics.length : session?.network.length;
     if (!hasEvidence) return;
-    textAnnotationBaseline.current = textAnnotations;
+    evidenceAnnotationBaseline.current = {
+      source,
+      history: evidenceAnnotations[source],
+    };
     setEvidenceView(source);
-    setIsAnnotatingText(true);
+    setEvidenceAnnotationTool('border');
+    setSelectedEvidenceAnnotationId(null);
+    setAnnotatingEvidence(source);
     setError('');
-    setNotice('Select text in an evidence field to highlight it');
+    setNotice(`Drag around the important ${source} evidence to add a border`);
   }
 
-  function cancelTextAnnotating() {
-    if (textAnnotationBaseline.current) setTextAnnotations(textAnnotationBaseline.current);
-    textAnnotationBaseline.current = null;
-    setIsAnnotatingText(false);
-    window.getSelection()?.removeAllRanges();
-    setNotice('Text annotation changes cancelled');
+  function chooseEvidenceAnnotationTool(tool: AnnotationTool) {
+    setEvidenceAnnotationTool(tool);
+    if (tool !== 'select') setSelectedEvidenceAnnotationId(null);
+    const instructions: Record<AnnotationTool, string> = {
+      select: 'Select an annotation to move, resize, or delete it',
+      marker: 'Draw directly on the evidence with the marker',
+      highlight: 'Drag over evidence to add a translucent highlight',
+      border: 'Drag around evidence to add a border',
+    };
+    setNotice(instructions[tool]);
   }
 
-  async function finishTextAnnotating() {
-    if (!session || savingTextAnnotations) return;
-    setSavingTextAnnotations(true);
+  function cancelEvidenceAnnotating() {
+    const baseline = evidenceAnnotationBaseline.current;
+    if (baseline) {
+      setEvidenceAnnotations((current) => ({
+        ...current,
+        [baseline.source]: baseline.history,
+      }));
+    }
+    evidenceAnnotationBaseline.current = null;
+    setSelectedEvidenceAnnotationId(null);
+    setAnnotatingEvidence(null);
+    setNotice('Evidence annotation changes cancelled');
+  }
+
+  async function finishEvidenceAnnotating() {
+    if (!session || !annotatingEvidence || savingEvidenceAnnotations) return;
+    const source = annotatingEvidence;
+    const document = evidenceAnnotations[source].present;
+    setSavingEvidenceAnnotations(true);
     setError('');
     try {
-      await saveTextAnnotationDocument(session.id, textAnnotationDocument);
-      textAnnotationBaseline.current = null;
-      setIsAnnotatingText(false);
-      window.getSelection()?.removeAllRanges();
+      await saveAnnotationDocument(getEvidenceAnnotationTargetId(session.id, source), document);
+      evidenceAnnotationBaseline.current = null;
+      setSelectedEvidenceAnnotationId(null);
+      setAnnotatingEvidence(null);
       setNotice(
-        textAnnotationCount === 0
-          ? 'Text annotations cleared'
-          : `${textAnnotationCount} text ${textAnnotationCount === 1 ? 'annotation' : 'annotations'} saved locally`,
+        document.items.length === 0
+          ? `${capitalize(source)} annotations cleared`
+          : `${document.items.length} ${source} ${document.items.length === 1 ? 'annotation' : 'annotations'} saved locally`,
       );
     } catch (reason) {
       setError(
         reason instanceof Error
           ? reason.message
-          : 'BugReceipt could not save the text annotations.',
+          : `BugReceipt could not save the ${source} annotations.`,
       );
     } finally {
-      setSavingTextAnnotations(false);
+      setSavingEvidenceAnnotations(false);
     }
   }
 
-  function addTextAnnotation(
-    selection: Pick<TextAnnotation, 'source' | 'eventId' | 'field' | 'start' | 'end'>,
-  ) {
-    if (textAnnotationCount >= 500) {
-      setError('This capture already has the maximum of 500 text annotations.');
-      return;
-    }
-    const annotation: TextAnnotation = {
-      ...selection,
-      id: crypto.randomUUID(),
-      color: textAnnotationColor,
-    };
-    setTextAnnotations((history) => commitTextAnnotation(history, { type: 'add', annotation }));
-    setNotice('Text highlighted');
+  function addEvidenceAnnotation(annotation: Annotation) {
+    if (!annotatingEvidence) return;
+    updateEvidenceAnnotationHistory(annotatingEvidence, (history) =>
+      commitAnnotation(history, { type: 'add', annotation }),
+    );
+    setSelectedEvidenceAnnotationId(annotation.id);
   }
 
-  function removeTextAnnotation(id: string) {
-    setTextAnnotations((history) => commitTextAnnotation(history, { type: 'remove', id }));
-    setNotice('Text highlight removed');
+  function replaceEvidenceAnnotation(annotation: Annotation) {
+    if (!annotatingEvidence) return;
+    updateEvidenceAnnotationHistory(annotatingEvidence, (history) =>
+      commitAnnotation(history, { type: 'replace', annotation }),
+    );
   }
 
   async function removeStoredTextAnnotationsForEvent(eventId: string) {
@@ -607,24 +771,56 @@ export function ReviewApp() {
     await saveTextAnnotationDocument(session.id, nextDocument);
   }
 
-  function renderTextAnnotationToolbar() {
+  function renderEvidenceAnnotationToolbar(source: DiagnosticSource) {
+    const history = evidenceAnnotations[source];
     return (
-      <TextAnnotationToolbar
-        color={textAnnotationColor}
-        count={textAnnotationCount}
-        canUndo={textAnnotations.past.length > 0}
-        canRedo={textAnnotations.future.length > 0}
-        saving={savingTextAnnotations}
-        onColorChange={setTextAnnotationColor}
-        onUndo={() => setTextAnnotations((history) => undoTextAnnotation(history))}
-        onRedo={() => setTextAnnotations((history) => redoTextAnnotation(history))}
-        onClear={() =>
-          setTextAnnotations((history) => commitTextAnnotation(history, { type: 'clear' }))
-        }
-        onCancel={cancelTextAnnotating}
-        onDone={() => void finishTextAnnotating()}
+      <AnnotationToolbar
+        subjectLabel={`${source} evidence`}
+        tool={evidenceAnnotationTool}
+        color={evidenceAnnotationColor}
+        strokeWidth={evidenceAnnotationWidth}
+        count={history.present.items.length}
+        canUndo={history.past.length > 0}
+        canRedo={history.future.length > 0}
+        saving={savingEvidenceAnnotations}
+        onToolChange={chooseEvidenceAnnotationTool}
+        onColorChange={setEvidenceAnnotationColor}
+        onStrokeWidthChange={setEvidenceAnnotationWidth}
+        onUndo={() => {
+          updateEvidenceAnnotationHistory(source, undoAnnotation);
+          setSelectedEvidenceAnnotationId(null);
+        }}
+        onRedo={() => {
+          updateEvidenceAnnotationHistory(source, redoAnnotation);
+          setSelectedEvidenceAnnotationId(null);
+        }}
+        onClear={() => {
+          updateEvidenceAnnotationHistory(source, (current) =>
+            commitAnnotation(current, { type: 'clear' }),
+          );
+          setSelectedEvidenceAnnotationId(null);
+        }}
+        onCancel={cancelEvidenceAnnotating}
+        onDone={() => void finishEvidenceAnnotating()}
       />
     );
+  }
+
+  async function clearEvidenceAnnotations(source: DiagnosticSource): Promise<boolean> {
+    if (!session || evidenceAnnotations[source].present.items.length === 0) return false;
+    const empty = createAnnotationDocument(EVIDENCE_ANNOTATION_WIDTH, EVIDENCE_ANNOTATION_HEIGHT);
+    setEvidenceAnnotations((current) => ({
+      ...current,
+      [source]: createAnnotationHistory(empty),
+    }));
+    try {
+      await saveAnnotationDocument(getEvidenceAnnotationTargetId(session.id, source), empty);
+    } catch {
+      setError(
+        `${capitalize(source)} evidence changed, but its visual annotations could not be cleared.`,
+      );
+    }
+    return true;
   }
 
   async function prepareSelectedFramePng(): Promise<Blob | null> {
@@ -641,7 +837,7 @@ export function ReviewApp() {
       if (!output) return;
       downloadBlob(
         output,
-        `${exportBase}-selected-frame${annotationCount > 0 ? '-annotated' : ''}.png`,
+        `${exportBase}-${getSelectedFrameFilename(activeSelectedFrameIndex, selectedFrames.length).replace('.png', '')}${annotationCount > 0 ? '-annotated' : ''}.png`,
       );
       setNotice(
         annotationCount > 0 ? 'Annotated frame download started' : 'Frame download started',
@@ -692,12 +888,7 @@ export function ReviewApp() {
       try {
         const savedMarkdown = renderGitHubIssue(saved, textAnnotationDocument.items);
         const savedExportBase = createExportBase(saved);
-        const visuals = await readExportVisuals(
-          recordingUrl,
-          selectedFrameBlob,
-          annotationDocument,
-          screenshotUrl,
-        );
+        const visuals = await readExportVisuals(saved, recordingUrl, screenshotUrl);
         if (format === 'folder') {
           await downloadReportFolder(savedExportBase, [
             {
@@ -735,38 +926,22 @@ export function ReviewApp() {
 
   async function emailReport() {
     await withPreparedExport(async (saved) => {
-      let annotatedFrameUrl = '';
       try {
-        if (selectedFrameBlob && annotationCount > 0) {
-          const output = await prepareSelectedFramePng();
-          if (output) annotatedFrameUrl = URL.createObjectURL(output);
-        }
-        const visualUrl = annotatedFrameUrl || selectedFrameUrl || recordingUrl || screenshotUrl;
-        const result = await sendReportEmail({
+        const visuals = await readExportVisuals(saved, recordingUrl, screenshotUrl);
+        await sendReportEmail({
           sessionId: saved.id,
           subject: saved.summary,
           markdown: renderGitHubIssue(saved, textAnnotationDocument.items),
-          ...(visualUrl
-            ? {
-                visualUrl,
-                visualFilename: selectedFrameUrl
-                  ? ('selected-frame.png' as const)
-                  : recordingUrl
-                    ? ('recording.webm' as const)
-                    : ('screenshot.png' as const),
-              }
-            : {}),
+          visuals,
         });
         setEmailed(true);
         setNotice(
-          result.visualAttached
-            ? 'Report and visual evidence emailed'
-            : 'Report emailed; the visual evidence was too large and remains local',
+          visuals.length > 0
+            ? `Emailed issue.md and ${visuals.length} visual ${visuals.length === 1 ? 'file' : 'files'}`
+            : 'Emailed issue.md',
         );
       } catch (reason) {
         setError(reason instanceof Error ? reason.message : 'The report email could not be sent.');
-      } finally {
-        if (annotatedFrameUrl) URL.revokeObjectURL(annotatedFrameUrl);
       }
     });
   }
@@ -774,7 +949,13 @@ export function ReviewApp() {
   async function discard() {
     const response = await sendRuntimeMessage({ type: 'session:discard' });
     if (response.ok) {
-      if (session) await deleteTextAnnotationDocument(session.id).catch(() => undefined);
+      if (session) {
+        await Promise.all([
+          deleteTextAnnotationDocument(session.id),
+          deleteAnnotationDocument(getEvidenceAnnotationTargetId(session.id, 'console')),
+          deleteAnnotationDocument(getEvidenceAnnotationTargetId(session.id, 'network')),
+        ]).catch(() => undefined);
+      }
       setSession(null);
     }
     if (!response.ok) setError(response.message);
@@ -793,9 +974,7 @@ export function ReviewApp() {
   const environment = describeCaptureEnvironment(session.environment);
 
   return (
-    <main
-      className={`review-shell${isAnnotating ? ' is-annotating' : ''}${isAnnotatingText ? ' is-annotating-text' : ''}`}
-    >
+    <main className={`review-shell${isAnnotating || annotatingEvidence ? ' is-annotating' : ''}`}>
       <header className="review-header">
         <div className="review-header-inner">
           <Brand />
@@ -807,7 +986,21 @@ export function ReviewApp() {
             <div className="review-status">
               <span /> {emailed ? 'Report sent by email' : 'Nothing has been uploaded'}
             </div>
-            <SupportLink />
+            <div className="review-header-controls">
+              <ReportIssueControl
+                session={session}
+                emailConfigured={emailConfigured}
+                onSent={(diagnosisIncluded) => {
+                  setEmailed(true);
+                  setNotice(
+                    diagnosisIncluded
+                      ? 'Issue emailed with diagnosis.md'
+                      : 'Issue emailed without a diagnosis report',
+                  );
+                }}
+              />
+              <SupportLink />
+            </div>
           </div>
         </div>
       </header>
@@ -939,12 +1132,25 @@ export function ReviewApp() {
             <input
               id="issue-summary"
               value={session.summary}
-              aria-invalid={!session.summary.trim()}
+              aria-invalid={!session.summary.trim() || Boolean(summaryModeration.error)}
+              aria-busy={summaryModeration.checking}
+              aria-describedby={
+                summaryModeration.error ? 'issue-summary-moderation-error' : undefined
+              }
               maxLength={200}
               onChange={(event) =>
                 updateSession((current) => ({ ...current, summary: event.target.value }))
               }
             />
+            {summaryModeration.error ? (
+              <p
+                className="field-validation-error"
+                id="issue-summary-moderation-error"
+                role="status"
+              >
+                {summaryModeration.error}
+              </p>
+            ) : null}
           </div>
           <div className="behavior-grid">
             <div className="review-field">
@@ -952,6 +1158,13 @@ export function ReviewApp() {
               <textarea
                 id="expected-behavior"
                 value={session.expectedBehavior}
+                aria-invalid={Boolean(expectedBehaviorModeration.error)}
+                aria-busy={expectedBehaviorModeration.checking}
+                aria-describedby={
+                  expectedBehaviorModeration.error
+                    ? 'expected-behavior-moderation-error'
+                    : undefined
+                }
                 maxLength={4_000}
                 rows={4}
                 placeholder="What should have happened?"
@@ -962,12 +1175,26 @@ export function ReviewApp() {
                   }))
                 }
               />
+              {expectedBehaviorModeration.error ? (
+                <p
+                  className="field-validation-error"
+                  id="expected-behavior-moderation-error"
+                  role="status"
+                >
+                  {expectedBehaviorModeration.error}
+                </p>
+              ) : null}
             </div>
             <div className="review-field">
               <label htmlFor="actual-behavior">Actual behavior (optional)</label>
               <textarea
                 id="actual-behavior"
                 value={session.actualBehavior}
+                aria-invalid={Boolean(actualBehaviorModeration.error)}
+                aria-busy={actualBehaviorModeration.checking}
+                aria-describedby={
+                  actualBehaviorModeration.error ? 'actual-behavior-moderation-error' : undefined
+                }
                 maxLength={4_000}
                 rows={4}
                 placeholder="What happened instead?"
@@ -978,13 +1205,28 @@ export function ReviewApp() {
                   }))
                 }
               />
+              {actualBehaviorModeration.error ? (
+                <p
+                  className="field-validation-error"
+                  id="actual-behavior-moderation-error"
+                  role="status"
+                >
+                  {actualBehaviorModeration.error}
+                </p>
+              ) : null}
             </div>
             <div className="review-field steps-textarea-field">
               <label htmlFor="steps-to-reproduce">Steps to reproduce (optional)</label>
               <textarea
                 id="steps-to-reproduce"
                 value={stepsText}
-                aria-invalid={session.steps.some((step) => !step.text.trim())}
+                aria-invalid={
+                  session.steps.some((step) => !step.text.trim()) || Boolean(stepsModeration.error)
+                }
+                aria-busy={stepsModeration.checking}
+                aria-describedby={
+                  stepsModeration.error ? 'steps-to-reproduce-moderation-error' : undefined
+                }
                 rows={5}
                 placeholder={'One step per line\nOpened checkout\nClicked Pay'}
                 onChange={(event) => {
@@ -1012,6 +1254,15 @@ export function ReviewApp() {
                   });
                 }}
               />
+              {stepsModeration.error ? (
+                <p
+                  className="field-validation-error"
+                  id="steps-to-reproduce-moderation-error"
+                  role="status"
+                >
+                  {stepsModeration.error}
+                </p>
+              ) : null}
             </div>
           </div>
           <dl className="environment-list">
@@ -1061,6 +1312,7 @@ export function ReviewApp() {
             role="tablist"
             aria-label="Captured evidence views"
             onKeyDown={(event) => {
+              if (isAnnotating || annotatingEvidence) return;
               if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
               event.preventDefault();
               const tabs = Array.from(
@@ -1086,6 +1338,7 @@ export function ReviewApp() {
               aria-selected={evidenceView === 'visual'}
               aria-controls="visual-evidence-panel"
               tabIndex={evidenceView === 'visual' ? 0 : -1}
+              disabled={annotatingEvidence !== null}
               onClick={() => setEvidenceView('visual')}
             >
               Visual evidence
@@ -1097,6 +1350,9 @@ export function ReviewApp() {
               aria-selected={evidenceView === 'console'}
               aria-controls="console-evidence-panel"
               tabIndex={evidenceView === 'console' ? 0 : -1}
+              disabled={
+                isAnnotating || (annotatingEvidence !== null && annotatingEvidence !== 'console')
+              }
               onClick={() => setEvidenceView('console')}
             >
               Console <span>{session.diagnostics.length}</span>
@@ -1108,6 +1364,9 @@ export function ReviewApp() {
               aria-selected={evidenceView === 'network'}
               aria-controls="network-evidence-panel"
               tabIndex={evidenceView === 'network' ? 0 : -1}
+              disabled={
+                isAnnotating || (annotatingEvidence !== null && annotatingEvidence !== 'network')
+              }
               onClick={() => setEvidenceView('network')}
             >
               Network <span>{session.network.length}</span>
@@ -1127,7 +1386,9 @@ export function ReviewApp() {
               <div className="studio-heading-meta">
                 <div className="visual-evidence-summary" aria-label="Visual evidence status">
                   {recordingState === 'ready' ? 'Recording ready' : 'Recording unavailable'}
-                  {session.page?.selectedFrame ? ' · Frame selected' : ''}
+                  {selectedFrames.length > 0
+                    ? ` · ${selectedFrames.length} ${selectedFrames.length === 1 ? 'frame' : 'frames'} selected`
+                    : ''}
                 </div>
                 {recordingState === 'ready' && recordingUrl && !isAnnotating && (
                   <div
@@ -1140,7 +1401,7 @@ export function ReviewApp() {
                       type="button"
                       onClick={() => downloadBlobFromUrl(recordingUrl, `${exportBase}.webm`)}
                     >
-                      Download recording.webm
+                      Download video
                     </button>
                     <button
                       className="remove-action"
@@ -1177,16 +1438,31 @@ export function ReviewApp() {
                   <button
                     className="button primary video-frame-capture-action"
                     type="button"
-                    aria-label={`Capture current frame at ${formatVideoTime(videoTime * 1_000)}`}
+                    aria-label={
+                      selectedFrames.length >= MAX_SELECTED_FRAMES
+                        ? `Maximum of ${MAX_SELECTED_FRAMES} frames reached`
+                        : `Capture current frame at ${formatVideoTime(videoTime * 1_000)}`
+                    }
                     onClick={() => void saveCurrentFrame()}
-                    disabled={busy || videoDuration <= 0}
+                    disabled={
+                      busy || videoDuration <= 0 || selectedFrames.length >= MAX_SELECTED_FRAMES
+                    }
+                    title={
+                      selectedFrames.length >= MAX_SELECTED_FRAMES
+                        ? `Remove a frame before capturing another. Maximum ${MAX_SELECTED_FRAMES}.`
+                        : undefined
+                    }
                   >
-                    {capturingFrame ? 'Capturing…' : 'Capture frame'}
+                    {capturingFrame
+                      ? 'Capturing…'
+                      : selectedFrames.length >= MAX_SELECTED_FRAMES
+                        ? `${MAX_SELECTED_FRAMES} frame limit`
+                        : 'Capture frame'}
                   </button>
                 </div>
               </section>
             )}
-            {(recordingState === 'ready' || session.page?.selectedFrame) && (
+            {(recordingState === 'ready' || selectedFrames.length > 0) && (
               <section
                 className={`frame-workspace frame-workspace-selected-only${isAnnotating ? ' frame-workspace-editing' : ''}`}
                 aria-label="Video frame evidence"
@@ -1198,7 +1474,11 @@ export function ReviewApp() {
                   <div className="selected-frame-heading">
                     <div>
                       <strong id="selected-frame-title">
-                        {isAnnotating ? 'Annotate selected frame' : 'Selected frame'}
+                        {isAnnotating
+                          ? `Annotate frame ${activeSelectedFrameIndex + 1}`
+                          : selectedFrames.length === 1
+                            ? 'Selected frame'
+                            : 'Selected frames'}
                       </strong>
                       <p>
                         {isAnnotating
@@ -1210,13 +1490,60 @@ export function ReviewApp() {
                             : 'Your saved still frame will appear here.'}
                       </p>
                     </div>
-                    {selectedFrameState === 'ready' && session.page?.selectedFrame && (
+                    {activeSelectedFrame && (
                       <div className="selected-frame-heading-actions">
-                        <span>{formatVideoTime(session.page.selectedFrame.videoTimeMs)}</span>
-                        {!isAnnotating && (
+                        {selectedFrames.length > 1 && (
+                          <div
+                            className="selected-frame-navigation"
+                            role="group"
+                            aria-label="Selected frame navigation"
+                          >
+                            <button
+                              className="selected-frame-navigation-button"
+                              type="button"
+                              aria-label="View previous selected frame"
+                              onClick={() =>
+                                setSelectedFrameIndex((index) => Math.max(0, index - 1))
+                              }
+                              disabled={busy || isAnnotating || activeSelectedFrameIndex === 0}
+                            >
+                              <svg viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="m12.5 4.5-5 5.5 5 5.5" />
+                              </svg>
+                            </button>
+                            <span
+                              className="selected-frame-position"
+                              aria-live="polite"
+                              aria-atomic="true"
+                            >
+                              {activeSelectedFrameIndex + 1} / {selectedFrames.length}
+                            </span>
+                            <button
+                              className="selected-frame-navigation-button"
+                              type="button"
+                              aria-label="View next selected frame"
+                              onClick={() =>
+                                setSelectedFrameIndex((index) =>
+                                  Math.min(selectedFrames.length - 1, index + 1),
+                                )
+                              }
+                              disabled={
+                                busy ||
+                                isAnnotating ||
+                                activeSelectedFrameIndex === selectedFrames.length - 1
+                              }
+                            >
+                              <svg viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="m7.5 4.5 5 5.5-5 5.5" />
+                              </svg>
+                            </button>
+                          </div>
+                        )}
+                        <span>{formatVideoTime(activeSelectedFrame.videoTimeMs)}</span>
+                        {!isAnnotating && selectedFrameState === 'ready' && (
                           <>
                             <button
-                              className="button quiet annotate-frame-action"
+                              className="text-action annotate-frame-action"
                               type="button"
                               aria-label="Annotate selected frame"
                               onClick={beginAnnotating}
@@ -1231,7 +1558,7 @@ export function ReviewApp() {
                               onClick={() => void downloadSelectedFrame()}
                               disabled={busy}
                             >
-                              Download PNG
+                              Download frame
                             </button>
                             <button
                               className="remove-action"
@@ -1248,72 +1575,68 @@ export function ReviewApp() {
                     )}
                   </div>
 
-                  {selectedFrameState === 'loading' && session.page?.selectedFrame && (
+                  {selectedFrameState === 'loading' && activeSelectedFrame && (
                     <p className="selected-frame-status" role="status">
                       Loading selected video frame…
                     </p>
                   )}
-                  {selectedFrameState === 'failed' && session.page?.selectedFrame && (
+                  {selectedFrameState === 'failed' && activeSelectedFrame && (
                     <p className="capture-warning" role="status">
                       The selected frame could not be loaded. Capture it again from the recording.
                     </p>
                   )}
-                  {selectedFrameState === 'ready' &&
-                    selectedFrameUrl &&
-                    session.page?.selectedFrame && (
-                      <>
-                        {isAnnotating && (
-                          <AnnotationToolbar
-                            tool={annotationTool}
-                            color={annotationColor}
-                            strokeWidth={annotationWidth}
-                            count={annotationCount}
-                            canUndo={annotations.past.length > 0}
-                            canRedo={annotations.future.length > 0}
-                            saving={savingAnnotations}
-                            onToolChange={chooseAnnotationTool}
-                            onColorChange={setAnnotationColor}
-                            onStrokeWidthChange={setAnnotationWidth}
-                            onUndo={() => {
-                              setAnnotations((history) => undoAnnotation(history));
-                              setSelectedAnnotationId(null);
-                            }}
-                            onRedo={() => {
-                              setAnnotations((history) => redoAnnotation(history));
-                              setSelectedAnnotationId(null);
-                            }}
-                            onClear={() => {
-                              setAnnotations((history) =>
-                                commitAnnotation(history, { type: 'clear' }),
-                              );
-                              setSelectedAnnotationId(null);
-                            }}
-                            onCancel={cancelAnnotating}
-                            onDone={() => void finishAnnotating()}
-                          />
-                        )}
-                        <div
-                          className={`selected-frame-canvas${isAnnotating ? ' is-editing' : ''}`}
-                        >
-                          <img
-                            src={selectedFrameUrl}
-                            alt={`Selected frame from the screen recording at ${formatVideoTime(session.page.selectedFrame.videoTimeMs)}`}
-                          />
-                          <AnnotationOverlay
-                            document={annotationDocument}
-                            editing={isAnnotating}
-                            tool={annotationTool}
-                            color={annotationColor}
-                            displayStrokeWidth={annotationWidth}
-                            selectedId={selectedAnnotationId}
-                            onSelect={setSelectedAnnotationId}
-                            onAdd={addAnnotation}
-                            onReplace={replaceAnnotation}
-                          />
-                        </div>
-                      </>
-                    )}
-                  {selectedFrameState === 'missing' && !session.page?.selectedFrame && (
+                  {selectedFrameState === 'ready' && selectedFrameUrl && activeSelectedFrame && (
+                    <>
+                      {isAnnotating && (
+                        <AnnotationToolbar
+                          tool={annotationTool}
+                          color={annotationColor}
+                          strokeWidth={annotationWidth}
+                          count={annotationCount}
+                          canUndo={annotations.past.length > 0}
+                          canRedo={annotations.future.length > 0}
+                          saving={savingAnnotations}
+                          onToolChange={chooseAnnotationTool}
+                          onColorChange={setAnnotationColor}
+                          onStrokeWidthChange={setAnnotationWidth}
+                          onUndo={() => {
+                            setAnnotations((history) => undoAnnotation(history));
+                            setSelectedAnnotationId(null);
+                          }}
+                          onRedo={() => {
+                            setAnnotations((history) => redoAnnotation(history));
+                            setSelectedAnnotationId(null);
+                          }}
+                          onClear={() => {
+                            setAnnotations((history) =>
+                              commitAnnotation(history, { type: 'clear' }),
+                            );
+                            setSelectedAnnotationId(null);
+                          }}
+                          onCancel={cancelAnnotating}
+                          onDone={() => void finishAnnotating()}
+                        />
+                      )}
+                      <div className={`selected-frame-canvas${isAnnotating ? ' is-editing' : ''}`}>
+                        <img
+                          src={selectedFrameUrl}
+                          alt={`Selected frame ${activeSelectedFrameIndex + 1} of ${selectedFrames.length} from the screen recording at ${formatVideoTime(activeSelectedFrame.videoTimeMs)}`}
+                        />
+                        <AnnotationOverlay
+                          document={annotationDocument}
+                          editing={isAnnotating}
+                          tool={annotationTool}
+                          color={annotationColor}
+                          displayStrokeWidth={annotationWidth}
+                          selectedId={selectedAnnotationId}
+                          onSelect={setSelectedAnnotationId}
+                          onAdd={addAnnotation}
+                          onReplace={replaceAnnotation}
+                        />
+                      </div>
+                    </>
+                  )}
+                  {selectedFrameState === 'missing' && selectedFrames.length === 0 && (
                     <div className="selected-frame-empty">
                       <strong>No frame saved yet</strong>
                       <p>Pause anywhere, then use Capture frame. The PNG stays local.</p>
@@ -1370,10 +1693,10 @@ export function ReviewApp() {
             <div className="workspace-section-heading diagnostics-heading">
               <div>
                 <h2>Console evidence</h2>
-                {consoleTextAnnotationCount > 0 && (
+                {consoleAnnotationCount > 0 && (
                   <span className="diagnostics-annotation-summary">
-                    {consoleTextAnnotationCount} highlighted{' '}
-                    {consoleTextAnnotationCount === 1 ? 'selection' : 'selections'}
+                    {consoleAnnotationCount} visual{' '}
+                    {consoleAnnotationCount === 1 ? 'annotation' : 'annotations'}
                   </span>
                 )}
               </div>
@@ -1382,31 +1705,41 @@ export function ReviewApp() {
                   {session.filtering.redactionCount} sensitive value
                   {session.filtering.redactionCount === 1 ? '' : 's'} redacted locally
                 </p>
-                {!isAnnotatingText && (
+                {!annotatingEvidence && (
                   <button
                     className="button quiet annotate-diagnostics-action"
                     type="button"
                     aria-label="Annotate console evidence"
-                    onClick={() => beginTextAnnotating('console')}
+                    onClick={() => beginEvidenceAnnotating('console')}
                     disabled={
-                      session.diagnostics.length === 0 || busy || isAnnotating || savingAnnotations
+                      session.diagnostics.length === 0 ||
+                      busy ||
+                      isAnnotating ||
+                      savingAnnotations ||
+                      savingEvidenceAnnotations
                     }
                   >
                     <AnnotateIcon />
-                    {consoleTextAnnotationCount > 0 ? 'Edit highlights' : 'Annotate text'}
+                    {consoleAnnotationCount > 0 ? 'Edit annotations' : 'Annotate'}
                   </button>
                 )}
               </div>
             </div>
-            {isAnnotatingText && renderTextAnnotationToolbar()}
+            {annotatingEvidence === 'console' && renderEvidenceAnnotationToolbar('console')}
             {evidenceView === 'console' && (
               <ConsoleEvidenceWindow
                 events={session.diagnostics}
-                busy={busy || isAnnotatingText}
-                annotations={textAnnotationDocument.items}
-                editing={isAnnotatingText}
-                onAnnotate={addTextAnnotation}
-                onRemoveAnnotation={removeTextAnnotation}
+                busy={busy || annotatingEvidence === 'console'}
+                textAnnotations={textAnnotationDocument.items}
+                annotationDocument={evidenceAnnotations.console.present}
+                annotationEditing={annotatingEvidence === 'console'}
+                annotationTool={evidenceAnnotationTool}
+                annotationColor={evidenceAnnotationColor}
+                annotationWidth={evidenceAnnotationWidth}
+                selectedAnnotationId={selectedEvidenceAnnotationId}
+                onSelectAnnotation={setSelectedEvidenceAnnotationId}
+                onAddAnnotation={addEvidenceAnnotation}
+                onReplaceAnnotation={replaceEvidenceAnnotation}
                 onRemove={removeDiagnostic}
               />
             )}
@@ -1422,10 +1755,10 @@ export function ReviewApp() {
             <div className="workspace-section-heading diagnostics-heading">
               <div>
                 <h2>Network evidence</h2>
-                {networkTextAnnotationCount > 0 && (
+                {networkAnnotationCount > 0 && (
                   <span className="diagnostics-annotation-summary">
-                    {networkTextAnnotationCount} highlighted{' '}
-                    {networkTextAnnotationCount === 1 ? 'selection' : 'selections'}
+                    {networkAnnotationCount} visual{' '}
+                    {networkAnnotationCount === 1 ? 'annotation' : 'annotations'}
                   </span>
                 )}
               </div>
@@ -1434,31 +1767,41 @@ export function ReviewApp() {
                   {session.filtering.redactionCount} sensitive value
                   {session.filtering.redactionCount === 1 ? '' : 's'} redacted locally
                 </p>
-                {!isAnnotatingText && (
+                {!annotatingEvidence && (
                   <button
                     className="button quiet annotate-diagnostics-action"
                     type="button"
                     aria-label="Annotate network evidence"
-                    onClick={() => beginTextAnnotating('network')}
+                    onClick={() => beginEvidenceAnnotating('network')}
                     disabled={
-                      session.network.length === 0 || busy || isAnnotating || savingAnnotations
+                      session.network.length === 0 ||
+                      busy ||
+                      isAnnotating ||
+                      savingAnnotations ||
+                      savingEvidenceAnnotations
                     }
                   >
                     <AnnotateIcon />
-                    {networkTextAnnotationCount > 0 ? 'Edit highlights' : 'Annotate text'}
+                    {networkAnnotationCount > 0 ? 'Edit annotations' : 'Annotate'}
                   </button>
                 )}
               </div>
             </div>
-            {isAnnotatingText && renderTextAnnotationToolbar()}
+            {annotatingEvidence === 'network' && renderEvidenceAnnotationToolbar('network')}
             {evidenceView === 'network' && (
               <NetworkEvidenceWindow
                 events={session.network}
-                busy={busy || isAnnotatingText}
-                annotations={textAnnotationDocument.items}
-                editing={isAnnotatingText}
-                onAnnotate={addTextAnnotation}
-                onRemoveAnnotation={removeTextAnnotation}
+                busy={busy || annotatingEvidence === 'network'}
+                textAnnotations={textAnnotationDocument.items}
+                annotationDocument={evidenceAnnotations.network.present}
+                annotationEditing={annotatingEvidence === 'network'}
+                annotationTool={evidenceAnnotationTool}
+                annotationColor={evidenceAnnotationColor}
+                annotationWidth={evidenceAnnotationWidth}
+                selectedAnnotationId={selectedEvidenceAnnotationId}
+                onSelectAnnotation={setSelectedEvidenceAnnotationId}
+                onAddAnnotation={addEvidenceAnnotation}
+                onReplaceAnnotation={replaceEvidenceAnnotation}
                 onRemove={removeNetworkEvent}
               />
             )}
@@ -1510,17 +1853,18 @@ export function ReviewApp() {
   );
 }
 
-type TextAnnotationSelection = Pick<
-  TextAnnotation,
-  'source' | 'eventId' | 'field' | 'start' | 'end'
->;
-
 interface AnnotatableEvidenceWindowProps {
   busy: boolean;
-  annotations: readonly TextAnnotation[];
-  editing: boolean;
-  onAnnotate: (selection: TextAnnotationSelection) => void;
-  onRemoveAnnotation: (id: string) => void;
+  textAnnotations: TextAnnotationHistory['present']['items'];
+  annotationDocument: AnnotationHistory['present'];
+  annotationEditing: boolean;
+  annotationTool: AnnotationTool;
+  annotationColor: AnnotationColor;
+  annotationWidth: number;
+  selectedAnnotationId: string | null;
+  onSelectAnnotation: (id: string | null) => void;
+  onAddAnnotation: (annotation: Annotation) => void;
+  onReplaceAnnotation: (annotation: Annotation) => void;
   onRemove: (id: string) => Promise<void> | void;
 }
 
@@ -1531,49 +1875,70 @@ interface ConsoleEvidenceWindowProps extends AnnotatableEvidenceWindowProps {
 function ConsoleEvidenceWindow({
   busy,
   events,
-  annotations,
-  editing,
-  onAnnotate,
-  onRemoveAnnotation,
+  textAnnotations,
+  annotationDocument,
+  annotationEditing,
+  annotationTool,
+  annotationColor,
+  annotationWidth,
+  selectedAnnotationId,
+  onSelectAnnotation,
+  onAddAnnotation,
+  onReplaceAnnotation,
   onRemove,
 }: ConsoleEvidenceWindowProps) {
   return (
     <div className="console-window">
-      <div className="console-top">
-        <span />
-        <span />
-        <span />
-        <b>{events.length} captured</b>
-      </div>
-      {events.length ? (
-        events.map((event) => (
-          <div className="console-entry" key={event.id}>
-            <time>{new Date(event.occurredAt).toLocaleTimeString()}</time>
-            <code>
-              <AnnotatedEvidenceText
-                value={event.message}
-                source="console"
-                eventId={event.id}
-                field="message"
-                annotations={annotations}
-                editing={editing}
-                onAnnotate={onAnnotate}
-                onRemove={onRemoveAnnotation}
-              />
-            </code>
-            <button
-              type="button"
-              aria-label="Remove console entry"
-              onClick={() => void onRemove(event.id)}
-              disabled={busy}
-            >
-              Remove
-            </button>
+      <div className={`diagnostic-annotation-surface${annotationEditing ? ' is-editing' : ''}`}>
+        <div className="diagnostic-evidence-content">
+          <div className="console-top">
+            <span />
+            <span />
+            <span />
+            <b>{events.length} captured</b>
           </div>
-        ))
-      ) : (
-        <p className="console-empty">No console messages were captured after recording started.</p>
-      )}
+          {events.length ? (
+            events.map((event) => (
+              <div className="console-entry" key={event.id}>
+                <time>{new Date(event.occurredAt).toLocaleTimeString()}</time>
+                <code>
+                  <AnnotatedEvidenceText
+                    value={event.message}
+                    source="console"
+                    eventId={event.id}
+                    field="message"
+                    annotations={textAnnotations}
+                  />
+                </code>
+                <button
+                  type="button"
+                  aria-label="Remove console entry"
+                  onClick={() => void onRemove(event.id)}
+                  disabled={busy}
+                >
+                  Remove
+                </button>
+              </div>
+            ))
+          ) : (
+            <p className="console-empty">
+              No console messages were captured after recording started.
+            </p>
+          )}
+        </div>
+        <AnnotationOverlay
+          ariaLabel="Console evidence annotation canvas"
+          document={annotationDocument}
+          editing={annotationEditing}
+          tool={annotationTool}
+          color={annotationColor}
+          displayStrokeWidth={annotationWidth}
+          selectedId={selectedAnnotationId}
+          onSelect={onSelectAnnotation}
+          onAdd={onAddAnnotation}
+          onReplace={onReplaceAnnotation}
+        />
+      </div>
     </div>
   );
 }
@@ -1585,150 +1950,153 @@ interface NetworkEvidenceWindowProps extends AnnotatableEvidenceWindowProps {
 function NetworkEvidenceWindow({
   busy,
   events,
-  annotations,
-  editing,
-  onAnnotate,
-  onRemoveAnnotation,
+  textAnnotations,
+  annotationDocument,
+  annotationEditing,
+  annotationTool,
+  annotationColor,
+  annotationWidth,
+  selectedAnnotationId,
+  onSelectAnnotation,
+  onAddAnnotation,
+  onReplaceAnnotation,
   onRemove,
 }: NetworkEvidenceWindowProps) {
   return (
     <div className="network-window">
-      <div className="network-top">
-        <strong>{events.length} requests captured</strong>
-        <span>Fetch, XHR, and page resources</span>
+      <div className={`diagnostic-annotation-surface${annotationEditing ? ' is-editing' : ''}`}>
+        <div className="diagnostic-evidence-content">
+          <div className="network-top">
+            <strong>{events.length} requests captured</strong>
+            <span>Fetch, XHR, and page resources</span>
+          </div>
+          {events.length ? (
+            events.map((event) => {
+              const status = String(event.status ?? 'FAILED');
+              const duration = `${Math.round(event.durationMs)} ms`;
+              return (
+                <article className="network-entry" key={event.id}>
+                  <div className="network-entry-heading">
+                    <span className="network-method">
+                      <AnnotatedEvidenceText
+                        value={event.method}
+                        source="network"
+                        eventId={event.id}
+                        field="method"
+                        annotations={textAnnotations}
+                      />
+                    </span>
+                    <span
+                      className={
+                        event.error || (event.status ?? 0) >= 400
+                          ? 'network-status failed'
+                          : 'network-status'
+                      }
+                    >
+                      <AnnotatedEvidenceText
+                        value={status}
+                        source="network"
+                        eventId={event.id}
+                        field="status"
+                        annotations={textAnnotations}
+                      />
+                    </span>
+                    <time>
+                      <AnnotatedEvidenceText
+                        value={duration}
+                        source="network"
+                        eventId={event.id}
+                        field="duration"
+                        annotations={textAnnotations}
+                      />
+                    </time>
+                    <button
+                      type="button"
+                      aria-label="Remove network entry"
+                      onClick={() => void onRemove(event.id)}
+                      disabled={busy}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <code className="network-url">
+                    <AnnotatedEvidenceText
+                      value={event.url}
+                      source="network"
+                      eventId={event.id}
+                      field="url"
+                      annotations={textAnnotations}
+                    />
+                  </code>
+                  {(event.requestBody || event.responseBody || event.error) && (
+                    <details>
+                      <summary>Request and response</summary>
+                      {event.requestBody && (
+                        <div className="network-payload">
+                          <strong>Request body</strong>
+                          <pre>
+                            <AnnotatedEvidenceText
+                              value={event.requestBody}
+                              source="network"
+                              eventId={event.id}
+                              field="requestBody"
+                              annotations={textAnnotations}
+                            />
+                          </pre>
+                        </div>
+                      )}
+                      {event.responseBody && (
+                        <div className="network-payload">
+                          <strong>Response body</strong>
+                          <pre>
+                            <AnnotatedEvidenceText
+                              value={event.responseBody}
+                              source="network"
+                              eventId={event.id}
+                              field="responseBody"
+                              annotations={textAnnotations}
+                            />
+                          </pre>
+                        </div>
+                      )}
+                      {event.error && (
+                        <div className="network-payload failed">
+                          <strong>Error</strong>
+                          <pre>
+                            <AnnotatedEvidenceText
+                              value={event.error}
+                              source="network"
+                              eventId={event.id}
+                              field="error"
+                              annotations={textAnnotations}
+                            />
+                          </pre>
+                        </div>
+                      )}
+                    </details>
+                  )}
+                </article>
+              );
+            })
+          ) : (
+            <p className="console-empty">
+              No network activity was captured after recording started.
+            </p>
+          )}
+        </div>
+        <AnnotationOverlay
+          ariaLabel="Network evidence annotation canvas"
+          document={annotationDocument}
+          editing={annotationEditing}
+          tool={annotationTool}
+          color={annotationColor}
+          displayStrokeWidth={annotationWidth}
+          selectedId={selectedAnnotationId}
+          onSelect={onSelectAnnotation}
+          onAdd={onAddAnnotation}
+          onReplace={onReplaceAnnotation}
+        />
       </div>
-      {events.length ? (
-        events.map((event) => {
-          const status = String(event.status ?? 'FAILED');
-          const duration = `${Math.round(event.durationMs)} ms`;
-          return (
-            <article className="network-entry" key={event.id}>
-              <div className="network-entry-heading">
-                <span className="network-method">
-                  <AnnotatedEvidenceText
-                    value={event.method}
-                    source="network"
-                    eventId={event.id}
-                    field="method"
-                    annotations={annotations}
-                    editing={editing}
-                    onAnnotate={onAnnotate}
-                    onRemove={onRemoveAnnotation}
-                  />
-                </span>
-                <span
-                  className={
-                    event.error || (event.status ?? 0) >= 400
-                      ? 'network-status failed'
-                      : 'network-status'
-                  }
-                >
-                  <AnnotatedEvidenceText
-                    value={status}
-                    source="network"
-                    eventId={event.id}
-                    field="status"
-                    annotations={annotations}
-                    editing={editing}
-                    onAnnotate={onAnnotate}
-                    onRemove={onRemoveAnnotation}
-                  />
-                </span>
-                <time>
-                  <AnnotatedEvidenceText
-                    value={duration}
-                    source="network"
-                    eventId={event.id}
-                    field="duration"
-                    annotations={annotations}
-                    editing={editing}
-                    onAnnotate={onAnnotate}
-                    onRemove={onRemoveAnnotation}
-                  />
-                </time>
-                <button
-                  type="button"
-                  aria-label="Remove network entry"
-                  onClick={() => void onRemove(event.id)}
-                  disabled={busy}
-                >
-                  Remove
-                </button>
-              </div>
-              <code className="network-url">
-                <AnnotatedEvidenceText
-                  value={event.url}
-                  source="network"
-                  eventId={event.id}
-                  field="url"
-                  annotations={annotations}
-                  editing={editing}
-                  onAnnotate={onAnnotate}
-                  onRemove={onRemoveAnnotation}
-                />
-              </code>
-              {(event.requestBody || event.responseBody || event.error) && (
-                <details>
-                  <summary>Request and response</summary>
-                  {event.requestBody && (
-                    <div className="network-payload">
-                      <strong>Request body</strong>
-                      <pre>
-                        <AnnotatedEvidenceText
-                          value={event.requestBody}
-                          source="network"
-                          eventId={event.id}
-                          field="requestBody"
-                          annotations={annotations}
-                          editing={editing}
-                          onAnnotate={onAnnotate}
-                          onRemove={onRemoveAnnotation}
-                        />
-                      </pre>
-                    </div>
-                  )}
-                  {event.responseBody && (
-                    <div className="network-payload">
-                      <strong>Response body</strong>
-                      <pre>
-                        <AnnotatedEvidenceText
-                          value={event.responseBody}
-                          source="network"
-                          eventId={event.id}
-                          field="responseBody"
-                          annotations={annotations}
-                          editing={editing}
-                          onAnnotate={onAnnotate}
-                          onRemove={onRemoveAnnotation}
-                        />
-                      </pre>
-                    </div>
-                  )}
-                  {event.error && (
-                    <div className="network-payload failed">
-                      <strong>Error</strong>
-                      <pre>
-                        <AnnotatedEvidenceText
-                          value={event.error}
-                          source="network"
-                          eventId={event.id}
-                          field="error"
-                          annotations={annotations}
-                          editing={editing}
-                          onAnnotate={onAnnotate}
-                          onRemove={onRemoveAnnotation}
-                        />
-                      </pre>
-                    </div>
-                  )}
-                </details>
-              )}
-            </article>
-          );
-        })
-      ) : (
-        <p className="console-empty">No network activity was captured after recording started.</p>
-      )}
     </div>
   );
 }
@@ -1750,9 +2118,8 @@ function downloadBlobFromUrl(url: string, filename: string) {
 }
 
 async function readExportVisuals(
+  session: CaptureSession,
   recordingUrl: string,
-  selectedFrameBlob: Blob | null,
-  annotationDocument: AnnotationHistory['present'],
   screenshotUrl: string,
 ): Promise<ReportBundleVisual[]> {
   const visuals: ReportBundleVisual[] = [];
@@ -1762,10 +2129,17 @@ async function readExportVisuals(
       filename: 'recording.webm',
     });
   }
-  if (selectedFrameBlob) {
+  const selectedFrames = getSelectedFrames(session.page);
+  for (const [index, frame] of selectedFrames.entries()) {
+    const blob = await readScreenshot(frame.blobId);
+    if (!blob) throw new Error(`Selected frame ${index + 1} could not be added to the download.`);
+    const storedAnnotations = await getAnnotationDocument(frame.blobId).catch(() => null);
+    const annotationDocument = isAnnotationDocument(storedAnnotations, frame.width, frame.height)
+      ? storedAnnotations
+      : createAnnotationDocument(frame.width, frame.height);
     visuals.push({
-      blob: await renderAnnotatedPng(selectedFrameBlob, annotationDocument),
-      filename: 'selected-frame.png',
+      blob: await renderAnnotatedPng(blob, annotationDocument),
+      filename: getSelectedFrameFilename(index, selectedFrames.length),
     });
   }
   if (!recordingUrl && screenshotUrl) {
@@ -1781,6 +2155,14 @@ async function readArtifactUrl(url: string): Promise<Blob> {
   const response = await fetch(url);
   if (!response.ok) throw new Error('The visual evidence could not be added to the download.');
   return response.blob();
+}
+
+function getEvidenceAnnotationTargetId(sessionId: string, source: DiagnosticSource): string {
+  return `${sessionId}:evidence:${source}`;
+}
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function formatVideoTime(timeMs: number): string {

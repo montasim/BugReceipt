@@ -1,5 +1,7 @@
+import { getSelectedFrames, MAX_SELECTED_FRAMES } from '@bugreceipt/capture-model';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  addSelectedFrame,
   appendNetworkEvent,
   appendStep,
   createSession,
@@ -7,7 +9,6 @@ import {
   loadSession,
   removeSelectedFrameReference,
   saveSession,
-  setSelectedFrame,
   updateReview,
 } from '../src/application/session-store';
 
@@ -118,7 +119,7 @@ describe('capture session store', () => {
     expect(interrupted.stoppedAt).toBeDefined();
   });
 
-  it('adds and removes selected frame metadata without removing the recording', async () => {
+  it('appends and removes selected frame metadata without removing the recording', async () => {
     const active = createSession(makeTab({ url: 'https://example.com', title: 'Checkout' }));
     await saveSession({
       ...active,
@@ -135,19 +136,62 @@ describe('capture session store', () => {
       },
     });
 
-    const withFrame = await setSelectedFrame({
+    const firstFrame = {
       blobId: '00000000-0000-4000-8000-000000000004',
-      mimeType: 'image/png',
+      mimeType: 'image/png' as const,
       sizeBytes: 512,
       videoTimeMs: 3_067,
       width: 1_280,
       height: 720,
-    });
-    expect(withFrame.page?.selectedFrame?.videoTimeMs).toBe(3_067);
+    };
+    const secondFrame = {
+      ...firstFrame,
+      blobId: '00000000-0000-4000-8000-000000000005',
+      videoTimeMs: 4_000,
+    };
+    await addSelectedFrame(firstFrame);
+    const withFrames = await addSelectedFrame(secondFrame);
+    expect(getSelectedFrames(withFrames.page).map((frame) => frame.videoTimeMs)).toEqual([
+      3_067, 4_000,
+    ]);
 
-    const withoutFrame = await removeSelectedFrameReference();
-    expect(withoutFrame.page?.selectedFrame).toBeUndefined();
-    expect(withoutFrame.page?.recording?.blobId).toBe(active.id);
+    const withOneFrame = await removeSelectedFrameReference(firstFrame.blobId);
+    expect(getSelectedFrames(withOneFrame.page)).toEqual([secondFrame]);
+    expect(withOneFrame.page?.recording?.blobId).toBe(active.id);
+  });
+
+  it('enforces the selected-frame limit at the persistence boundary', async () => {
+    const active = createSession(makeTab({ url: 'https://example.com', title: 'Checkout' }));
+    const baseFrame = {
+      mimeType: 'image/png' as const,
+      sizeBytes: 512,
+      videoTimeMs: 0,
+      width: 1_280,
+      height: 720,
+    };
+    await saveSession({
+      ...active,
+      status: 'ready-for-review',
+      stoppedAt: new Date().toISOString(),
+      page: {
+        ...active.page!,
+        recording: {
+          blobId: active.id,
+          mimeType: 'video/webm',
+          sizeBytes: 1_024,
+          durationMs: 10_000,
+        },
+        selectedFrames: Array.from({ length: MAX_SELECTED_FRAMES }, (_, index) => ({
+          ...baseFrame,
+          blobId: crypto.randomUUID(),
+          videoTimeMs: index,
+        })),
+      },
+    });
+
+    await expect(addSelectedFrame({ ...baseFrame, blobId: crypto.randomUUID() })).rejects.toThrow(
+      'up to 20 selected frames',
+    );
   });
 });
 

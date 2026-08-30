@@ -12,7 +12,7 @@ export function SupportLink() {
         <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8Z" />
         <path d="M6 1v3M10 1v3M14 1v3" />
       </svg>
-      Support
+      <span className="support-link-label">Support</span>
     </a>
   );
 }

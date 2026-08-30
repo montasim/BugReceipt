@@ -22,6 +22,7 @@
     "@bugreceipt/issue-export": "workspace:*",
     "@bugreceipt/privacy": "workspace:*",
     "jszip": "3.10.1",
+    "obscenity": "0.4.6",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zod": "^4.4.3"

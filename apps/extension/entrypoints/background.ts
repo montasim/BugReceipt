@@ -1,5 +1,6 @@
 import {
   diagnosticEventSchema,
+  getSelectedFrames,
   networkEventSchema,
   runtimeRequestSchema,
   type RuntimeRequest,
@@ -9,6 +10,7 @@ import { defineBackground } from 'wxt/utils/define-background';
 import {
   appendDiagnostic,
   appendNetworkEvent,
+  addSelectedFrame,
   appendStep,
   clearSession,
   createSession,
@@ -116,9 +118,7 @@ async function handleRequest(
       const current = await loadSession();
       if (current?.status === 'recording') return { ok: true, session: current };
       if (current?.page?.screenshotBlobId) await deleteScreenshot(current.page.screenshotBlobId);
-      if (current?.page?.selectedFrame?.blobId) {
-        await deleteScreenshot(current.page.selectedFrame.blobId);
-      }
+      await deleteSelectedFrameArtifacts(getSelectedFrames(current?.page));
       if (current?.page?.recording?.blobId) await deleteRecording(current.page.recording.blobId);
       const tab = await chrome.tabs.get(request.tabId);
       if (!tab.active) {
@@ -165,16 +165,15 @@ async function handleRequest(
       return { ok: true, session: await removeDiagnostic(request.id) };
     case 'session:remove-network':
       return { ok: true, session: await removeNetworkEvent(request.id) };
+    case 'session:add-selected-frame':
+      return { ok: true, session: await addSelectedFrame(request.frame) };
     case 'session:set-selected-frame': {
       const session = await loadSession();
-      const previousBlobId = session?.page?.selectedFrame?.blobId;
+      const previousFrames = getSelectedFrames(session?.page);
       const updated = await setSelectedFrame(request.frame);
-      if (previousBlobId && previousBlobId !== request.frame.blobId) {
-        await Promise.allSettled([
-          deleteScreenshot(previousBlobId),
-          deleteAnnotationDocument(previousBlobId),
-        ]);
-      }
+      await deleteSelectedFrameArtifacts(
+        previousFrames.filter((frame) => frame.blobId !== request.frame.blobId),
+      );
       return { ok: true, session: updated };
     }
     case 'session:remove-selected-frame': {
@@ -182,13 +181,12 @@ async function handleRequest(
       if (!session || session.status !== 'ready-for-review') {
         throw new Error('No reviewable capture exists.');
       }
-      if (session.page?.selectedFrame?.blobId) {
-        await Promise.allSettled([
-          deleteScreenshot(session.page.selectedFrame.blobId),
-          deleteAnnotationDocument(session.page.selectedFrame.blobId),
-        ]);
-      }
-      return { ok: true, session: await removeSelectedFrameReference() };
+      const frames = getSelectedFrames(session.page);
+      const blobId = request.blobId ?? frames.at(-1)?.blobId;
+      const frame = frames.find((candidate) => candidate.blobId === blobId);
+      const updated = await removeSelectedFrameReference(blobId);
+      if (frame) await deleteSelectedFrameArtifacts([frame]);
+      return { ok: true, session: updated };
     }
     case 'session:remove-recording': {
       const session = await loadSession();
@@ -263,12 +261,7 @@ async function handleRequest(
         await Promise.allSettled([removeCapture(session.tabId), finishScreenRecording(session)]);
       }
       if (session?.page?.screenshotBlobId) await deleteScreenshot(session.page.screenshotBlobId);
-      if (session?.page?.selectedFrame?.blobId) {
-        await Promise.allSettled([
-          deleteScreenshot(session.page.selectedFrame.blobId),
-          deleteAnnotationDocument(session.page.selectedFrame.blobId),
-        ]);
-      }
+      await deleteSelectedFrameArtifacts(getSelectedFrames(session?.page));
       if (session?.page?.recording?.blobId) await deleteRecording(session.page.recording.blobId);
       if (session) await deleteRecording(session.id).catch(() => undefined);
       await clearSession();
@@ -276,6 +269,17 @@ async function handleRequest(
       return { ok: true };
     }
   }
+}
+
+async function deleteSelectedFrameArtifacts(
+  frames: ReturnType<typeof getSelectedFrames>,
+): Promise<void> {
+  await Promise.allSettled(
+    frames.flatMap((frame) => [
+      deleteScreenshot(frame.blobId),
+      deleteAnnotationDocument(frame.blobId),
+    ]),
+  );
 }
 
 async function finishInterruptedCapture(

@@ -11,9 +11,9 @@ type AnnotatedEvidenceTextProps = {
   eventId: string;
   field: EvidenceTextAnnotation['field'];
   annotations: readonly TextAnnotation[];
-  editing: boolean;
-  onAnnotate: (selection: TextSelection) => void;
-  onRemove: (id: string) => void;
+  editing?: boolean;
+  onAnnotate?: (selection: TextSelection) => void;
+  onRemove?: (id: string) => void;
 };
 
 export function AnnotatedEvidenceText({
@@ -22,7 +22,7 @@ export function AnnotatedEvidenceText({
   eventId,
   field,
   annotations,
-  editing,
+  editing = false,
   onAnnotate,
   onRemove,
 }: AnnotatedEvidenceTextProps) {
@@ -39,7 +39,7 @@ export function AnnotatedEvidenceText({
     .sort((left, right) => left.start - right.start);
 
   function annotateSelection(root: HTMLElement) {
-    if (!editing) return;
+    if (!editing || !onAnnotate) return;
     const selection = window.getSelection();
     const offsets = selection ? getTextSelectionOffsets(root, selection) : null;
     if (!offsets || !value.slice(offsets.start, offsets.end).trim()) return;
@@ -91,7 +91,7 @@ function renderAnnotatedText(
   value: string,
   annotations: readonly TextAnnotation[],
   editing: boolean,
-  onRemove: (id: string) => void,
+  onRemove?: (id: string) => void,
 ) {
   if (!annotations.length) return value;
   const output = [];
@@ -104,19 +104,21 @@ function renderAnnotatedText(
         key={annotation.id}
         className={`text-annotation-mark${editing ? ' is-editing' : ''}`}
         style={{ '--text-annotation-color': annotation.color } as CSSProperties}
-        role={editing ? 'button' : undefined}
-        tabIndex={editing ? 0 : undefined}
-        title={editing ? 'Remove this annotation' : 'Annotated evidence'}
+        role={editing && onRemove ? 'button' : undefined}
+        tabIndex={editing && onRemove ? 0 : undefined}
+        title={editing && onRemove ? 'Remove this annotation' : 'Annotated evidence'}
         aria-label={
-          editing
+          editing && onRemove
             ? `Remove annotation: ${value.slice(annotation.start, annotation.end)}`
             : undefined
         }
         onClick={() => {
-          if (editing && window.getSelection()?.isCollapsed !== false) onRemove(annotation.id);
+          if (editing && onRemove && window.getSelection()?.isCollapsed !== false) {
+            onRemove(annotation.id);
+          }
         }}
         onKeyDown={(event: KeyboardEvent<HTMLElement>) => {
-          if (!editing || (event.key !== 'Enter' && event.key !== ' ')) return;
+          if (!editing || !onRemove || (event.key !== 'Enter' && event.key !== ' ')) return;
           event.preventDefault();
           onRemove(annotation.id);
         }}

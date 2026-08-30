@@ -16,6 +16,7 @@ import {
 } from './annotation-icons';
 
 type AnnotationToolbarProps = {
+  subjectLabel?: string;
   tool: AnnotationTool;
   color: AnnotationColor;
   strokeWidth: number;
@@ -41,6 +42,7 @@ const tools = [
 ] as const;
 
 export function AnnotationToolbar({
+  subjectLabel = 'selected frame',
   tool,
   color,
   strokeWidth,
@@ -153,7 +155,7 @@ export function AnnotationToolbar({
         </div>
       </div>
       <p className="sr-only" aria-live="polite">
-        {count} {count === 1 ? 'annotation' : 'annotations'} on the selected frame.
+        {count} {count === 1 ? 'annotation' : 'annotations'} on {subjectLabel}.
       </p>
     </section>
   );

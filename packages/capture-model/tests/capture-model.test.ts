@@ -3,6 +3,8 @@ import {
   captureSessionSchema,
   describeCaptureEnvironment,
   evidenceTextAnnotationSchema,
+  getSelectedFrames,
+  MAX_SELECTED_FRAMES,
   runtimeRequestSchema,
 } from '../src/index';
 
@@ -72,7 +74,7 @@ describe('capture contracts', () => {
 
   it('accepts bounded metadata for a locally selected video frame', () => {
     const request = runtimeRequestSchema.parse({
-      type: 'session:set-selected-frame',
+      type: 'session:add-selected-frame',
       frame: {
         blobId: '00000000-0000-4000-8000-000000000004',
         mimeType: 'image/png',
@@ -83,12 +85,12 @@ describe('capture contracts', () => {
       },
     });
 
-    expect(request.type).toBe('session:set-selected-frame');
+    expect(request.type).toBe('session:add-selected-frame');
   });
 
   it('rejects selected frame metadata outside the recording duration ceiling', () => {
     const result = runtimeRequestSchema.safeParse({
-      type: 'session:set-selected-frame',
+      type: 'session:add-selected-frame',
       frame: {
         blobId: '00000000-0000-4000-8000-000000000004',
         mimeType: 'image/png',
@@ -96,6 +98,54 @@ describe('capture contracts', () => {
         videoTimeMs: 3_600_001,
         width: 1_280,
         height: 720,
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('keeps legacy selected frames readable while preferring the frame collection', () => {
+    const legacyFrame = {
+      blobId: '00000000-0000-4000-8000-000000000004',
+      mimeType: 'image/png' as const,
+      sizeBytes: 24_000,
+      videoTimeMs: 3_067,
+      width: 1_280,
+      height: 720,
+    };
+
+    expect(getSelectedFrames({ selectedFrame: legacyFrame })).toEqual([legacyFrame]);
+    expect(getSelectedFrames({ selectedFrames: [legacyFrame] })).toEqual([legacyFrame]);
+  });
+
+  it('rejects sessions with more than 20 selected frames', () => {
+    const result = captureSessionSchema.safeParse({
+      schemaVersion: 1,
+      id: crypto.randomUUID(),
+      status: 'ready-for-review',
+      tabId: 7,
+      windowId: 2,
+      origin: 'https://example.com',
+      startedAt: new Date().toISOString(),
+      stoppedAt: new Date().toISOString(),
+      summary: 'Bug report',
+      expectedBehavior: '',
+      actualBehavior: '',
+      steps: [],
+      diagnostics: [],
+      filtering: { redactionCount: 0, droppedEventCount: 0 },
+      page: {
+        url: 'https://example.com',
+        title: 'Example',
+        capturedAt: new Date().toISOString(),
+        selectedFrames: Array.from({ length: MAX_SELECTED_FRAMES + 1 }, (_, index) => ({
+          blobId: crypto.randomUUID(),
+          mimeType: 'image/png',
+          sizeBytes: 24_000,
+          videoTimeMs: index,
+          width: 1_280,
+          height: 720,
+        })),
       },
     });
 
