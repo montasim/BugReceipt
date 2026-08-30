@@ -11,9 +11,9 @@ BugReceipt is a local-first Chrome extension for people reporting web applicatio
 
 **[Open the landing page](https://bugreceipt.netlify.app) · [Download the latest release](https://github.com/montasim/BugReceipt/releases/latest) · [Try the deterministic fixture](#deterministic-test-fixture) · [Report a non-sensitive bug](https://github.com/montasim/BugReceipt/issues/new/choose)**
 
-**Release status:** the source tree is prepared for version `0.1.3`, targeting Chrome 120 and newer. GitHub Releases distributes BugReceipt as a checksummed, unpacked extension archive; it is not currently available through the Chrome Web Store.
+**Release status:** the source tree is prepared for version `0.1.4`, targeting Chrome 120 and newer. GitHub Releases distributes BugReceipt as a checksummed, unpacked extension archive; it is not currently available through the Chrome Web Store.
 
-[![BugReceipt v0.1.3 review workbench](apps/web/public/brand/bugreceipt-review-v0.1.3.png)](https://bugreceipt.netlify.app)
+[![Current BugReceipt review workbench](apps/web/public/brand/bugreceipt-review-latest.jpg)](https://bugreceipt.netlify.app)
 
 ## Why BugReceipt?
 
@@ -40,19 +40,23 @@ A screenshot shows the result of a failure, but rarely the browser evidence or h
 
 - Editable issue title, expected behavior, actual behavior, and reproduction steps
 - A video player with **Capture frame** at the current playhead position
+- Navigation across as many as 20 timestamped selected frames from one recording
 - Local selected-frame annotation with select, marker, highlight, border, color, width, undo, redo, and clear controls
 - Exact text highlighting inside the Console and Network tabs
-- Per-entry removal for console, network, recording, selected-frame, and fallback-screenshot evidence
+- Per-entry removal for console, network, recording, individual selected-frame, and fallback-screenshot evidence
+- Required-field and offensive-language validation while editing and again immediately before export
+- A built-in BugReceipt issue form with an explicitly optional local diagnosis report
 - Responsive issue inspector and Visual evidence, Console, and Network workspaces
 
 ### At export
 
 - GitHub-ready `issue.md` with environment and diagnostic evidence
 - Saved console and network highlights represented by explicit `⟦double-bracket⟧` markers
-- `recording.webm`, `selected-frame.png`, or fallback `screenshot.png` when available
+- `recording.webm`, one or more numbered selected-frame PNGs, or fallback `screenshot.png` when available
 - One ZIP containing the reviewed files, or the same files in a named folder under Chrome Downloads
 - Clipboard copy of the reviewed Markdown
-- Optional email delivery through the configured report endpoint
+- Optional complete-bundle email delivery through the configured report endpoint
+- A responsive BugReceipt-branded HTML email with the reviewed Markdown preserved as its plain-text fallback and attached source report
 
 BugReceipt does not currently provide Firefox or Safari support, automatic interaction-step capture, WebSocket frames, feature-flag or application-version SDK capture, or authenticated GitHub/Linear issue creation.
 
@@ -106,7 +110,7 @@ Load `apps/extension/.output` through Chrome's **Load unpacked** action. A succe
 4. Reproduce the problem and add concise manual steps.
 5. Select **Stop & review**.
 6. Verify the report fields and inspect Visual evidence, Console, and Network.
-7. Pause the recording at the clearest moment and select **Capture frame**; annotate the saved PNG if it improves the evidence.
+7. Pause the recording at useful moments and select **Capture frame**; navigate and annotate the saved PNGs if they improve the evidence.
 8. Use **Annotate text** in Console or Network to preserve an exact diagnostic selection. Remove anything that should not be shared.
 9. Copy the Markdown, download the report as a ZIP, or save the individual files into one report folder under Downloads.
 10. Use **Share by email** only when the build has a configured report endpoint and the reviewed evidence is intended for that recipient.
@@ -127,7 +131,7 @@ Console values and supported text or JSON network bodies are bounded before stor
 
 Filtering reduces risk; it cannot guarantee that every sensitive value will be recognized. Screen recordings can display personal or confidential information rendered by the page. Review every field, highlight, and visual artifact before sharing it.
 
-Email delivery is a separate network boundary. **Share by email** sends `issue.md` plus the same recording, selected frames, or screenshot included in the ZIP to a fixed server-side recipient through Resend. The complete email file set must total no more than 4 MiB; BugReceipt rejects larger sets instead of silently omitting evidence. The Resend key and recipient are never bundled into the extension.
+Email delivery is a separate network boundary. **Share by email** sends `issue.md` plus the same recording, selected frames, or screenshot included in the ZIP to a fixed server-side recipient through Resend. HTML-capable clients receive a structured BugReceipt report, while the original Markdown remains the plain-text fallback and attached source. The complete email file set must total no more than 4 MiB; BugReceipt rejects larger sets instead of silently omitting evidence. The Resend key and recipient are never bundled into the extension.
 
 **Report an issue** sends the entered subject and description as `issue.md`. When **Include diagnosis report** is selected, BugReceipt also attaches `diagnosis.md` with the extension version, capture state, page and browser details, evidence counts, and locally filtered console and network metadata. It excludes recordings, screenshots, selected frames, and network request or response bodies.
 
@@ -229,7 +233,7 @@ Configure the server-side Resend variables only when report email delivery is en
 
 ## Release process
 
-The workspace packages, landing-page release copy, and extension manifest derive from version `0.1.3`. The release validator rejects a built manifest whose version differs from `apps/extension/package.json`.
+The workspace packages, landing-page release copy, and extension manifest derive from version `0.1.4`. The release validator rejects a built manifest whose version differs from `apps/extension/package.json`.
 
 Before tagging a release:
 
@@ -240,7 +244,7 @@ pnpm release:zip
 
 Inspect the generated Chrome ZIP and confirm `manifest.json` is at its root. Pushing a tag matching `v*` starts the [release workflow](.github/workflows/release.yml), which rebuilds the extension, renames the archive to `BugReceipt-<tag>-chrome-unpacked.zip`, verifies its layout, creates `SHA256SUMS.txt`, and publishes both files with [.github/RELEASE_NOTES.md](.github/RELEASE_NOTES.md).
 
-`v0.1.3` is prepared from the source changes after the published [v0.1.2 release](https://github.com/montasim/BugReceipt/releases/tag/v0.1.2). Historical tags and attached archives remain immutable.
+`v0.1.4` is prepared from the source changes after the published [v0.1.3 release](https://github.com/montasim/BugReceipt/releases/tag/v0.1.3). Historical tags and attached archives remain immutable.
 
 ## Troubleshooting
 
@@ -262,7 +266,7 @@ For ordinary installation and usage help, follow [SUPPORT.md](SUPPORT.md).
 - Cross-origin navigation ends capture rather than following the user across sites.
 - GitHub release installs use Developer mode and do not update automatically.
 - Screen recordings and Markdown remain separate GitHub-issue attachments.
-- Visual email attachments are limited to 4 MiB.
+- The complete report-email payload, including Markdown, diagnosis, and visual files, is limited to 4 MiB.
 - The report endpoint's in-memory rate limit is a baseline control, not a distributed production rate limiter.
 - Export does not authenticate with or create GitHub or Linear issues.
 - Automated tests cannot replace manual verification of Chrome permission, sharing, recording, download, and installation gestures.
@@ -272,6 +276,7 @@ For ordinary installation and usage help, follow [SUPPORT.md](SUPPORT.md).
 - [SUPPORT.md](SUPPORT.md) explains how to ask for help without exposing captured data.
 - [SECURITY.md](SECURITY.md) defines the private vulnerability-reporting path.
 - [CONTRIBUTING.md](CONTRIBUTING.md) documents setup, validation, and privacy expectations for pull requests.
+- [Microsoft Teams and Azure DevOps integration research](docs/research/microsoft-teams-azure-devops-integrations.md) records the evaluated sharing and ticketing options without claiming an implemented integration.
 - [GitHub Issues](https://github.com/montasim/BugReceipt/issues/new/choose) accepts ordinary non-sensitive bugs and feature requests.
 
 Never attach an unreviewed capture, production payload, credential, recording, or screenshot to a public issue. Use [GitHub private vulnerability reporting](https://github.com/montasim/BugReceipt/security/advisories/new) for suspected security problems.
