@@ -238,7 +238,7 @@ function Home() {
         </section>
 
         <section
-          className="mt-[200px] border-b border-line bg-paper"
+          className="mt-[clamp(7rem,10vw,12rem)] border-b border-line bg-paper"
           id="privacy"
           aria-labelledby="privacy-title"
         >
@@ -252,7 +252,7 @@ function Home() {
           >
             <h2
               id="privacy-title"
-              className="m-0 self-center px-0 py-6 pr-8 text-[clamp(1.5rem,2vw,2rem)] leading-[1.08] font-[570] tracking-[-0.035em] max-[1180px]:col-span-full max-[1180px]:border-b max-[1180px]:border-line-soft max-[620px]:px-4 max-[620px]:py-5"
+              className="m-0 self-center px-0 py-8 pr-8 text-[clamp(1.5rem,2vw,2rem)] leading-[1.08] font-[570] tracking-[-0.035em] max-[1180px]:col-span-full max-[1180px]:border-b max-[1180px]:border-line-soft max-[620px]:px-4 max-[620px]:py-5"
             >
               Local until you choose to <em className="not-italic text-signal-text">share.</em>
             </h2>
@@ -708,7 +708,7 @@ function PrivacyPrinciple({
   children: ReactNode;
 }) {
   return (
-    <article className="grid grid-cols-[36px_1fr] items-center gap-3 border-l border-line-soft p-5 odd:max-[1180px]:border-l-0 max-[620px]:border-t max-[620px]:border-l-0 max-[620px]:px-4 max-[620px]:py-5">
+    <article className="grid grid-cols-[36px_1fr] items-center gap-3 border-l border-line-soft p-6 odd:max-[1180px]:border-l-0 max-[620px]:border-t max-[620px]:border-l-0 max-[620px]:px-4 max-[620px]:py-5">
       <SystemIcon kind={icon} className="h-7 w-7" />
       <div>
         <h3 className="mt-0 mb-1 text-sm leading-[1.3]">{title}</h3>
