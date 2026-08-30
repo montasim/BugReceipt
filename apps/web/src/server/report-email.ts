@@ -3,7 +3,9 @@ import { createHash } from 'node:crypto';
 import { Resend } from 'resend';
 
 const MAX_REPORT_CHARACTERS = 200_000;
-const MAX_VISUAL_BYTES = 4 * 1024 * 1024;
+const MAX_DIAGNOSIS_CHARACTERS = 120_000;
+const MAX_EMAIL_REQUEST_BYTES = 4 * 1024 * 1024;
+const MAX_VISUAL_FILES = 21;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1_000;
 const RATE_LIMIT_REQUESTS = 5;
 const requestsByClient = new Map<string, number[]>();
@@ -38,11 +40,17 @@ export async function handleReportEmailRequest(
     );
   }
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.BUGRECEIPT_REPORT_FROM || process.env.REPROKIT_REPORT_FROM;
-  const to = process.env.BUGRECEIPT_REPORT_TO || process.env.REPROKIT_REPORT_TO;
+  const from = process.env.BUGRECEIPT_REPORT_FROM;
+  const to = process.env.BUGRECEIPT_REPORT_TO;
   if (!apiKey || !from || !to) {
     return Response.json(
       { error: 'Report email is not configured on the BugReceipt server.' },
+      { status: 503, headers },
+    );
+  }
+  if (/^re_(?:replace_me|x+)$/i.test(apiKey)) {
+    return Response.json(
+      { error: 'Replace the RESEND_API_KEY placeholder with a valid Resend API key.' },
       { status: 503, headers },
     );
   }
@@ -52,7 +60,8 @@ export async function handleReportEmailRequest(
     const report = form.get('report');
     const subject = form.get('subject');
     const sessionId = form.get('sessionId');
-    const visual = form.get('visual');
+    const diagnosis = form.get('diagnosis');
+    const visualValues = form.getAll('visual');
     if (
       typeof report !== 'string' ||
       report.length === 0 ||
@@ -61,24 +70,46 @@ export async function handleReportEmailRequest(
       subject.length === 0 ||
       subject.length > 200 ||
       typeof sessionId !== 'string' ||
-      !/^[0-9a-f-]{36}$/i.test(sessionId)
+      !/^[0-9a-f-]{36}$/i.test(sessionId) ||
+      (diagnosis !== null &&
+        (typeof diagnosis !== 'string' || diagnosis.length > MAX_DIAGNOSIS_CHARACTERS))
     ) {
       return Response.json({ error: 'The report payload is invalid.' }, { status: 400, headers });
     }
-    if (visual instanceof File && visual.size > MAX_VISUAL_BYTES) {
+    if (visualValues.some((visual) => !(visual instanceof File))) {
       return Response.json(
-        { error: 'The visual attachment is too large to email.' },
-        { status: 413, headers },
+        { error: 'The visual attachments are invalid.' },
+        { status: 400, headers },
+      );
+    }
+    const visuals = visualValues as File[];
+    if (visuals.length > MAX_VISUAL_FILES) {
+      return Response.json(
+        { error: `A report email can include up to ${MAX_VISUAL_FILES} visual files.` },
+        { status: 400, headers },
       );
     }
     if (
-      visual instanceof File &&
-      visual.size > 0 &&
-      !['image/png', 'video/webm'].includes(visual.type)
+      visuals.some(
+        (visual) => visual.size > 0 && !['image/png', 'video/webm'].includes(visual.type),
+      )
     ) {
       return Response.json(
         { error: 'The visual attachment type is not supported.' },
         { status: 415, headers },
+      );
+    }
+    const requestBytes =
+      Buffer.byteLength(report, 'utf8') +
+      Buffer.byteLength(typeof diagnosis === 'string' ? diagnosis : '', 'utf8') +
+      visuals.reduce((total, visual) => total + visual.size, 0);
+    if (requestBytes > MAX_EMAIL_REQUEST_BYTES) {
+      return Response.json(
+        {
+          error:
+            'All report files must total 4 MB or less for email. Download the ZIP instead or remove visual evidence.',
+        },
+        { status: 413, headers },
       );
     }
     if (isRateLimited(clientAddress(request))) {
@@ -90,18 +121,20 @@ export async function handleReportEmailRequest(
 
     const attachments = [
       {
-        filename: 'bugreceipt-report.md',
+        filename: 'issue.md',
         content: Buffer.from(report, 'utf8'),
       },
     ];
-    if (visual instanceof File && visual.size > 0) {
+    if (typeof diagnosis === 'string' && diagnosis.trim()) {
       attachments.push({
-        filename:
-          visual.type === 'image/png' && visual.name === 'selected-frame.png'
-            ? 'selected-frame.png'
-            : visual.type === 'image/png'
-              ? 'screenshot.png'
-              : 'recording.webm',
+        filename: 'diagnosis.md',
+        content: Buffer.from(diagnosis, 'utf8'),
+      });
+    }
+    for (const visual of visuals) {
+      if (visual.size === 0) continue;
+      attachments.push({
+        filename: emailVisualFilename(visual),
         content: Buffer.from(await visual.arrayBuffer()),
       });
     }
@@ -119,23 +152,18 @@ export async function handleReportEmailRequest(
     const sendEmail: SendEmail =
       dependencies.sendEmail ??
       ((message, options) => new Resend(apiKey).emails.send(message, options));
-    const { data, error } = await sendEmail(
-      {
-        from,
-        to: recipients,
-        subject: `[BugReceipt] ${subject}`,
-        text: report,
-        attachments,
-      },
-      {
-        idempotencyKey: `bugreceipt-${sessionId}-${createHash('sha256').update(report).digest('hex').slice(0, 16)}`,
-      },
-    );
+    const message = {
+      from,
+      to: recipients,
+      subject: `[BugReceipt] ${subject}`,
+      text: report,
+      attachments,
+    };
+    const { data, error } = await sendEmail(message, {
+      idempotencyKey: emailIdempotencyKey(sessionId, message),
+    });
     if (error || !data) {
-      return Response.json(
-        { error: 'Resend rejected the report email.' },
-        { status: 502, headers },
-      );
+      return Response.json({ error: providerRejectionMessage(error) }, { status: 502, headers });
     }
     return Response.json({ ok: true, id: data.id }, { headers });
   } catch {
@@ -144,6 +172,38 @@ export async function handleReportEmailRequest(
       { status: 500, headers },
     );
   }
+}
+
+function emailVisualFilename(visual: File): string {
+  if (visual.type === 'video/webm') return 'recording.webm';
+  if (/^selected-frame(?:-\d{2})?\.png$/.test(visual.name)) return visual.name;
+  return 'screenshot.png';
+}
+
+function emailIdempotencyKey(sessionId: string, message: EmailMessage): string {
+  const payload = JSON.stringify({
+    from: message.from,
+    to: message.to,
+    subject: message.subject,
+    text: message.text,
+    attachments: message.attachments.map((attachment) => ({
+      filename: attachment.filename,
+      contentHash: createHash('sha256').update(attachment.content).digest('hex'),
+    })),
+  });
+  const payloadHash = createHash('sha256').update(payload).digest('hex').slice(0, 32);
+  return `bugreceipt-${sessionId}-${payloadHash}`;
+}
+
+function providerRejectionMessage(error: unknown): string {
+  if (typeof error !== 'object' || error === null || !('message' in error)) {
+    return 'Resend rejected the report email.';
+  }
+  const message = error.message;
+  if (typeof message !== 'string' || message.trim().length === 0) {
+    return 'Resend rejected the report email.';
+  }
+  return message.trim().slice(0, 500);
 }
 
 function corsHeaders(request: Request): Record<string, string> {
@@ -159,10 +219,11 @@ function corsHeaders(request: Request): Record<string, string> {
 
 function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
-  const configured =
-    process.env.BUGRECEIPT_EXTENSION_ORIGIN || process.env.REPROKIT_EXTENSION_ORIGIN;
-  if (configured) return origin === configured;
-  return /^chrome-extension:\/\/[a-p]{32}$/.test(origin);
+  const extensionOriginPattern = /^chrome-extension:\/\/[a-p]{32}$/;
+  const configured = (process.env.BUGRECEIPT_EXTENSION_ORIGIN || '').trim().replace(/\/+$/, '');
+  if (extensionOriginPattern.test(configured)) return origin === configured;
+  if (configured && !import.meta.env.DEV) return false;
+  return extensionOriginPattern.test(origin);
 }
 
 function clientAddress(request: Request): string {

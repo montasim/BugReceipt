@@ -2,7 +2,8 @@ import JSZip from 'jszip';
 
 export interface ReportBundleVisual {
   blob: Blob;
-  filename: 'recording.webm' | 'selected-frame.png' | 'screenshot.png';
+  filename:
+    'recording.webm' | 'selected-frame.png' | `selected-frame-${string}.png` | 'screenshot.png';
 }
 
 export async function createReportBundle(
