@@ -58,9 +58,55 @@ describe('report email endpoint', () => {
         to: ['maintainer@example.com'],
         subject: '[BugReceipt] Checkout fails',
         text: '# Checkout fails',
+        html: expect.stringContaining('A browser issue was captured, reviewed'),
       }),
       expect.objectContaining({ idempotencyKey: expect.stringMatching(/^bugreceipt-/) }),
     );
+  });
+
+  it('renders a branded, email-safe HTML report while preserving the Markdown fallback', async () => {
+    const sendEmail = vi.fn().mockResolvedValue({ data: { id: 'email-1' }, error: null });
+    const form = new FormData();
+    form.set('sessionId', '00000000-0000-4000-8000-000000000000');
+    form.set('subject', 'Checkout <script>alert(1)</script>');
+    form.set(
+      'report',
+      [
+        '# Checkout fails',
+        '',
+        '## Steps to reproduce',
+        '',
+        '1. Open https://example.com/checkout',
+        '2. Click `Pay`',
+        '',
+        '## Console messages',
+        '',
+        '```text',
+        '<script>alert(1)</script>',
+        '```',
+        '',
+        '![Frame captured at 00:03.067](./selected-frame.png)',
+      ].join('\n'),
+    );
+    form.set('visual', new File(['frame'], 'selected-frame.png', { type: 'image/png' }));
+    const request = new Request('https://bugreceipt.example/api/reports', {
+      method: 'POST',
+      headers: { Origin: extensionOrigin, 'X-Forwarded-For': '198.51.100.24' },
+      body: form,
+    });
+
+    const response = await handleReportEmailRequest(request, { sendEmail });
+
+    expect(response.status).toBe(200);
+    const message = sendEmail.mock.calls[0]?.[0];
+    expect(message.text).toContain('```text');
+    expect(message.html).toContain('BugReceipt');
+    expect(message.html).toContain('Evidence report');
+    expect(message.html).toContain('Steps to reproduce');
+    expect(message.html).toContain('selected-frame.png');
+    expect(message.html).toContain('2 files attached');
+    expect(message.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(message.html).not.toContain('<script>alert(1)</script>');
   });
 
   it('surfaces the provider rejection reason instead of a generic Resend error', async () => {
