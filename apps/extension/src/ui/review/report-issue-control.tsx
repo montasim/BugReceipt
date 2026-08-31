@@ -2,6 +2,7 @@ import type { CaptureSession } from '@bugreceipt/capture-model';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { renderExtensionDiagnosisReport } from '../../application/extension-diagnosis';
 import { sendReportEmail } from '../../infrastructure/report-email';
+import { ActivityIndicator } from '../activity-indicator';
 import { useOffensiveLanguageValidation } from '../use-offensive-language-validation';
 
 interface ReportIssueControlProps {
@@ -252,8 +253,10 @@ export function ReportIssueControl({ session, emailConfigured, onSent }: ReportI
                   Cancel
                 </button>
                 <button
-                  className="button primary"
+                  className="button primary email-action"
                   type="submit"
+                  aria-busy={sending}
+                  aria-label={sending ? 'Sending issue by email' : undefined}
                   disabled={
                     sending ||
                     !emailConfigured ||
@@ -263,6 +266,7 @@ export function ReportIssueControl({ session, emailConfigured, onSent }: ReportI
                     Boolean(descriptionModeration.error)
                   }
                 >
+                  {sending ? <ActivityIndicator /> : null}
                   {sending ? 'Sending…' : 'Send email'}
                 </button>
               </div>

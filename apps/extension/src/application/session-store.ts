@@ -53,6 +53,7 @@ export function createSession(
     origin: url.origin,
     startedAt,
     summary: tab.title ? `Bug on ${tab.title}`.slice(0, 200) : 'Bug report',
+    description: '',
     expectedBehavior: '',
     actualBehavior: '',
     steps: [],
@@ -170,10 +171,14 @@ export async function updateReview(update: ReviewUpdate): Promise<CaptureSession
   const session = await requireSession('ready-for-review');
   const draft = reviewUpdateSchema.parse(update);
   const summary = filterText(draft.summary);
+  const description = filterText(draft.description ?? '');
   const expectedBehavior = filterText(draft.expectedBehavior);
   const actualBehavior = filterText(draft.actualBehavior);
   let redactionCount =
-    summary.redactionCount + expectedBehavior.redactionCount + actualBehavior.redactionCount;
+    summary.redactionCount +
+    description.redactionCount +
+    expectedBehavior.redactionCount +
+    actualBehavior.redactionCount;
   const steps = draft.steps.map((step, position) => {
     const filtered = filterText(step.text);
     redactionCount += filtered.redactionCount;
@@ -183,6 +188,7 @@ export async function updateReview(update: ReviewUpdate): Promise<CaptureSession
   return saveSession({
     ...session,
     summary: summary.value,
+    description: description.value,
     expectedBehavior: expectedBehavior.value,
     actualBehavior: actualBehavior.value,
     steps,

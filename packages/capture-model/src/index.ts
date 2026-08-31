@@ -74,6 +74,7 @@ export const captureSessionSchema = z.object({
   stoppedAt: z.string().datetime().optional(),
   endReason: z.enum(['completed', 'origin-changed', 'tab-closed']).optional(),
   summary: z.string().max(200),
+  description: z.string().max(4_000).optional(),
   expectedBehavior: z.string().max(4_000),
   actualBehavior: z.string().max(4_000),
   steps: z.array(stepSchema).max(50),
@@ -211,6 +212,7 @@ function describeOperatingSystem(userAgent: string, platform: string): string {
 
 export const reviewUpdateSchema = z.object({
   summary: z.string().trim().max(200),
+  description: z.string().trim().max(4_000).optional(),
   expectedBehavior: z.string().trim().max(4_000),
   actualBehavior: z.string().trim().max(4_000),
   steps: z.array(stepSchema).max(50),

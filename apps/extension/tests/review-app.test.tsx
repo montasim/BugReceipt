@@ -81,7 +81,7 @@ const session: CaptureSession = {
   environment: {
     userAgent,
     platform: 'Win32',
-    reproKitVersion: '0.1.4',
+    reproKitVersion: '0.1.5',
   },
   filtering: { redactionCount: 0, droppedEventCount: 0 },
 };
@@ -124,6 +124,7 @@ beforeEach(() => {
   saveTextAnnotations.mockResolvedValue(undefined);
   renderAnnotations.mockImplementation((source) => Promise.resolve(source));
   emailConfigured.mockReturnValue(true);
+  email.mockResolvedValue({ visualAttached: false });
   Object.defineProperty(navigator, 'clipboard', {
     configurable: true,
     value: { writeText: writeClipboard },
@@ -136,6 +137,7 @@ beforeEach(() => {
         session: {
           ...session,
           summary: request.summary,
+          description: request.description,
           expectedBehavior: request.expectedBehavior,
           actualBehavior: request.actualBehavior,
           steps: request.steps,
@@ -188,6 +190,35 @@ describe('review editor', () => {
     );
     expect(sentIssue).not.toHaveProperty('diagnosis');
     expect(screen.queryByRole('dialog', { name: 'Report an issue' })).toBeNull();
+    expect(await screen.findByText('Issue emailed without a diagnosis report')).toBeDefined();
+  });
+
+  it('shows a loading state while sending an issue report', async () => {
+    let finishEmail: ((result: { visualAttached: boolean }) => void) | undefined;
+    email.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishEmail = resolve;
+        }),
+    );
+    render(<ReviewApp />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Report an issue' }));
+    fireEvent.change(screen.getByLabelText('Subject'), {
+      target: { value: 'Review controls stop responding' },
+    });
+    fireEvent.change(screen.getByLabelText('Description'), {
+      target: { value: 'The review page stopped responding.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Send email' }));
+
+    const sendingButton = await screen.findByRole<HTMLButtonElement>('button', {
+      name: 'Sending issue by email',
+    });
+    expect(sendingButton.disabled).toBe(true);
+    expect(sendingButton.getAttribute('aria-busy')).toBe('true');
+
+    finishEmail?.({ visualAttached: false });
     expect(await screen.findByText('Issue emailed without a diagnosis report')).toBeDefined();
   });
 
@@ -264,7 +295,7 @@ describe('review editor', () => {
     expect(screen.getByText('Chrome 140.0.0.0')).toBeDefined();
     expect(screen.getByText('Win32')).toBeDefined();
     expect(screen.getByText(userAgent)).toBeDefined();
-    expect(screen.getByText('0.1.4')).toBeDefined();
+    expect(screen.getByText('0.1.5')).toBeDefined();
   });
 
   it('offers visual, console, and network evidence in keyboard-accessible tabs', async () => {
@@ -279,12 +310,18 @@ describe('review editor', () => {
     fireEvent.click(consoleTab);
     expect(consoleTab.getAttribute('aria-selected')).toBe('true');
     expect(
+      screen.getByRole<HTMLButtonElement>('button', { name: 'Download console' }).disabled,
+    ).toBe(true);
+    expect(
       screen.getByText('No console messages were captured after recording started.'),
     ).toBeDefined();
 
     consoleTab.focus();
     fireEvent.keyDown(consoleTab, { key: 'ArrowRight' });
     expect(networkTab.getAttribute('aria-selected')).toBe('true');
+    expect(
+      screen.getByRole<HTMLButtonElement>('button', { name: 'Download network' }).disabled,
+    ).toBe(true);
     expect(
       screen.getByText('No network activity was captured after recording started.'),
     ).toBeDefined();
@@ -293,6 +330,74 @@ describe('review editor', () => {
     fireEvent.keyDown(networkTab, { key: 'ArrowRight' });
     expect(visualTab.getAttribute('aria-selected')).toBe('true');
     expect(screen.queryByRole('tab', { name: /Console \+ network/ })).toBeNull();
+  });
+
+  it('downloads console JSON and network HAR from their evidence tabs', async () => {
+    const diagnosticSession: CaptureSession = {
+      ...session,
+      diagnostics: [
+        {
+          id: '00000000-0000-4000-8000-000000000010',
+          occurredAt: '2026-08-27T12:00:15.000Z',
+          kind: 'console',
+          level: 'error',
+          message: 'Payment request failed',
+        },
+      ],
+      network: [
+        {
+          id: '00000000-0000-4000-8000-000000000011',
+          occurredAt: '2026-08-27T12:00:15.100Z',
+          method: 'POST',
+          url: 'https://example.com/api/payment',
+          resourceType: 'fetch',
+          status: 500,
+          durationMs: 235,
+        },
+      ],
+    };
+    send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> =>
+      Promise.resolve(
+        request.type === 'session:get' ? { ok: true, session: diagnosticSession } : { ok: true },
+      ),
+    );
+    const objectUrl = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValueOnce('blob:console')
+      .mockReturnValueOnce('blob:network');
+    const downloadedFiles: string[] = [];
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      downloadedFiles.push(this.download);
+    });
+
+    render(<ReviewApp />);
+
+    fireEvent.click(await screen.findByRole('tab', { name: /^Console 1$/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Download console' }));
+    expect(await screen.findByText(/Downloaded .*console\.json/)).toBeDefined();
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Network 1$/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Download network' }));
+    expect(await screen.findByText(/Downloaded .*network\.har/)).toBeDefined();
+
+    expect(downloadedFiles).toEqual([
+      'bugreceipt-checkout-fails-20260827T120000Z-console.json',
+      'bugreceipt-checkout-fails-20260827T120000Z-network.har',
+    ]);
+    const consoleBlob = objectUrl.mock.calls[0]?.[0];
+    const networkBlob = objectUrl.mock.calls[1]?.[0];
+    expect(consoleBlob).toBeInstanceOf(Blob);
+    expect(networkBlob).toBeInstanceOf(Blob);
+    const consoleOutput = JSON.parse(await (consoleBlob as Blob).text()) as {
+      events: CaptureSession['diagnostics'];
+    };
+    const networkOutput = JSON.parse(await (networkBlob as Blob).text()) as {
+      log: { entries: CaptureSession['network'] };
+    };
+    expect(consoleOutput.events).toEqual(diagnosticSession.diagnostics);
+    expect(networkOutput.log.entries).toHaveLength(1);
   });
 
   it('reuses the visual annotation workspace for console and network evidence', async () => {
@@ -333,15 +438,25 @@ describe('review editor', () => {
           width: 460,
           height: 160,
         },
+        {
+          id: 'console-marker-1',
+          kind: 'marker' as const,
+          color: '#1f9fae' as const,
+          strokeWidth: 6,
+          points: [
+            { x: 100, y: 100 },
+            { x: 240, y: 180 },
+          ],
+        },
       ],
     };
     const networkDocument = {
       ...createAnnotationDocument(1_600, 720),
       items: [
         {
-          id: 'network-highlight-1',
-          kind: 'highlight' as const,
-          color: '#e2a90a' as const,
+          id: 'network-border-1',
+          kind: 'border' as const,
+          color: '#ff5c3a' as const,
           strokeWidth: 6,
           x: 80,
           y: 180,
@@ -368,9 +483,13 @@ describe('review editor', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: /^Console 1$/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Annotate console evidence' }));
-    expect(
-      screen.getByRole('application', { name: 'Console evidence annotation canvas' }),
-    ).toBeDefined();
+    const consoleAnnotationCanvas = screen.getByRole('application', {
+      name: 'Console evidence annotation canvas',
+    });
+    const consoleMarker = consoleAnnotationCanvas.querySelector(
+      '[data-annotation-id="console-marker-1"] path[stroke]',
+    );
+    expect(consoleMarker?.getAttribute('vector-effect')).toBe('non-scaling-stroke');
     expect(screen.getByRole('button', { name: 'Select' })).toBeDefined();
     expect(screen.getByRole('button', { name: 'Marker' })).toBeDefined();
     expect(screen.getByRole('button', { name: 'Highlight' })).toBeDefined();
@@ -387,9 +506,13 @@ describe('review editor', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: /^Network 1$/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Annotate network evidence' }));
-    expect(
-      screen.getByRole('application', { name: 'Network evidence annotation canvas' }),
-    ).toBeDefined();
+    const networkAnnotationCanvas = screen.getByRole('application', {
+      name: 'Network evidence annotation canvas',
+    });
+    const networkBorder = networkAnnotationCanvas.querySelector(
+      '[data-annotation-id="network-border-1"] rect[stroke]',
+    );
+    expect(networkBorder?.getAttribute('vector-effect')).toBe('non-scaling-stroke');
     fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     await waitFor(() =>
       expect(saveAnnotations).toHaveBeenCalledWith(
@@ -462,7 +585,7 @@ describe('review editor', () => {
     expect(writeClipboard).toHaveBeenCalledWith(expect.stringContaining('⟦/api/payment⟧'));
   });
 
-  it('allows export when optional steps and behavior descriptions are empty', async () => {
+  it('allows export when optional description, steps, and behavior fields are empty', async () => {
     render(<ReviewApp />);
 
     await screen.findByDisplayValue('Checkout fails');
@@ -471,6 +594,7 @@ describe('review editor', () => {
     expect(screen.queryByRole('button', { name: 'Save locally' })).toBeNull();
     expect(screen.queryByText('Saved locally')).toBeNull();
     expect(screen.queryByText('Complete the report before export')).toBeNull();
+    expect(screen.getByLabelText('Description (optional)')).toBeDefined();
     expect(screen.getByLabelText('Expected behavior (optional)')).toBeDefined();
     expect(screen.getByLabelText('Actual behavior (optional)')).toBeDefined();
     expect(screen.getByLabelText('Steps to reproduce (optional)')).toBeDefined();
@@ -481,12 +605,36 @@ describe('review editor', () => {
     expect(screen.getByRole('menuitem', { name: /Download ZIP/ })).toBeDefined();
   });
 
+  it('persists the optional description and includes it in issue.md', async () => {
+    render(<ReviewApp />);
+
+    const description = await screen.findByLabelText<HTMLTextAreaElement>('Description (optional)');
+    fireEvent.change(description, {
+      target: { value: 'Checkout stops after the final confirmation step.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Copy Markdown' }));
+
+    await waitFor(() => expect(writeClipboard).toHaveBeenCalledOnce());
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'session:update-review',
+        description: 'Checkout stops after the final confirmation step.',
+      }),
+    );
+    expect(writeClipboard).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '## Description\n\nCheckout stops after the final confirmation step.',
+      ),
+    );
+  });
+
   it('validates every report input and textarea as the user types', async () => {
     render(<ReviewApp />);
 
     await screen.findByDisplayValue('Checkout fails');
     const fields = [
       screen.getByLabelText<HTMLInputElement>('Issue title'),
+      screen.getByLabelText<HTMLTextAreaElement>('Description (optional)'),
       screen.getByLabelText<HTMLTextAreaElement>('Expected behavior (optional)'),
       screen.getByLabelText<HTMLTextAreaElement>('Actual behavior (optional)'),
       screen.getByLabelText<HTMLTextAreaElement>('Steps to reproduce (optional)'),
@@ -1185,6 +1333,30 @@ describe('review editor', () => {
       }),
     );
     expect(await screen.findByText('Emailed issue.md')).toBeDefined();
+  });
+
+  it('shows a loading state and prevents duplicate clicks while sharing by email', async () => {
+    let finishEmail: ((result: { visualAttached: boolean }) => void) | undefined;
+    email.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishEmail = resolve;
+        }),
+    );
+    render(<ReviewApp />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Share by email' }));
+
+    const sendingButton = await screen.findByRole<HTMLButtonElement>('button', {
+      name: 'Sending report by email',
+    });
+    expect(sendingButton.disabled).toBe(true);
+    expect(sendingButton.getAttribute('aria-busy')).toBe('true');
+    fireEvent.click(sendingButton);
+    expect(email).toHaveBeenCalledTimes(1);
+
+    finishEmail?.({ visualAttached: false });
+    expect(await screen.findByRole('button', { name: 'Report emailed' })).toBeDefined();
   });
 
   it('labels email as unavailable when the build has no report endpoint', async () => {

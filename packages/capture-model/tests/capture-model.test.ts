@@ -54,10 +54,32 @@ describe('capture contracts', () => {
     expect(result.success && result.data.endReason).toBe('tab-closed');
   });
 
+  it('keeps captures created before the optional description field readable', () => {
+    const result = captureSessionSchema.safeParse({
+      schemaVersion: 1,
+      id: crypto.randomUUID(),
+      status: 'ready-for-review',
+      tabId: 7,
+      windowId: 2,
+      origin: 'https://example.com',
+      startedAt: new Date().toISOString(),
+      summary: 'Bug report',
+      expectedBehavior: '',
+      actualBehavior: '',
+      steps: [],
+      diagnostics: [],
+      filtering: { redactionCount: 0, droppedEventCount: 0 },
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.description).toBeUndefined();
+  });
+
   it('accepts a bounded review draft update', () => {
     const request = runtimeRequestSchema.parse({
       type: 'session:update-review',
       summary: 'Checkout fails',
+      description: 'Payment fails after the final confirmation step.',
       expectedBehavior: 'The order should complete.',
       actualBehavior: 'The payment button stays disabled.',
       steps: [
@@ -70,6 +92,9 @@ describe('capture contracts', () => {
     });
 
     expect(request.type).toBe('session:update-review');
+    if (request.type === 'session:update-review') {
+      expect(request.description).toBe('Payment fails after the final confirmation step.');
+    }
   });
 
   it('accepts bounded metadata for a locally selected video frame', () => {
@@ -188,7 +213,7 @@ describe('capture contracts', () => {
       describeCaptureEnvironment({
         userAgent,
         platform: 'Win32',
-        reproKitVersion: '0.1.4',
+        reproKitVersion: '0.1.5',
       }),
     ).toEqual({
       browser: 'Microsoft Edge 140.0.0.0',

@@ -39,23 +39,33 @@ describe('capture navigation lifecycle', () => {
     expect(interrupt).not.toHaveBeenCalled();
   });
 
-  it('turns a cross-origin navigation into a reviewable interruption', async () => {
-    const inject = vi.fn().mockResolvedValue(undefined);
-    const interrupt = vi.fn().mockResolvedValue(undefined);
+  it('keeps the selected tab recording when cross-origin injection is unavailable', async () => {
+    const inject = vi.fn().mockRejectedValue(new Error('Site access is not granted.'));
+    const persisted = { session } as { session: CaptureSession };
+    const interrupt = vi.fn().mockImplementation(() => {
+      persisted.session = {
+        ...persisted.session,
+        status: 'ready-for-review',
+        stoppedAt: '2026-08-27T12:00:01.000Z',
+        endReason: 'origin-changed',
+      };
+      return Promise.resolve();
+    });
 
-    const restored = await restoreCaptureAfterNavigation(
+    const outcome = await restoreCaptureAfterNavigation(
       7,
       { status: 'complete' },
       { url: 'https://payments.example.net' },
       { loadSession: () => Promise.resolve(session), inject, interrupt },
     );
 
-    expect(restored).toBe('interrupted');
-    expect(inject).not.toHaveBeenCalled();
-    expect(interrupt).toHaveBeenCalledWith('origin-changed');
+    expect(outcome).toBe('continued');
+    expect(inject).toHaveBeenCalledWith(7, session.id);
+    expect(interrupt).not.toHaveBeenCalled();
+    expect(persisted.session.status).toBe('recording');
   });
 
-  it('interrupts from the navigation URL before active-tab access is revoked', async () => {
+  it('waits for a cross-origin document to load without ending the recording', async () => {
     const inject = vi.fn().mockResolvedValue(undefined);
     const interrupt = vi.fn().mockResolvedValue(undefined);
 
@@ -66,8 +76,25 @@ describe('capture navigation lifecycle', () => {
       { loadSession: () => Promise.resolve(session), inject, interrupt },
     );
 
-    expect(outcome).toBe('interrupted');
-    expect(interrupt).toHaveBeenCalledWith('origin-changed');
+    expect(outcome).toBe('ignored');
+    expect(inject).not.toHaveBeenCalled();
+    expect(interrupt).not.toHaveBeenCalled();
+  });
+
+  it('reinjects diagnostics after cross-origin navigation when site access exists', async () => {
+    const inject = vi.fn().mockResolvedValue(undefined);
+    const interrupt = vi.fn().mockResolvedValue(undefined);
+
+    const outcome = await restoreCaptureAfterNavigation(
+      7,
+      { status: 'complete' },
+      { url: 'https://payments.example.net' },
+      { loadSession: () => Promise.resolve(session), inject, interrupt },
+    );
+
+    expect(outcome).toBe('restored');
+    expect(inject).toHaveBeenCalledWith(7, session.id);
+    expect(interrupt).not.toHaveBeenCalled();
   });
 
   it('turns closing the recorded tab into a reviewable interruption', async () => {

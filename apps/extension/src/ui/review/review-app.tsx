@@ -33,6 +33,10 @@ import {
   getAnnotationDocument,
   saveAnnotationDocument,
 } from '../../infrastructure/annotation-store';
+import {
+  serializeConsoleEvidence,
+  serializeNetworkEvidenceAsHar,
+} from '../../infrastructure/evidence-download';
 import { createReportBundle, type ReportBundleVisual } from '../../infrastructure/report-bundle';
 import { readRecording } from '../../infrastructure/recording-store';
 import { downloadReportFolder } from '../../infrastructure/report-folder-download';
@@ -48,6 +52,7 @@ import {
   getTextAnnotationDocument,
   saveTextAnnotationDocument,
 } from '../../infrastructure/text-annotation-store';
+import { ActivityIndicator } from '../activity-indicator';
 import { Brand } from '../brand';
 import { SupportLink } from '../support-link';
 import { useOffensiveLanguageValidation } from '../use-offensive-language-validation';
@@ -127,6 +132,7 @@ export function ReviewApp() {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [emailed, setEmailed] = useState(false);
+  const [emailing, setEmailing] = useState(false);
   const [evidenceView, setEvidenceView] = useState<EvidenceView>('visual');
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
   const selectedFrames = useMemo(() => getSelectedFrames(session?.page), [session?.page]);
@@ -144,6 +150,7 @@ export function ReviewApp() {
     [session],
   );
   const summaryModeration = useOffensiveLanguageValidation(session?.summary ?? '');
+  const descriptionModeration = useOffensiveLanguageValidation(session?.description ?? '');
   const expectedBehaviorModeration = useOffensiveLanguageValidation(
     session?.expectedBehavior ?? '',
   );
@@ -151,6 +158,7 @@ export function ReviewApp() {
   const stepsModeration = useOffensiveLanguageValidation(stepsText);
   const moderationFieldStates = [
     { id: 'issue-summary', label: 'Issue title', ...summaryModeration },
+    { id: 'issue-description', label: 'Description', ...descriptionModeration },
     {
       id: 'expected-behavior',
       label: 'Expected behavior',
@@ -382,6 +390,7 @@ export function ReviewApp() {
     const response = await sendRuntimeMessage({
       type: 'session:update-review',
       summary: draft.summary,
+      description: draft.description ?? '',
       expectedBehavior: draft.expectedBehavior,
       actualBehavior: draft.actualBehavior,
       steps: draft.steps,
@@ -853,6 +862,30 @@ export function ReviewApp() {
     }
   }
 
+  function downloadConsoleEvidence() {
+    if (!session || session.diagnostics.length === 0 || reviewActionsDisabled) return;
+    setError('');
+    downloadBlob(
+      new Blob([serializeConsoleEvidence(session)], {
+        type: 'application/json;charset=utf-8',
+      }),
+      `${exportBase}-console.json`,
+    );
+    setNotice(`Downloaded ${exportBase}-console.json with locally filtered console evidence`);
+  }
+
+  function downloadNetworkEvidence() {
+    if (!session || session.network.length === 0 || reviewActionsDisabled) return;
+    setError('');
+    downloadBlob(
+      new Blob([serializeNetworkEvidenceAsHar(session)], {
+        type: 'application/har+json;charset=utf-8',
+      }),
+      `${exportBase}-network.har`,
+    );
+    setNotice(`Downloaded ${exportBase}-network.har with locally filtered network evidence`);
+  }
+
   function syncVideoState(video: HTMLVideoElement) {
     const recordedDuration = (session?.page?.recording?.durationMs ?? 0) / 1_000;
     const previewDuration =
@@ -926,6 +959,7 @@ export function ReviewApp() {
 
   async function emailReport() {
     await withPreparedExport(async (saved) => {
+      setEmailing(true);
       try {
         const visuals = await readExportVisuals(saved, recordingUrl, screenshotUrl);
         await sendReportEmail({
@@ -942,6 +976,8 @@ export function ReviewApp() {
         );
       } catch (reason) {
         setError(reason instanceof Error ? reason.message : 'The report email could not be sent.');
+      } finally {
+        setEmailing(false);
       }
     });
   }
@@ -1026,10 +1062,12 @@ export function ReviewApp() {
             Copy Markdown
           </button>
           <button
-            className="button quiet"
+            className="button quiet email-action"
             type="button"
             onClick={() => void emailReport()}
             disabled={reviewActionsDisabled || emailed || !emailConfigured}
+            aria-busy={emailing}
+            aria-label={emailing ? 'Sending report by email' : undefined}
             aria-describedby={!exportReady ? 'report-check-heading' : undefined}
             title={
               emailConfigured
@@ -1037,7 +1075,14 @@ export function ReviewApp() {
                 : 'Set VITE_BUGRECEIPT_REPORT_ENDPOINT when building the extension.'
             }
           >
-            {emailed ? 'Report emailed' : emailConfigured ? 'Share by email' : 'Email unavailable'}
+            {emailing ? <ActivityIndicator /> : null}
+            {emailing
+              ? 'Sending…'
+              : emailed
+                ? 'Report emailed'
+                : emailConfigured
+                  ? 'Share by email'
+                  : 'Email unavailable'}
           </button>
           <div className="review-download-control" ref={downloadMenuRef}>
             <button
@@ -1153,6 +1198,36 @@ export function ReviewApp() {
             ) : null}
           </div>
           <div className="behavior-grid">
+            <div className="review-field">
+              <label htmlFor="issue-description">Description (optional)</label>
+              <textarea
+                id="issue-description"
+                value={session.description ?? ''}
+                aria-invalid={Boolean(descriptionModeration.error)}
+                aria-busy={descriptionModeration.checking}
+                aria-describedby={
+                  descriptionModeration.error ? 'issue-description-moderation-error' : undefined
+                }
+                maxLength={4_000}
+                rows={4}
+                placeholder="Describe the problem and add any useful context."
+                onChange={(event) =>
+                  updateSession((current) => ({
+                    ...current,
+                    description: event.target.value,
+                  }))
+                }
+              />
+              {descriptionModeration.error ? (
+                <p
+                  className="field-validation-error"
+                  id="issue-description-moderation-error"
+                  role="status"
+                >
+                  {descriptionModeration.error}
+                </p>
+              ) : null}
+            </div>
             <div className="review-field">
               <label htmlFor="expected-behavior">Expected behavior (optional)</label>
               <textarea
@@ -1705,6 +1780,15 @@ export function ReviewApp() {
                   {session.filtering.redactionCount} sensitive value
                   {session.filtering.redactionCount === 1 ? '' : 's'} redacted locally
                 </p>
+                <button
+                  className="button quiet diagnostics-download-action"
+                  type="button"
+                  onClick={downloadConsoleEvidence}
+                  disabled={session.diagnostics.length === 0 || reviewActionsDisabled}
+                >
+                  <EvidenceDownloadIcon />
+                  Download console
+                </button>
                 {!annotatingEvidence && (
                   <button
                     className="button quiet annotate-diagnostics-action"
@@ -1767,6 +1851,15 @@ export function ReviewApp() {
                   {session.filtering.redactionCount} sensitive value
                   {session.filtering.redactionCount === 1 ? '' : 's'} redacted locally
                 </p>
+                <button
+                  className="button quiet diagnostics-download-action"
+                  type="button"
+                  onClick={downloadNetworkEvidence}
+                  disabled={session.network.length === 0 || reviewActionsDisabled}
+                >
+                  <EvidenceDownloadIcon />
+                  Download network
+                </button>
                 {!annotatingEvidence && (
                   <button
                     className="button quiet annotate-diagnostics-action"
@@ -2115,6 +2208,14 @@ function downloadBlobFromUrl(url: string, filename: string) {
   link.href = url;
   link.download = filename;
   link.click();
+}
+
+function EvidenceDownloadIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M10 3v9m0 0 3.5-3.5M10 12 6.5 8.5M4 16h12" />
+    </svg>
+  );
 }
 
 async function readExportVisuals(

@@ -23,15 +23,21 @@ const session: CaptureSession = {
   environment: {
     userAgent,
     platform: 'Win32',
-    reproKitVersion: '0.1.4',
+    reproKitVersion: '0.1.5',
   },
   filtering: { redactionCount: 0, droppedEventCount: 0 },
 };
 
 describe('GitHub issue renderer', () => {
   it('renders a deterministic report', () => {
-    const markdown = renderGitHubIssue(session);
+    const markdown = renderGitHubIssue({
+      ...session,
+      description: 'Payment fails after the final confirmation step.',
+    });
     expect(markdown).toContain('# Checkout fails');
+    expect(markdown).toContain(
+      '## Description\n\nPayment fails after the final confirmation step.',
+    );
     expect(markdown).toContain('1. Pay');
     expect(markdown).toContain('Captured locally with BugReceipt');
   });
@@ -44,7 +50,7 @@ describe('GitHub issue renderer', () => {
     expect(markdown).toContain('- Browser: Chrome 140.0.0.0');
     expect(markdown).toContain('- Platform: Win32');
     expect(markdown).toContain(`- User agent: ${userAgent}`);
-    expect(markdown).toContain('- BugReceipt: 0.1.4');
+    expect(markdown).toContain('- BugReceipt: 0.1.5');
   });
 
   it('reports the fields that make an export incomplete', () => {
@@ -53,12 +59,12 @@ describe('GitHub issue renderer', () => {
     ]);
   });
 
-  it('allows steps and behavior descriptions to be omitted', () => {
+  it('allows the description, steps, and behavior fields to be omitted', () => {
     expect(getIssueValidationErrors({ ...session, steps: [] })).toEqual([]);
     expect(renderGitHubIssue({ ...session, steps: [] })).toContain(
       '_No reproduction steps provided._',
     );
-    expect(renderGitHubIssue({ ...session, steps: [] })).toContain('_Not provided._');
+    expect(renderGitHubIssue({ ...session, steps: [] }).match(/_Not provided\._/g)).toHaveLength(3);
   });
 
   it('rejects a blank step that is still present in the draft', () => {

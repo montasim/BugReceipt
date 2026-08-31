@@ -71,15 +71,11 @@ export default defineBackground(() => {
   );
   chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     const task = requestQueue.then(async () => {
-      const outcome = await restoreCaptureAfterNavigation(tabId, changeInfo, tab, {
+      await restoreCaptureAfterNavigation(tabId, changeInfo, tab, {
         loadSession,
         inject: injectCapture,
         interrupt: (reason) => finishInterruptedCapture(reason),
       });
-      if (outcome === 'interrupted') {
-        await chrome.action.setBadgeBackgroundColor({ color: '#1f9fae' });
-        await chrome.action.setBadgeText({ text: '!', tabId });
-      }
     });
     requestQueue = task.then(
       () => undefined,
@@ -156,6 +152,7 @@ async function handleRequest(
         ok: true,
         session: await updateReview({
           summary: request.summary,
+          description: request.description,
           expectedBehavior: request.expectedBehavior,
           actualBehavior: request.actualBehavior,
           steps: request.steps,

@@ -105,6 +105,10 @@ export function renderGitHubIssue(
 
   return `# ${session.summary || 'Bug report'}
 
+## Description
+
+${session.description || '_Not provided._'}
+
 ## Steps to reproduce
 
 ${steps}

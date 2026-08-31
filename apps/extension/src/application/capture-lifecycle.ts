@@ -1,7 +1,7 @@
 import type { CaptureSession } from '@bugreceipt/capture-model';
 
-type InterruptionReason = 'origin-changed' | 'tab-closed';
-type NavigationOutcome = 'ignored' | 'restored' | 'interrupted';
+type InterruptionReason = 'tab-closed';
+type NavigationOutcome = 'ignored' | 'restored' | 'continued';
 
 type NavigationDependencies = {
   loadSession: () => Promise<CaptureSession | null>;
@@ -19,21 +19,17 @@ export async function restoreCaptureAfterNavigation(
   if (!navigationUrl) return 'ignored';
   const session = await dependencies.loadSession();
   if (!session || session.status !== 'recording' || session.tabId !== tabId) return 'ignored';
-
-  let origin: string;
-  try {
-    origin = new URL(navigationUrl).origin;
-  } catch {
-    return 'ignored';
-  }
-  if (origin !== session.origin) {
-    await dependencies.interrupt('origin-changed');
-    return 'interrupted';
-  }
   if (changeInfo.status !== 'complete') return 'ignored';
 
-  await dependencies.inject(tabId, session.id);
-  return 'restored';
+  try {
+    await dependencies.inject(tabId, session.id);
+    return 'restored';
+  } catch {
+    // Navigation may revoke activeTab access when the selected tab changes origin.
+    // The user-approved video stream remains valid, so keep the recording alive
+    // even when console and network instrumentation cannot be reinstalled.
+    return 'continued';
+  }
 }
 
 export async function interruptCaptureAfterTabClosed(

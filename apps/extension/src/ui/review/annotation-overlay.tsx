@@ -255,6 +255,7 @@ function AnnotationShape({
           fill="none"
           stroke={annotation.color}
           strokeWidth={annotation.strokeWidth}
+          vectorEffect="non-scaling-stroke"
           strokeLinecap="round"
           strokeLinejoin="round"
           opacity="0.82"
@@ -277,6 +278,7 @@ function AnnotationShape({
           fill="none"
           stroke={annotation.color}
           strokeWidth={annotation.strokeWidth}
+          vectorEffect="non-scaling-stroke"
         />
       )}
       {selected ? (

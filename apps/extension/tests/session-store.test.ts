@@ -18,7 +18,7 @@ beforeEach(() => {
   values.clear();
   vi.stubGlobal('chrome', {
     runtime: {
-      getManifest: () => ({ version: '0.1.4' }),
+      getManifest: () => ({ version: '0.1.5' }),
     },
     storage: {
       session: {
@@ -84,6 +84,7 @@ describe('capture session store', () => {
 
     const updated = await updateReview({
       summary: 'Payment fails for fixture@example.com',
+      description: 'Customer fixture@example.com cannot finish checkout.',
       expectedBehavior: 'The order should complete.',
       actualBehavior: 'Authorization: Bearer secret-token is shown.',
       steps: [
@@ -96,6 +97,7 @@ describe('capture session store', () => {
     });
 
     expect(updated.summary).toBe('Payment fails for [REDACTED]');
+    expect(updated.description).toBe('Customer [REDACTED] cannot finish checkout.');
     expect(updated.actualBehavior).not.toContain('secret-token');
     expect(updated.steps).toEqual([
       {
