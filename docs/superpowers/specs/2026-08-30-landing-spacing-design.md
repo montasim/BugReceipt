@@ -13,11 +13,11 @@ Consistent vertical rhythm following UI/UX best practice, per the approved "Gene
 
 ## Rhythm Tiers
 
-| Tier | Desktop | Mobile (≤620px) | Usage |
-|---|---|---|---|
-| Primary chapter | `py-[clamp(6rem,9vw,8rem)]` (96→128px) | `py-16` | Ledger, Install |
-| Supporting chapter | `py-[clamp(5rem,7vw,6rem)]` (80→96px) | `py-16` | Questions, Closing |
-| Interiors | 24–32px rows, unchanged range but one step up where dense | — | Evidence rows, FAQ rows, privacy principles |
+| Tier               | Desktop                                                   | Mobile (≤620px) | Usage                                       |
+| ------------------ | --------------------------------------------------------- | --------------- | ------------------------------------------- |
+| Primary chapter    | `py-[clamp(6rem,9vw,8rem)]` (96→128px)                    | `py-16`         | Ledger, Install                             |
+| Supporting chapter | `py-[clamp(5rem,7vw,6rem)]` (80→96px)                     | `py-16`         | Questions, Closing                          |
+| Interiors          | 24–32px rows, unchanged range but one step up where dense | —               | Evidence rows, FAQ rows, privacy principles |
 
 ## Changes
 

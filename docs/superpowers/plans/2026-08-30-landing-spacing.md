@@ -22,10 +22,12 @@
 ### Task 1: Hero and trace section spacing
 
 **Files:**
+
 - Modify: `apps/web/src/routes/index.tsx` (hero section ~line 117-126, trace section ~line 156-157)
 - Test: `apps/web/tests/landing-page.test.tsx` ("keeps the hero, timeline, and evidence trace visually separated" test ~line 69)
 
 **Interfaces:**
+
 - Consumes: existing `shell`, `cn` helpers.
 - Produces: hero classes `pt-12 pb-[clamp(5rem,8vw,7rem)]`, trace section `scroll-mt-[76px] pt-2` — Task 3's test update depends on these exact strings.
 
@@ -34,15 +36,15 @@
 In `apps/web/tests/landing-page.test.tsx`, replace in the "keeps the hero, timeline, and evidence trace visually separated" test:
 
 ```ts
-    expect(source).toContain('pt-8');
-    expect(source).toContain('scroll-mt-[76px] pt-5');
+expect(source).toContain('pt-8');
+expect(source).toContain('scroll-mt-[76px] pt-5');
 ```
 
 with:
 
 ```ts
-    expect(source).toContain('pt-12');
-    expect(source).toContain('scroll-mt-[76px] pt-2');
+expect(source).toContain('pt-12');
+expect(source).toContain('scroll-mt-[76px] pt-2');
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -88,9 +90,11 @@ cd /home/montasim/Work/Personal/BugReceipt && git add apps/web/src/routes/index.
 ### Task 2: Privacy strip spacing
 
 **Files:**
+
 - Modify: `apps/web/src/routes/index.tsx` (privacy section ~line 240-271)
 
 **Interfaces:**
+
 - Consumes: nothing from other tasks.
 - Produces: privacy section `mt-[clamp(7rem,10vw,12rem)]` — Task 4's spacing test pins this string.
 
@@ -116,10 +120,12 @@ cd /home/montasim/Work/Personal/BugReceipt && git add apps/web/src/routes/index.
 ### Task 3: Chapter tiers, interior rows, test updates
 
 **Files:**
+
 - Modify: `apps/web/src/routes/index.tsx` (ledger ~line 274-312, install ~line 314-357, questions ~line 359-396, closing ~line 398-424)
 - Test: `apps/web/tests/landing-page.test.tsx` ("uses normalized responsive Tailwind spacing" test ~line 57-64)
 
 **Interfaces:**
+
 - Consumes: privacy `mt-[clamp(7rem,10vw,12rem)]` from Task 2.
 - Produces: final rhythm; page complete.
 
@@ -128,15 +134,15 @@ cd /home/montasim/Work/Personal/BugReceipt && git add apps/web/src/routes/index.
 In the "uses normalized responsive Tailwind spacing without oversized mobile sections" test, replace:
 
 ```ts
-    expect(source).toContain('py-[clamp(4.5rem,7vw,6rem)]');
-    expect(source).toContain('py-[clamp(4rem,6vw,5rem)]');
+expect(source).toContain('py-[clamp(4.5rem,7vw,6rem)]');
+expect(source).toContain('py-[clamp(4rem,6vw,5rem)]');
 ```
 
 with:
 
 ```ts
-    expect(source).toContain('py-[clamp(6rem,9vw,8rem)]');
-    expect(source).toContain('py-[clamp(5rem,7vw,6rem)]');
+expect(source).toContain('py-[clamp(6rem,9vw,8rem)]');
+expect(source).toContain('py-[clamp(5rem,7vw,6rem)]');
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -182,9 +188,11 @@ cd /home/montasim/Work/Personal/BugReceipt && git add apps/web/src/routes/index.
 ### Task 4: Visual verification
 
 **Files:**
+
 - Verify: rendered page, desktop + mobile.
 
 **Interfaces:**
+
 - Consumes: final page from Task 3.
 
 - [ ] **Step 1: Screenshot desktop and mobile**
