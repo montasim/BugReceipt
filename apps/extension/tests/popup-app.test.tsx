@@ -48,6 +48,7 @@ const chooseDesktopMedia = vi
   });
 
 beforeEach(() => {
+  startRecording.mockResolvedValue(undefined);
   send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> => {
     if (request.type === 'session:get') return Promise.resolve({ ok: true, session });
     return Promise.resolve({ ok: true });
@@ -62,7 +63,7 @@ beforeEach(() => {
     action: { setBadgeText },
     runtime: {
       getURL: (path: string) => `chrome-extension://bugreceipt${path}`,
-      getManifest: () => ({ version: '0.1.4' }),
+      getManifest: () => ({ version: '0.1.5' }),
     },
     sidePanel: { close: closeSidePanel },
     windows: { update: updateWindow },
@@ -94,8 +95,8 @@ describe('capture popup', () => {
     const support = await screen.findByRole('link', { name: 'Support BugReceipt on SupportKori' });
     expect(support.getAttribute('href')).toBe('https://www.supportkori.com/montasim');
     expect(support.getAttribute('target')).toBe('_blank');
-    expect(screen.getByLabelText('BugReceipt version 0.1.4')).toBeDefined();
-    expect(screen.getByText('v0.1.4')).toBeDefined();
+    expect(screen.getByLabelText('BugReceipt version 0.1.5')).toBeDefined();
+    expect(screen.getByText('v0.1.5')).toBeDefined();
   });
 
   it('accepts a multiline manual step in a textarea', async () => {
@@ -219,6 +220,33 @@ describe('capture popup', () => {
     expect(chooseDesktopMedia).toHaveBeenCalledWith(['tab'], expect.any(Function));
     expect(containsPermission).toHaveBeenCalledWith({ origins: ['https://example.com/*'] });
     expect(requestPermission).not.toHaveBeenCalled();
+  });
+
+  it('keeps the capture action visible with progress feedback while starting', async () => {
+    let finishStarting: (() => void) | undefined;
+    startRecording.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishStarting = resolve;
+        }),
+    );
+    send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> => {
+      if (request.type === 'session:get') return Promise.resolve({ ok: true, session: null });
+      return Promise.resolve({ ok: true, session });
+    });
+    render(<PopupApp />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Choose tab & start' }));
+
+    const starting = await screen.findByRole<HTMLButtonElement>('button', {
+      name: 'Starting capture',
+    });
+    expect(starting.disabled).toBe(true);
+    expect(starting.getAttribute('aria-busy')).toBe('true');
+    expect(screen.queryByText('Reading capture state…')).toBeNull();
+
+    act(() => finishStarting?.());
+    await waitFor(() => expect(getSentStartRequest()).toBeDefined());
   });
 
   it('grants site access before offering a fresh recording gesture', async () => {

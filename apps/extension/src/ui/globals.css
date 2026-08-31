@@ -27,6 +27,10 @@
   --space-9: 64px;
   --review-width: 1600px;
   --review-gutter: var(--space-6);
+  --motion-fast: 120ms;
+  --motion-ui: 180ms;
+  --motion-panel: 260ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * {
@@ -106,15 +110,24 @@ button:disabled {
   font-weight: 700;
   text-decoration: none;
   transition:
-    color 150ms ease,
-    background-color 150ms ease,
-    border-color 150ms ease;
+    color var(--motion-ui) ease,
+    background-color var(--motion-ui) ease,
+    border-color var(--motion-ui) ease,
+    transform var(--motion-fast) ease,
+    box-shadow var(--motion-ui) ease;
 }
 .support-link:hover,
 .report-issue-trigger:hover {
   border-color: var(--trace);
   color: #116571;
   background: #eef8f8;
+  box-shadow: 0 5px 14px rgb(31 159 174 / 12%);
+  transform: translateY(-1px);
+}
+.support-link:active,
+.report-issue-trigger:active {
+  box-shadow: none;
+  transform: translateY(0) scale(0.985);
 }
 .support-link svg,
 .report-issue-trigger svg {
@@ -154,14 +167,30 @@ button:disabled {
   display: block;
   height: 4px;
   background: var(--ink);
+  transform-origin: left center;
+  animation: brand-register 360ms var(--ease-out) both;
 }
 .brand-mark i:nth-child(2) {
   width: 76%;
   background: var(--signal);
+  animation-delay: 45ms;
 }
 .brand-mark i:nth-child(3) {
   width: 48%;
   background: var(--trace);
+  animation-delay: 90ms;
+}
+@keyframes brand-register {
+  from {
+    opacity: 0.4;
+    filter: blur(1px);
+    transform: scaleX(0.55);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: scaleX(1);
+  }
 }
 .eyebrow {
   margin: 0;
@@ -224,11 +253,18 @@ h1 em {
   padding: var(--space-3) var(--space-4);
   font-weight: 700;
   transition:
-    transform 150ms ease,
-    box-shadow 150ms ease;
+    color var(--motion-ui) ease,
+    background-color var(--motion-ui) ease,
+    border-color var(--motion-ui) ease,
+    transform var(--motion-fast) ease,
+    box-shadow var(--motion-ui) ease;
 }
 .button:hover:not(:disabled) {
   transform: translateY(-1px);
+}
+.button:active:not(:disabled) {
+  box-shadow: none;
+  transform: translateY(0) scale(0.985);
 }
 .button.primary {
   background: var(--ink);
@@ -237,19 +273,79 @@ h1 em {
     0 2px 0 color-mix(in srgb, var(--signal) 78%, transparent),
     0 8px 18px rgb(255 92 58 / 16%);
 }
+.button.primary:hover:not(:disabled) {
+  background: #1a3444;
+  box-shadow:
+    0 2px 0 color-mix(in srgb, var(--signal) 88%, transparent),
+    0 11px 24px rgb(255 92 58 / 22%);
+}
 .button.quiet {
   background: transparent;
   color: var(--ink);
   border: 1px solid var(--line);
+}
+.button.quiet:hover:not(:disabled) {
+  border-color: #8fc7cd;
+  background: #eef8f8;
+  color: #116571;
 }
 .button.danger {
   background: transparent;
   color: #a73520;
   border: 1px solid #e1a99c;
 }
+.button.danger:hover:not(:disabled) {
+  border-color: var(--signal);
+  background: #fff0ec;
+}
 .button.full {
   width: 100%;
   padding-block: var(--space-3);
+}
+.email-action,
+.button-with-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.button-activity-indicator {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: button-activity-spin 700ms linear infinite;
+}
+@keyframes button-activity-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.panel-state {
+  animation: evidence-sheet-register var(--motion-panel) var(--ease-out) both;
+}
+.panel-loading-state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+}
+.panel-loading-state .button-activity-indicator {
+  color: var(--trace);
+}
+@keyframes evidence-sheet-register {
+  from {
+    opacity: 0.72;
+    filter: blur(1px);
+    clip-path: inset(0 0 10px 0);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    clip-path: inset(0);
+  }
 }
 .privacy-note {
   margin: var(--space-4) 0 0;
@@ -358,10 +454,24 @@ h1 em {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   counter-increment: steps;
-  transition: background-color 140ms ease;
+  animation: evidence-row-register var(--motion-panel) var(--ease-out) both;
+  transition:
+    background-color var(--motion-ui) ease,
+    box-shadow var(--motion-ui) ease;
 }
 .step-list li:hover {
   background: color-mix(in srgb, var(--trace) 4%, white);
+  box-shadow: inset 3px 0 var(--trace);
+}
+@keyframes evidence-row-register {
+  from {
+    opacity: 0.6;
+    background: var(--trace-soft);
+  }
+  to {
+    opacity: 1;
+    background: transparent;
+  }
 }
 .step-list li::before {
   content: counter(steps, decimal-leading-zero);
@@ -447,6 +557,7 @@ h1 em {
   font-size: 11px;
   font-weight: 650;
   line-height: 1.4;
+  animation: status-register var(--motion-ui) var(--ease-out) both;
 }
 .add-step-button {
   min-width: 92px;
@@ -524,6 +635,17 @@ h1 em {
   border: 1px solid #e1a99c;
   color: #812b19;
   font-size: 12px;
+  animation: status-register var(--motion-ui) var(--ease-out) both;
+}
+@keyframes status-register {
+  from {
+    opacity: 0.55;
+    clip-path: inset(0 10px 0 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0);
+  }
 }
 
 .review-body {
@@ -1421,6 +1543,12 @@ h1 em {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+  .brand-mark i,
+  .button-activity-indicator,
+  .panel-state,
+  .recording-dot {
+    animation: none !important;
+  }
 }
 
 /* Review workspace: Evidence Console */
@@ -1494,6 +1622,7 @@ h1 em {
   place-items: center;
   overflow: auto;
   background: rgb(16 35 50 / 52%);
+  animation: report-backdrop-enter var(--motion-ui) ease-out both;
 }
 .report-issue-dialog {
   width: min(540px, 100%);
@@ -1502,6 +1631,26 @@ h1 em {
   border: 1px solid var(--ink);
   background: var(--paper);
   box-shadow: 12px 18px 42px rgb(16 35 50 / 24%);
+  animation: report-sheet-enter var(--motion-panel) var(--ease-out) both;
+}
+@keyframes report-backdrop-enter {
+  from {
+    background: rgb(16 35 50 / 0%);
+  }
+}
+@keyframes report-sheet-enter {
+  from {
+    opacity: 0.78;
+    filter: blur(1px);
+    clip-path: inset(0 0 18px 0);
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    clip-path: inset(0);
+    transform: translateY(0);
+  }
 }
 .report-issue-dialog-heading {
   padding: var(--space-5);
@@ -1608,9 +1757,15 @@ h1 em {
   gap: var(--space-3);
   background: #eef8f8;
   cursor: pointer;
+  transition:
+    background-color var(--motion-ui) ease,
+    border-color var(--motion-ui) ease,
+    box-shadow var(--motion-ui) ease;
 }
 .diagnosis-consent:hover {
   border-color: var(--trace);
+  background: #e4f5f6;
+  box-shadow: inset 3px 0 var(--trace);
 }
 .diagnosis-consent input {
   width: 17px;
@@ -1736,6 +1891,18 @@ h1 em {
   border: 1px solid var(--line);
   background: #fff;
   box-shadow: 0 12px 28px rgb(16 35 50 / 16%);
+  transform-origin: top right;
+  animation: review-menu-enter var(--motion-ui) var(--ease-out) both;
+}
+@keyframes review-menu-enter {
+  from {
+    opacity: 0.7;
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0);
+  }
 }
 .review-download-menu button {
   width: 100%;
@@ -1749,6 +1916,10 @@ h1 em {
   align-items: center;
   gap: 12px;
   text-align: left;
+  transition:
+    color var(--motion-ui) ease,
+    background-color var(--motion-ui) ease,
+    box-shadow var(--motion-ui) ease;
 }
 .review-download-menu button + button {
   border-top: 1px solid #dce5e8;
@@ -1756,6 +1927,7 @@ h1 em {
 .review-download-menu button:hover,
 .review-download-menu button:focus-visible {
   background: #eef6f7;
+  box-shadow: inset 3px 0 var(--trace);
 }
 .review-download-menu button > svg {
   width: 22px;
@@ -1786,6 +1958,9 @@ h1 em {
   padding: 0 var(--review-gutter);
   display: grid;
   gap: var(--space-2);
+}
+.review-alerts > * {
+  animation: status-register var(--motion-ui) var(--ease-out) both;
 }
 .review-alerts .interruption-panel,
 .review-alerts .validation-panel {
@@ -1839,6 +2014,7 @@ h1 em {
 }
 .evidence-tab-panel {
   grid-area: panel;
+  animation: evidence-sheet-register var(--motion-panel) var(--ease-out) both;
 }
 .visual-studio,
 .diagnostics-panel {
@@ -2007,6 +2183,10 @@ h1 em {
   border: 0;
   background: transparent;
   color: var(--ink);
+  transition:
+    color var(--motion-ui) ease,
+    background-color var(--motion-ui) ease,
+    transform var(--motion-fast) ease;
 }
 .selected-frame-navigation-button:first-child {
   border-inline-end: 1px solid #d4e6e8;
@@ -2017,6 +2197,13 @@ h1 em {
 .selected-frame-navigation-button:hover:not(:disabled) {
   background: var(--trace-soft);
   color: #116571;
+  transform: translateX(-1px);
+}
+.selected-frame-navigation-button:last-child:hover:not(:disabled) {
+  transform: translateX(1px);
+}
+.selected-frame-navigation-button:active:not(:disabled) {
+  transform: translateX(0) scale(0.94);
 }
 .selected-frame-navigation-button:disabled {
   color: #9aafb5;
@@ -2095,9 +2282,11 @@ h1 em {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: var(--space-3);
 }
-.annotate-diagnostics-action {
+.annotate-diagnostics-action,
+.diagnostics-download-action {
   min-height: 38px;
   flex: none;
   display: inline-flex;
@@ -2105,10 +2294,18 @@ h1 em {
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
 }
-.annotate-diagnostics-action svg {
+.annotate-diagnostics-action svg,
+.diagnostics-download-action svg {
   width: 17px;
   height: 17px;
   flex: none;
+}
+.diagnostics-download-action svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  stroke-width: 1.7;
 }
 .annotatable-evidence-text {
   user-select: text;
@@ -2153,6 +2350,11 @@ h1 em {
   font-size: 12px;
   font-weight: 720;
   white-space: nowrap;
+  transition:
+    color var(--motion-ui) ease,
+    background-color var(--motion-ui) ease,
+    border-color var(--motion-ui) ease,
+    box-shadow var(--motion-ui) ease;
 }
 .evidence-tabs button:hover {
   color: var(--ink);
@@ -2162,6 +2364,7 @@ h1 em {
   border-bottom-color: var(--signal);
   color: #fff;
   background: #0f202b;
+  box-shadow: inset 0 -1px var(--signal);
 }
 .evidence-tabs button:disabled {
   cursor: not-allowed;
@@ -2370,6 +2573,10 @@ h1 em {
     width: 100%;
     justify-content: space-between;
     flex-wrap: wrap;
+  }
+  .diagnostics-heading-actions .button {
+    min-height: 44px;
+    flex: 1 1 auto;
   }
   .studio-heading {
     align-items: flex-start;

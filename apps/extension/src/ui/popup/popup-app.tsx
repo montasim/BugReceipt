@@ -5,9 +5,21 @@ import {
   abortDesktopRecording,
   startDesktopRecording,
 } from '../../infrastructure/desktop-recorder';
+import { ActivityIndicator } from '../activity-indicator';
 import { Brand } from '../brand';
 import { SupportLink } from '../support-link';
 import { useOffensiveLanguageValidation } from '../use-offensive-language-validation';
+
+type PendingAction =
+  | 'loading'
+  | 'granting-access'
+  | 'starting'
+  | 'adding-step'
+  | 'stopping'
+  | 'discarding'
+  | 'returning'
+  | 'opening-review'
+  | null;
 
 export function PopupApp() {
   const [session, setSession] = useState<CaptureSession | null>(null);
@@ -17,9 +29,10 @@ export function PopupApp() {
   const [hasSiteAccess, setHasSiteAccess] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(true);
+  const [pendingAction, setPendingAction] = useState<PendingAction>('loading');
   const [clockNow, setClockNow] = useState(() => Date.now());
   const stepModeration = useOffensiveLanguageValidation(step);
+  const busy = pendingAction !== null;
 
   useEffect(() => {
     const readActiveTab = async () => {
@@ -43,7 +56,7 @@ export function PopupApp() {
       .catch(() =>
         setError('BugReceipt could not read the active tab. Reopen the side panel and retry.'),
       )
-      .finally(() => setBusy(false));
+      .finally(() => setPendingAction(null));
     return () => chrome.tabs.onActivated.removeListener(handleTabActivated);
   }, []);
 
@@ -72,31 +85,31 @@ export function PopupApp() {
     setError('');
     setNotice('');
     if (!hasSiteAccess) {
-      setBusy(true);
+      setPendingAction('granting-access');
       let allowed: boolean;
       try {
         allowed = await chrome.permissions.request({ origins: [originPattern] });
       } catch {
         setError('Chrome could not request access to this site.');
-        setBusy(false);
+        setPendingAction(null);
         return;
       }
       if (!allowed) {
         setError('Site access is required to capture this tab.');
-        setBusy(false);
+        setPendingAction(null);
         return;
       }
       setHasSiteAccess(true);
       setNotice('Site access granted. Select Choose tab & start to begin.');
-      setBusy(false);
+      setPendingAction(null);
       return;
     }
 
-    setBusy(true);
+    setPendingAction('starting');
     const streamId = await chooseTabToRecord();
     if (!streamId) {
       setError('No tab was selected. Select a tab to start recording.');
-      setBusy(false);
+      setPendingAction(null);
       return;
     }
     const sessionId = crypto.randomUUID();
@@ -125,17 +138,17 @@ export function PopupApp() {
       await abortDesktopRecording(sessionId);
       setError('BugReceipt could not initialize this capture. Try again.');
     }
-    setBusy(false);
+    setPendingAction(null);
   }
 
   async function addStep(event: FormEvent) {
     event.preventDefault();
     if (!step.trim()) return;
-    setBusy(true);
+    setPendingAction('adding-step');
     const moderationError = await stepModeration.validateNow();
     if (moderationError) {
       document.getElementById('step')?.focus();
-      setBusy(false);
+      setPendingAction(null);
       return;
     }
     const response = await sendRuntimeMessage({ type: 'session:add-step', text: step });
@@ -144,11 +157,11 @@ export function PopupApp() {
       setStep('');
     }
     if (!response.ok) setError(response.message);
-    setBusy(false);
+    setPendingAction(null);
   }
 
   async function stop() {
-    setBusy(true);
+    setPendingAction('stopping');
     setError('');
     const response = await sendRuntimeMessage({ type: 'session:stop' });
     if (response.ok && 'session' in response && response.session) {
@@ -156,42 +169,42 @@ export function PopupApp() {
     } else if (!response.ok) {
       setError(response.message);
     }
-    setBusy(false);
+    setPendingAction(null);
   }
 
   async function discard() {
-    setBusy(true);
+    setPendingAction('discarding');
     const response = await sendRuntimeMessage({ type: 'session:discard' });
     if (response.ok) setSession(null);
     if (!response.ok) setError(response.message);
-    setBusy(false);
+    setPendingAction(null);
   }
 
   async function returnToRecordedTab() {
     if (!session) return;
-    setBusy(true);
+    setPendingAction('returning');
     setError('');
     try {
       await chrome.windows.update(session.windowId, { focused: true });
       await chrome.tabs.update(session.tabId, { active: true });
       setActiveTabId(session.tabId);
-      setBusy(false);
+      setPendingAction(null);
     } catch {
       setError('The recorded tab is no longer available. Discard this capture and start again.');
-      setBusy(false);
+      setPendingAction(null);
     }
   }
 
   async function openReview() {
     if (!session) return;
-    setBusy(true);
+    setPendingAction('opening-review');
     setError('');
     try {
       await showReview(session);
     } catch {
       setError('The review could not be opened. Try again.');
     }
-    setBusy(false);
+    setPendingAction(null);
   }
 
   async function showReview(reviewSession: CaptureSession) {
@@ -214,12 +227,13 @@ export function PopupApp() {
         <Brand />
         <SupportLink />
       </header>
-      {busy && !session ? (
-        <div className="empty-panel" aria-live="polite">
-          Reading capture state…
+      {pendingAction === 'loading' && !session ? (
+        <div className="empty-panel panel-state panel-loading-state" aria-live="polite">
+          <ActivityIndicator />
+          <span>Reading capture state…</span>
         </div>
       ) : session?.status === 'recording' ? (
-        <section className="capture-panel">
+        <section className="capture-panel panel-state">
           <div className="recording-line">
             <div className="recording-clock">
               <time
@@ -249,20 +263,26 @@ export function PopupApp() {
               <p>Return to the recorded tab before adding steps or finishing the report.</p>
               <div className="popup-actions stacked">
                 <button
-                  className="button primary"
+                  className="button primary button-with-status"
                   type="button"
                   onClick={() => void returnToRecordedTab()}
                   disabled={busy}
+                  aria-busy={pendingAction === 'returning'}
+                  aria-label={pendingAction === 'returning' ? 'Opening recorded tab' : undefined}
                 >
-                  Return to recorded tab
+                  {pendingAction === 'returning' ? <ActivityIndicator /> : null}
+                  {pendingAction === 'returning' ? 'Opening tab…' : 'Return to recorded tab'}
                 </button>
                 <button
-                  className="button quiet"
+                  className="button quiet button-with-status"
                   type="button"
                   onClick={() => void discard()}
                   disabled={busy}
+                  aria-busy={pendingAction === 'discarding'}
+                  aria-label={pendingAction === 'discarding' ? 'Discarding capture' : undefined}
                 >
-                  Discard capture
+                  {pendingAction === 'discarding' ? <ActivityIndicator /> : null}
+                  {pendingAction === 'discarding' ? 'Discarding…' : 'Discard capture'}
                 </button>
               </div>
             </div>
@@ -288,16 +308,20 @@ export function PopupApp() {
                 <div className="step-form-heading">
                   <label htmlFor="step">What did you do?</label>
                   <button
-                    className="add-step-button"
+                    className="add-step-button button-with-status"
                     type="submit"
                     disabled={busy || !step.trim() || Boolean(stepModeration.error)}
-                    aria-label="Add step"
+                    aria-busy={pendingAction === 'adding-step'}
+                    aria-label={pendingAction === 'adding-step' ? 'Adding step' : 'Add step'}
                     title="Add step (Ctrl or Command + Enter)"
                   >
-                    <span>Add step</span>
-                    <svg aria-hidden="true" viewBox="0 0 20 20">
-                      <path d="M10 4v12M4 10h12" />
-                    </svg>
+                    {pendingAction === 'adding-step' ? <ActivityIndicator /> : null}
+                    <span>{pendingAction === 'adding-step' ? 'Adding…' : 'Add step'}</span>
+                    {pendingAction !== 'adding-step' ? (
+                      <svg aria-hidden="true" viewBox="0 0 20 20">
+                        <path d="M10 4v12M4 10h12" />
+                      </svg>
+                    ) : null}
                   </button>
                 </div>
                 <div className="step-input-row">
@@ -334,20 +358,26 @@ export function PopupApp() {
 
               <div className="popup-actions capture-actions">
                 <button
-                  className="button primary"
+                  className="button primary button-with-status"
                   type="button"
                   onClick={() => void stop()}
                   disabled={busy}
+                  aria-busy={pendingAction === 'stopping'}
+                  aria-label={pendingAction === 'stopping' ? 'Preparing review' : undefined}
                 >
-                  Stop & review
+                  {pendingAction === 'stopping' ? <ActivityIndicator /> : null}
+                  {pendingAction === 'stopping' ? 'Preparing review…' : 'Stop & review'}
                 </button>
                 <button
-                  className="button quiet"
+                  className="button quiet button-with-status"
                   type="button"
                   onClick={() => void discard()}
                   disabled={busy}
+                  aria-busy={pendingAction === 'discarding'}
+                  aria-label={pendingAction === 'discarding' ? 'Discarding capture' : undefined}
                 >
-                  Discard
+                  {pendingAction === 'discarding' ? <ActivityIndicator /> : null}
+                  {pendingAction === 'discarding' ? 'Discarding…' : 'Discard'}
                 </button>
               </div>
               <p className="privacy-note">
@@ -357,26 +387,37 @@ export function PopupApp() {
           )}
         </section>
       ) : session?.status === 'ready-for-review' ? (
-        <section className="empty-panel">
+        <section className="empty-panel panel-state">
           <p className="eyebrow">{interruptionCopy ? 'Capture interrupted' : 'Capture ready'}</p>
           <h1>{interruptionCopy?.title ?? 'Your evidence is waiting.'}</h1>
           {interruptionCopy && <p>{interruptionCopy.detail}</p>}
           <div className="ready-actions">
             <button
-              className="button primary"
+              className="button primary button-with-status"
               type="button"
               onClick={() => void openReview()}
               disabled={busy}
+              aria-busy={pendingAction === 'opening-review'}
+              aria-label={pendingAction === 'opening-review' ? 'Opening review' : undefined}
             >
-              Open review
+              {pendingAction === 'opening-review' ? <ActivityIndicator /> : null}
+              {pendingAction === 'opening-review' ? 'Opening…' : 'Open review'}
             </button>
-            <button className="button quiet" type="button" onClick={() => void discard()}>
-              Discard
+            <button
+              className="button quiet button-with-status"
+              type="button"
+              onClick={() => void discard()}
+              disabled={busy}
+              aria-busy={pendingAction === 'discarding'}
+              aria-label={pendingAction === 'discarding' ? 'Discarding capture' : undefined}
+            >
+              {pendingAction === 'discarding' ? <ActivityIndicator /> : null}
+              {pendingAction === 'discarding' ? 'Discarding…' : 'Discard'}
             </button>
           </div>
         </section>
       ) : (
-        <section className="start-panel">
+        <section className="start-panel panel-state">
           <p className="eyebrow">A useful bug report in one pass</p>
           <h1>
             Record the failure.
@@ -394,12 +435,29 @@ export function PopupApp() {
             export.
           </p>
           <button
-            className="button primary full"
+            className="button primary full button-with-status"
             type="button"
             onClick={() => void start()}
             disabled={busy || activeTabId === null || !activeTabUrl}
+            aria-busy={pendingAction === 'granting-access' || pendingAction === 'starting'}
+            aria-label={
+              pendingAction === 'granting-access'
+                ? 'Requesting site access'
+                : pendingAction === 'starting'
+                  ? 'Starting capture'
+                  : undefined
+            }
           >
-            {hasSiteAccess ? 'Choose tab & start' : 'Allow site access'}
+            {pendingAction === 'granting-access' || pendingAction === 'starting' ? (
+              <ActivityIndicator />
+            ) : null}
+            {pendingAction === 'granting-access'
+              ? 'Requesting access…'
+              : pendingAction === 'starting'
+                ? 'Starting capture…'
+                : hasSiteAccess
+                  ? 'Choose tab & start'
+                  : 'Allow site access'}
           </button>
           {notice && (
             <p className="privacy-note" role="status">
