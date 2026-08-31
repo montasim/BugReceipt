@@ -11,7 +11,7 @@ BugReceipt is a local-first Chrome extension for people reporting web applicatio
 
 **[Open the landing page](https://bugreceipt.netlify.app) · [Download the latest release](https://github.com/montasim/BugReceipt/releases/latest) · [Try the deterministic fixture](#deterministic-test-fixture) · [Report a non-sensitive bug](https://github.com/montasim/BugReceipt/issues/new/choose)**
 
-**Release status:** the source tree is prepared for version `0.1.4`, targeting Chrome 120 and newer. GitHub Releases distributes BugReceipt as a checksummed, unpacked extension archive; it is not currently available through the Chrome Web Store.
+**Release status:** the source tree is prepared for version `0.1.5`, targeting Chrome 120 and newer. GitHub Releases distributes BugReceipt as a checksummed, unpacked extension archive; it is not currently available through the Chrome Web Store.
 
 [![Current BugReceipt review workbench](apps/web/public/brand/bugreceipt-review-latest.jpg)](https://bugreceipt.netlify.app)
 
@@ -147,15 +147,15 @@ Copy the safe template:
 cp .env.example .env
 ```
 
-| Variable                          | Purpose                                                     |
-| --------------------------------- | ----------------------------------------------------------- |
-| `RESEND_API_KEY`                  | Server-side Resend API key                                  |
-| `BUGRECEIPT_REPORT_FROM`          | Sender on a verified Resend domain                          |
-| `BUGRECEIPT_REPORT_TO`            | Fixed recipient or comma-separated recipients               |
-| `BUGRECEIPT_EXTENSION_ORIGIN`     | Installed production extension origin                       |
-| `VITE_BUGRECEIPT_REPORT_ENDPOINT` | Deployed `/api/reports` URL embedded in the extension build |
+| Variable                          | Purpose                                                       |
+| --------------------------------- | ------------------------------------------------------------- |
+| `RESEND_API_KEY`                  | Server-side Resend API key                                    |
+| `BUGRECEIPT_REPORT_FROM`          | Sender on a verified Resend domain                            |
+| `BUGRECEIPT_REPORT_TO`            | Fixed recipient or comma-separated recipients                 |
+| `BUGRECEIPT_EXTENSION_ORIGIN`     | `*` for unpacked distribution, or one pinned extension origin |
+| `VITE_BUGRECEIPT_REPORT_ENDPOINT` | Optional report API override embedded in the extension build  |
 
-For local development, the extension uses `http://localhost:3000/api/reports`. Production builds do not fall back to localhost. The endpoint accepts configured extension origins, limits each client to five requests per hour per running server instance, fixes recipients on the server, and derives the Resend idempotency key from the capture ID plus the complete email payload. Identical retries deduplicate, while edited reports or visual evidence can be sent as a new delivery.
+For local development, the extension uses `http://localhost:3000/api/reports`. Production builds default to `https://bugreceipt.netlify.app/api/reports` and replace a localhost override with that deployed endpoint. Set `BUGRECEIPT_EXTENSION_ORIGIN=*` for the distributed unpacked ZIP, because Chrome derives unpacked extension IDs from their install paths. Use one exact `chrome-extension://` origin only for a private or stable-ID build. The endpoint still validates the Chrome extension origin format, limits each client to five requests per hour per running server instance, fixes recipients on the server, and derives the Resend idempotency key from the capture ID plus the complete email payload. Identical retries deduplicate, while edited reports or visual evidence can be sent as a new delivery.
 
 Never commit a real `.env` file or put Resend credentials in client-side configuration.
 
@@ -233,7 +233,7 @@ Configure the server-side Resend variables only when report email delivery is en
 
 ## Release process
 
-The workspace packages, landing-page release copy, and extension manifest derive from version `0.1.4`. The release validator rejects a built manifest whose version differs from `apps/extension/package.json`.
+The workspace packages, landing-page release copy, and extension manifest derive from version `0.1.5`. The release validator rejects a built manifest whose version differs from `apps/extension/package.json`.
 
 Before tagging a release:
 
@@ -244,17 +244,17 @@ pnpm release:zip
 
 Inspect the generated Chrome ZIP and confirm `manifest.json` is at its root. Pushing a tag matching `v*` starts the [release workflow](.github/workflows/release.yml), which rebuilds the extension, renames the archive to `BugReceipt-<tag>-chrome-unpacked.zip`, verifies its layout, creates `SHA256SUMS.txt`, and publishes both files with [.github/RELEASE_NOTES.md](.github/RELEASE_NOTES.md).
 
-`v0.1.4` is prepared from the source changes after the published [v0.1.3 release](https://github.com/montasim/BugReceipt/releases/tag/v0.1.3). Historical tags and attached archives remain immutable.
+`v0.1.5` is prepared from the source changes after the published [v0.1.4 release](https://github.com/montasim/BugReceipt/releases/tag/v0.1.4). Historical tags and attached archives remain immutable.
 
 ## Troubleshooting
 
-| Problem                              | What to check                                                                                 |
-| ------------------------------------ | --------------------------------------------------------------------------------------------- |
-| Chrome rejects the extension folder  | Select the extracted directory that contains `manifest.json` directly                         |
-| The side panel cannot capture a page | Use a normal HTTP/HTTPS tab; restricted Chrome pages cannot grant site access                 |
-| **Download folder** fails            | Check Chrome download permissions and policy, then use **Download ZIP** for the same files    |
-| Email is unavailable                 | Build with `VITE_BUGRECEIPT_REPORT_ENDPOINT` and configure the matching server-side variables |
-| A recording cannot be previewed      | Preserve the fallback screenshot or retry capture on the affected tab                         |
+| Problem                              | What to check                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Chrome rejects the extension folder  | Select the extracted directory that contains `manifest.json` directly                      |
+| The side panel cannot capture a page | Use a normal HTTP/HTTPS tab; restricted Chrome pages cannot grant site access              |
+| **Download folder** fails            | Check Chrome download permissions and policy, then use **Download ZIP** for the same files |
+| Email delivery fails                 | Configure the server-side report variables and use `*` for unpacked extension distribution |
+| A recording cannot be previewed      | Preserve the fallback screenshot or retry capture on the affected tab                      |
 
 For ordinary installation and usage help, follow [SUPPORT.md](SUPPORT.md).
 

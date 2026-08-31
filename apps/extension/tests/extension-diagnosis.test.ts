@@ -54,7 +54,7 @@ describe('extension diagnosis report', () => {
         userAgent:
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36',
         platform: 'Win32',
-        reproKitVersion: '0.1.4',
+        reproKitVersion: '0.1.5',
       },
       filtering: { redactionCount: 2, droppedEventCount: 1 },
     };
@@ -62,7 +62,7 @@ describe('extension diagnosis report', () => {
     const report = renderExtensionDiagnosisReport(session);
 
     expect(report).toContain('# BugReceipt diagnosis report');
-    expect(report).toContain('BugReceipt version: 0.1.4');
+    expect(report).toContain('BugReceipt version: 0.1.5');
     expect(report).toContain('Browser: Chrome 140.0.0.0');
     expect(report).toContain('TypeError: Failed to fetch');
     expect(report).toContain('POST · https://example.com/api/checkout');

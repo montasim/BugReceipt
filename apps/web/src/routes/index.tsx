@@ -77,7 +77,7 @@ function Home() {
             <Mark />
             <span>BugReceipt</span>
             <small className="ml-1 font-mono text-[0.71875rem] font-[620] tracking-normal text-muted-text max-[620px]:hidden">
-              v0.1.4
+              v0.1.5
             </small>
           </a>
           <nav
@@ -338,7 +338,7 @@ function Home() {
               <ArrowIcon />
             </a>
             <code className="mt-4 block font-mono text-[0.6875rem] font-[560] text-muted-text">
-              BugReceipt-v0.1.4-chrome-unpacked.zip
+              BugReceipt-v0.1.5-chrome-unpacked.zip
             </code>
           </div>
           <ol className="m-0 list-none border-y border-ink p-0">
@@ -588,7 +588,7 @@ function ExtensionPanel() {
         <span className="inline-flex items-center gap-2.5 text-base font-[790] tracking-[-0.025em] text-ink">
           <Mark compact /> BugReceipt{' '}
           <small className="ml-1 font-mono text-[0.71875rem] font-[620] tracking-normal text-muted-text">
-            v0.1.4
+            v0.1.5
           </small>
         </span>
         <SupportButton compact />
