@@ -4,6 +4,7 @@ import { loadEnv } from 'vite';
 import { defineConfig, type WxtViteConfig } from 'wxt';
 
 const LOCAL_REPORT_ENDPOINT = 'http://localhost:3000/api/reports';
+const PRODUCTION_REPORT_ENDPOINT = 'https://bugreceipt.netlify.app/api/reports';
 const WORKSPACE_ROOT = resolve(process.cwd(), '../..');
 
 export function getConfiguredReportEndpoint(mode: string): string {
@@ -13,7 +14,8 @@ export function getConfiguredReportEndpoint(mode: string): string {
     workspaceEnvironment.VITE_BUGRECEIPT_REPORT_ENDPOINT ||
     ''
   ).trim();
-  if (mode !== 'development' && isLocalReportEndpoint(endpoint)) return '';
+  if (mode === 'development') return endpoint || LOCAL_REPORT_ENDPOINT;
+  if (!endpoint || isLocalReportEndpoint(endpoint)) return PRODUCTION_REPORT_ENDPOINT;
   return endpoint;
 }
 
@@ -29,13 +31,17 @@ function isLocalReportEndpoint(endpoint: string): boolean {
 export default defineConfig({
   outDirTemplate: '.',
   modules: ['@wxt-dev/module-react'],
-  vite: (): WxtViteConfig => ({
+  vite: ({ mode }): WxtViteConfig => ({
     envDir: WORKSPACE_ROOT,
+    define: {
+      'import.meta.env.VITE_BUGRECEIPT_REPORT_ENDPOINT': JSON.stringify(
+        getConfiguredReportEndpoint(mode),
+      ),
+    },
     plugins: tailwindcss() as NonNullable<WxtViteConfig['plugins']>,
   }),
   manifest: ({ mode }) => {
-    const reportEndpoint =
-      getConfiguredReportEndpoint(mode) || (mode === 'development' ? LOCAL_REPORT_ENDPOINT : '');
+    const reportEndpoint = getConfiguredReportEndpoint(mode);
     const reportOrigin = reportEndpoint ? `${new URL(reportEndpoint).origin}/*` : null;
 
     return {

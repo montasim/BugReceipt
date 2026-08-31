@@ -467,12 +467,13 @@ function corsHeaders(request: Request): Record<string, string> {
   };
 }
 
-function isAllowedOrigin(origin: string | null): boolean {
+export function isAllowedOrigin(origin: string | null, development = import.meta.env.DEV): boolean {
   if (!origin) return false;
   const extensionOriginPattern = /^chrome-extension:\/\/[a-p]{32}$/;
   const configured = (process.env.BUGRECEIPT_EXTENSION_ORIGIN || '').trim().replace(/\/+$/, '');
+  if (configured === '*') return extensionOriginPattern.test(origin);
   if (extensionOriginPattern.test(configured)) return origin === configured;
-  if (configured && !import.meta.env.DEV) return false;
+  if (configured && !development) return false;
   return extensionOriginPattern.test(origin);
 }
 

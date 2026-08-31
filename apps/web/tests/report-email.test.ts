@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { handleReportEmailRequest } from '../src/server/report-email';
+import { handleReportEmailRequest, isAllowedOrigin } from '../src/server/report-email';
 
 const originalEnvironment = {
   RESEND_API_KEY: process.env.RESEND_API_KEY,
@@ -74,6 +74,10 @@ describe('report email endpoint', () => {
       [
         '# Checkout fails',
         '',
+        '## Description',
+        '',
+        'Payment stops after the final confirmation step.',
+        '',
         '## Steps to reproduce',
         '',
         '1. Open https://example.com/checkout',
@@ -102,6 +106,8 @@ describe('report email endpoint', () => {
     expect(message.text).toContain('```text');
     expect(message.html).toContain('BugReceipt');
     expect(message.html).toContain('Evidence report');
+    expect(message.html).toContain('Description');
+    expect(message.html).toContain('Payment stops after the final confirmation step.');
     expect(message.html).toContain('Steps to reproduce');
     expect(message.html).toContain('selected-frame.png');
     expect(message.html).toContain('2 files attached');
@@ -156,6 +162,18 @@ describe('report email endpoint', () => {
     );
 
     expect(response.status).toBe(403);
+  });
+
+  it('allows distributed unpacked extension origins when the server opts into them', async () => {
+    process.env.BUGRECEIPT_EXTENSION_ORIGIN = '*';
+    const unpackedOrigin = 'chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const sendEmail = vi.fn().mockResolvedValue({ data: { id: 'email-1' }, error: null });
+
+    expect(isAllowedOrigin(unpackedOrigin, false)).toBe(true);
+    const response = await handleReportEmailRequest(reportRequest(unpackedOrigin), { sendEmail });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe(unpackedOrigin);
   });
 
   it('allows a valid unpacked extension origin when local config still has a placeholder', async () => {
