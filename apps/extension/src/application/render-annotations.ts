@@ -8,8 +8,8 @@ export function paintAnnotations(
     context.save();
     context.strokeStyle = annotation.color;
     context.fillStyle = annotation.color;
-    context.lineWidth = annotation.strokeWidth;
     if (annotation.kind === 'marker') {
+      context.lineWidth = annotation.strokeWidth;
       const firstPoint = annotation.points[0];
       if (firstPoint) {
         context.globalAlpha = 0.82;
@@ -23,7 +23,10 @@ export function paintAnnotations(
     } else if (annotation.kind === 'highlight') {
       context.globalAlpha = 0.28;
       context.fillRect(annotation.x, annotation.y, annotation.width, annotation.height);
+    } else if (annotation.kind === 'text') {
+      paintTextNote(context, annotation);
     } else {
+      context.lineWidth = annotation.strokeWidth;
       const inset = annotation.strokeWidth / 2;
       context.globalAlpha = 1;
       context.strokeRect(
@@ -35,6 +38,92 @@ export function paintAnnotations(
     }
     context.restore();
   }
+}
+
+function paintTextNote(
+  context: CanvasRenderingContext2D,
+  annotation: Extract<AnnotationDocument['items'][number], { kind: 'text' }>,
+): void {
+  const borderWidth = Math.max(2, annotation.fontSize * 0.07);
+  const accentHeight = Math.max(7, annotation.fontSize * 0.24);
+  const padding = annotation.fontSize * 0.58;
+  const lineHeight = annotation.fontSize * 1.34;
+  const text = annotation.text.trim();
+
+  context.globalAlpha = 0.96;
+  context.fillStyle = '#fffdf7';
+  context.fillRect(annotation.x, annotation.y, annotation.width, annotation.height);
+  context.globalAlpha = 1;
+  context.strokeStyle = annotation.color;
+  context.lineWidth = borderWidth;
+  context.strokeRect(
+    annotation.x + borderWidth / 2,
+    annotation.y + borderWidth / 2,
+    Math.max(0, annotation.width - borderWidth),
+    Math.max(0, annotation.height - borderWidth),
+  );
+  context.fillStyle = annotation.color;
+  context.fillRect(annotation.x, annotation.y, annotation.width, accentHeight);
+  if (!text) return;
+
+  context.fillStyle = '#102332';
+  context.font = `600 ${annotation.fontSize}px "Bricolage Grotesque", Arial, sans-serif`;
+  context.textBaseline = 'top';
+  const maxWidth = Math.max(0, annotation.width - padding * 2);
+  const maxLines = Math.max(
+    1,
+    Math.floor((annotation.height - accentHeight - padding * 1.5) / lineHeight),
+  );
+  const lines = wrapNoteText(context, text, maxWidth);
+  const visibleLines = lines.slice(0, maxLines);
+  if (lines.length > maxLines) {
+    visibleLines[maxLines - 1] = truncateNoteLine(
+      context,
+      `${visibleLines[maxLines - 1] ?? ''}…`,
+      maxWidth,
+    );
+  }
+  visibleLines.forEach((line, index) => {
+    context.fillText(
+      line,
+      annotation.x + padding,
+      annotation.y + accentHeight + padding + index * lineHeight,
+    );
+  });
+}
+
+function wrapNoteText(context: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const lines: string[] = [];
+  for (const paragraph of text.split(/\r?\n/)) {
+    if (!paragraph.trim()) {
+      lines.push('');
+      continue;
+    }
+    let line = '';
+    for (const word of paragraph.trim().split(/\s+/)) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (line && context.measureText(candidate).width > maxWidth) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = candidate;
+      }
+    }
+    if (line) lines.push(line);
+  }
+  return lines;
+}
+
+function truncateNoteLine(
+  context: CanvasRenderingContext2D,
+  line: string,
+  maxWidth: number,
+): string {
+  let output = line;
+  while (output.length > 1 && context.measureText(output).width > maxWidth) {
+    output = `${output.slice(0, -2).trimEnd()}…`;
+  }
+  return output;
 }
 
 export async function renderAnnotatedPng(

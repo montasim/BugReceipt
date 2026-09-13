@@ -6,8 +6,9 @@ export const ANNOTATION_COLORS = [
 ] as const;
 
 export type AnnotationColor = (typeof ANNOTATION_COLORS)[number]['value'];
-export type AnnotationTool = 'select' | 'marker' | 'highlight' | 'border';
+export type AnnotationTool = 'select' | 'marker' | 'highlight' | 'border' | 'text';
 export type RectangleHandle = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+export const MAX_ANNOTATION_NOTE_LENGTH = 500;
 
 export type AnnotationPoint = {
   x: number;
@@ -34,7 +35,18 @@ export type RectangleAnnotation = AnnotationBase & {
   strokeWidth: number;
 };
 
-export type Annotation = MarkerAnnotation | RectangleAnnotation;
+export type TextNoteAnnotation = AnnotationBase & {
+  kind: 'text';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fontSize: number;
+  text: string;
+};
+
+export type ResizableAnnotation = RectangleAnnotation | TextNoteAnnotation;
+export type Annotation = MarkerAnnotation | ResizableAnnotation;
 
 export type AnnotationDocument = {
   version: 1;
@@ -182,6 +194,32 @@ export function createRectangleAnnotation({
   };
 }
 
+export function createTextNoteAnnotation({
+  id,
+  anchor,
+  color,
+  document,
+}: {
+  id: string;
+  anchor: AnnotationPoint;
+  color: AnnotationColor;
+  document: Pick<AnnotationDocument, 'imageWidth' | 'imageHeight'>;
+}): TextNoteAnnotation {
+  const width = Math.min(document.imageWidth, Math.max(220, document.imageWidth * 0.32));
+  const height = Math.min(document.imageHeight, Math.max(120, document.imageHeight * 0.18));
+  return {
+    id,
+    kind: 'text',
+    color,
+    x: clamp(anchor.x, 0, Math.max(0, document.imageWidth - width)),
+    y: clamp(anchor.y, 0, Math.max(0, document.imageHeight - height)),
+    width,
+    height,
+    fontSize: clamp(document.imageWidth * 0.022, 22, 38),
+    text: '',
+  };
+}
+
 export function translateAnnotation(
   annotation: Annotation,
   delta: AnnotationPoint,
@@ -200,11 +238,11 @@ export function translateAnnotation(
 }
 
 export function resizeRectangleAnnotation(
-  annotation: RectangleAnnotation,
+  annotation: ResizableAnnotation,
   handle: RectangleHandle,
   point: AnnotationPoint,
   document: Pick<AnnotationDocument, 'imageWidth' | 'imageHeight'>,
-): RectangleAnnotation {
+): ResizableAnnotation {
   const right = annotation.x + annotation.width;
   const bottom = annotation.y + annotation.height;
   const target = {
@@ -215,6 +253,15 @@ export function resizeRectangleAnnotation(
     x: handle.includes('left') ? right : annotation.x,
     y: handle.includes('top') ? bottom : annotation.y,
   };
+  if (annotation.kind === 'text') {
+    return {
+      ...annotation,
+      x: Math.min(opposite.x, target.x),
+      y: Math.min(opposite.y, target.y),
+      width: Math.abs(target.x - opposite.x),
+      height: Math.abs(target.y - opposite.y),
+    };
+  }
   return createRectangleAnnotation({ ...annotation, start: opposite, end: target });
 }
 
@@ -281,6 +328,25 @@ function isAnnotation(value: unknown): value is Annotation {
           typeof point?.y === 'number' &&
           Number.isFinite(point.y),
       )
+    );
+  }
+  if (annotation.kind === 'text') {
+    return (
+      typeof annotation.x === 'number' &&
+      Number.isFinite(annotation.x) &&
+      typeof annotation.y === 'number' &&
+      Number.isFinite(annotation.y) &&
+      typeof annotation.width === 'number' &&
+      Number.isFinite(annotation.width) &&
+      annotation.width > 0 &&
+      typeof annotation.height === 'number' &&
+      Number.isFinite(annotation.height) &&
+      annotation.height > 0 &&
+      typeof annotation.fontSize === 'number' &&
+      Number.isFinite(annotation.fontSize) &&
+      annotation.fontSize > 0 &&
+      typeof annotation.text === 'string' &&
+      annotation.text.length <= MAX_ANNOTATION_NOTE_LENGTH
     );
   }
   return (

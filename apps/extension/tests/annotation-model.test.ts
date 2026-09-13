@@ -5,11 +5,14 @@ import {
   createAnnotationDocument,
   createAnnotationHistory,
   createRectangleAnnotation,
+  createTextNoteAnnotation,
+  isAnnotationDocument,
   redoAnnotation,
   resizeRectangleAnnotation,
   translateAnnotation,
   undoAnnotation,
   type MarkerAnnotation,
+  type TextNoteAnnotation,
 } from '../src/application/annotation-model';
 
 describe('annotation model', () => {
@@ -83,6 +86,29 @@ describe('annotation model', () => {
           { x: 45, y: 65 },
         ],
       }),
+    );
+  });
+
+  it('creates, validates, moves, and resizes a text note inside the frame', () => {
+    const document = createAnnotationDocument(1_600, 900);
+    const note = createTextNoteAnnotation({
+      id: 'note-1',
+      anchor: { x: 1_500, y: 850 },
+      color: '#e2a90a',
+      document,
+    });
+    const populated: TextNoteAnnotation = { ...note, text: 'Check the total before submitting.' };
+    const withNote = { ...document, items: [populated] };
+
+    expect(note).toEqual(
+      expect.objectContaining({ kind: 'text', x: 1_088, y: 738, width: 512, height: 162 }),
+    );
+    expect(isAnnotationDocument(withNote, 1_600, 900)).toBe(true);
+    expect(translateAnnotation(populated, { x: -2_000, y: -2_000 }, document)).toEqual(
+      expect.objectContaining({ x: 0, y: 0 }),
+    );
+    expect(resizeRectangleAnnotation(populated, 'top-left', { x: 900, y: 600 }, document)).toEqual(
+      expect.objectContaining({ x: 900, y: 600, width: 700, height: 300 }),
     );
   });
 });

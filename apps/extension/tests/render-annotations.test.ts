@@ -3,7 +3,7 @@ import { createAnnotationDocument } from '../src/application/annotation-model';
 import { paintAnnotations } from '../src/application/render-annotations';
 
 describe('annotation renderer', () => {
-  it('paints marker, highlight, and border annotations in document order', () => {
+  it('paints marker, highlight, border, and text note annotations in document order', () => {
     const calls: string[] = [];
     const save = vi.fn(() => calls.push('save'));
     const restore = vi.fn(() => calls.push('restore'));
@@ -20,12 +20,16 @@ describe('annotation renderer', () => {
       strokeRect: vi.fn((x: number, y: number, width: number, height: number) =>
         calls.push(`strokeRect:${x},${y},${width},${height}`),
       ),
+      fillText: vi.fn((text: string, x: number, y: number) => calls.push(`text:${text}:${x},${y}`)),
+      measureText: vi.fn((text: string) => ({ width: text.length * 12 })),
       set strokeStyle(_value: string) {},
       set fillStyle(_value: string) {},
       set lineWidth(_value: number) {},
       set globalAlpha(_value: number) {},
       set lineCap(_value: CanvasLineCap) {},
       set lineJoin(_value: CanvasLineJoin) {},
+      set font(_value: string) {},
+      set textBaseline(_value: CanvasTextBaseline) {},
     } as unknown as CanvasRenderingContext2D;
     const document = {
       ...createAnnotationDocument(1_000, 1_500),
@@ -60,6 +64,17 @@ describe('annotation renderer', () => {
           width: 120,
           height: 90,
         },
+        {
+          id: 'note',
+          kind: 'text' as const,
+          color: '#ff5c3a' as const,
+          x: 400,
+          y: 500,
+          width: 360,
+          height: 180,
+          fontSize: 30,
+          text: 'Check the total',
+        },
       ],
     };
 
@@ -69,7 +84,9 @@ describe('annotation renderer', () => {
     expect(calls).toContain('line:30,40');
     expect(calls).toContain('fill:50,60,100,80');
     expect(calls).toContain('strokeRect:205,305,110,80');
-    expect(save).toHaveBeenCalledTimes(3);
-    expect(restore).toHaveBeenCalledTimes(3);
+    expect(calls).toContain('fill:400,500,360,180');
+    expect(calls.some((call) => call.startsWith('text:Check the total:'))).toBe(true);
+    expect(save).toHaveBeenCalledTimes(4);
+    expect(restore).toHaveBeenCalledTimes(4);
   });
 });
