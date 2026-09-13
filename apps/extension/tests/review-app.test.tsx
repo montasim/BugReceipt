@@ -1296,9 +1296,17 @@ describe('review editor', () => {
     render(<ReviewApp />);
 
     await screen.findByDisplayValue('Checkout fails');
-    fireEvent.click(screen.getByRole('button', { name: 'Delete local capture' }));
+    const deleteCapture = screen.getByRole('button', { name: 'Delete local capture' });
+    const copyMarkdown = screen.getByRole('button', { name: 'Copy Markdown' });
+    expect(deleteCapture.nextElementSibling).toBe(copyMarkdown);
+    expect(deleteCapture.closest('.review-actions')).not.toBeNull();
+
+    fireEvent.click(deleteCapture);
 
     expect(screen.getByText('Delete this capture permanently?')).toBeDefined();
+    expect(
+      screen.getByRole('group', { name: 'Confirm capture deletion' }).closest('.review-actions'),
+    ).not.toBeNull();
     expect(send.mock.calls.some(([request]) => request.type === 'session:discard')).toBe(false);
 
     fireEvent.click(screen.getByRole('button', { name: 'Keep capture' }));
