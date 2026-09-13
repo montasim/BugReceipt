@@ -1,20 +1,20 @@
 ## Summary
 
-BugReceipt v0.1.5 keeps capture running through real browsing journeys, makes diagnostic evidence easier to export, and adds calm feedback throughout the extension. It also refreshes the public landing page and makes production email delivery work for distributed unpacked installations.
+BugReceipt v0.1.5 keeps capture running through real browsing journeys, makes diagnostic evidence easier to export, and adds calm feedback throughout the extension. It also refreshes the public landing page and keeps complete-report export local.
 
 ## Highlights
 
 - **Capture continuity across navigation:** The selected-tab video keeps recording after reloads and cross-origin navigation. Console and network instrumentation resumes whenever Chrome grants access to the new document without sacrificing the recording when it cannot.
-- **Richer report context:** A dedicated optional description field is filtered, persisted, validated while typing, and included in `issue.md` and report email content.
+- **Richer report context:** A dedicated optional description field is filtered, persisted, validated while typing, and included in `issue.md`.
 - **Direct diagnostic downloads:** Export locally filtered Console evidence as JSON and Network evidence as HAR from their review tabs.
 - **Sharper annotations:** Marker and border strokes retain their intended visual weight while evidence is scaled in the annotation workspace.
-- **Calm interaction feedback:** Buttons, panels, tabs, menus, dialogs, alerts, and newly added steps use short, restrained motion. Capture and email actions expose specific loading labels and prevent duplicate submissions, with reduced-motion support throughout.
-- **Production email delivery:** Production extension builds default to the deployed BugReceipt report endpoint. The server can safely accept any well-formed unpacked extension origin when distribution mode is explicitly enabled.
+- **Calm interaction feedback:** Buttons, panels, tabs, menus, dialogs, alerts, and newly added steps use short, restrained motion. Capture and export actions expose specific loading labels and prevent duplicate submissions, with reduced-motion support throughout.
+- **Local report export:** Complete reports can be downloaded as a local folder or Markdown without sending capture data to a BugReceipt server.
 - **Refreshed public experience:** The landing page now uses the Evidence Desk visual system with clearer product proof, installation guidance, responsive spacing, and current extension imagery.
 
 ## Privacy boundary
 
-Capture data, selected frames, annotations, and diagnosis inputs remain in extension-owned storage until the user downloads or explicitly shares them. The new Console JSON and Network HAR downloads contain only the locally filtered evidence already visible in review. Email recipients and Resend credentials remain server-side.
+Capture data, selected frames, and annotations remain in extension-owned storage until the user downloads them. The new Console JSON and Network HAR downloads contain only the locally filtered evidence already visible in review. This release does not provide complete-report upload or email delivery.
 
 ## Install in Chrome
 

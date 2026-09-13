@@ -7,13 +7,11 @@
 [![Chrome 120+](https://img.shields.io/badge/Chrome-120%2B-1f9fae)](apps/extension/wxt.config.ts)
 [![Support on SupportKori](https://img.shields.io/badge/Support-SupportKori-ffdd00)](https://www.supportkori.com/montasim)
 
-BugReceipt is a local-first Chrome extension for people reporting web application bugs and the developers who must reproduce them. A persistent side panel records the selected tab, collects bounded console and network evidence, keeps manual steps beside the browser context, and opens a review workbench where the reporter decides exactly what to export or explicitly send.
+BugReceipt is a local-first Chrome extension for people reporting web application bugs and the developers who must reproduce them. A persistent side panel records the selected tab, collects bounded console and network evidence, keeps manual steps beside the browser context, and opens a review workbench where the reporter decides exactly what to export locally.
 
 **[Open the landing page](https://bugreceipt.netlify.app) · [Download the latest release](https://github.com/montasim/BugReceipt/releases/latest) · [Try the deterministic fixture](#deterministic-test-fixture) · [Report a non-sensitive bug](https://github.com/montasim/BugReceipt/issues/new/choose)**
 
 **Release status:** the source tree is prepared for version `0.1.5`, targeting Chrome 120 and newer. GitHub Releases distributes BugReceipt as a checksummed, unpacked extension archive; it is not currently available through the Chrome Web Store.
-
-[![Current BugReceipt review workbench](apps/web/public/brand/bugreceipt-review-latest.jpg)](https://bugreceipt.netlify.app)
 
 ## Why BugReceipt?
 
@@ -23,7 +21,7 @@ A screenshot shows the result of a failure, but rarely the browser evidence or h
 - sensitive diagnostic values are filtered before extension storage;
 - recording, console, network, environment, and manual context meet in one review;
 - individual evidence can be removed or annotated before export;
-- local download is the default, and email delivery requires a separate explicit action.
+- complete reports export locally as Markdown, a folder, or a ZIP.
 
 ## What it captures
 
@@ -45,7 +43,7 @@ A screenshot shows the result of a failure, but rarely the browser evidence or h
 - Exact text highlighting inside the Console and Network tabs
 - Per-entry removal for console, network, recording, individual selected-frame, and fallback-screenshot evidence
 - Required-field and offensive-language validation while editing and again immediately before export
-- A built-in BugReceipt issue form with an explicitly optional local diagnosis report
+- A direct link to the BugReceipt GitHub issue form
 - Responsive issue inspector and Visual evidence, Console, and Network workspaces
 
 ### At export
@@ -55,8 +53,7 @@ A screenshot shows the result of a failure, but rarely the browser evidence or h
 - `recording.webm`, one or more numbered selected-frame PNGs, or fallback `screenshot.png` when available
 - One ZIP containing the reviewed files, or the same files in a named folder under Chrome Downloads
 - Clipboard copy of the reviewed Markdown
-- Optional complete-bundle email delivery through the configured report endpoint
-- A responsive BugReceipt-branded HTML email with the reviewed Markdown preserved as its plain-text fallback and attached source report
+- No complete-report upload or capture-level email delivery
 
 BugReceipt does not currently provide Firefox or Safari support, automatic interaction-step capture, WebSocket frames, feature-flag or application-version SDK capture, or authenticated GitHub/Linear issue creation.
 
@@ -113,14 +110,13 @@ Load `apps/extension/.output` through Chrome's **Load unpacked** action. A succe
 7. Pause the recording at useful moments and select **Capture frame**; navigate and annotate the saved PNGs if they improve the evidence.
 8. Use **Annotate text** in Console or Network to preserve an exact diagnostic selection. Remove anything that should not be shared.
 9. Copy the Markdown, download the report as a ZIP, or save the individual files into one report folder under Downloads.
-10. Use **Share by email** only when the build has a configured report endpoint and the reviewed evidence is intended for that recipient.
-11. Use **Report an issue** in the review header to email a BugReceipt problem. The optional diagnosis checkbox attaches `diagnosis.md` only after explicit consent.
+10. Use **Report an issue** in the review header to open BugReceipt's GitHub issue form.
 
 Same-origin reloads continue the session. Cross-origin navigation or closing the selected tab ends capture and preserves the evidence collected up to that point with an interruption reason.
 
 ## Privacy and trust boundary
 
-Captured evidence and annotations stay in extension-owned browser storage until the user deletes them, starts another capture, downloads them, or explicitly emails them. BugReceipt does not directly collect:
+Captured evidence and annotations stay in extension-owned browser storage until the user deletes them, starts another capture, or downloads them. Complete capture reports are not uploaded or emailed by this release. BugReceipt does not directly collect:
 
 - page HTML or DOM snapshots;
 - cookies, local storage, or session storage;
@@ -131,33 +127,9 @@ Console values and supported text or JSON network bodies are bounded before stor
 
 Filtering reduces risk; it cannot guarantee that every sensitive value will be recognized. Screen recordings can display personal or confidential information rendered by the page. Review every field, highlight, and visual artifact before sharing it.
 
-Email delivery is a separate network boundary. **Share by email** sends `issue.md` plus the same recording, selected frames, or screenshot included in the ZIP to a fixed server-side recipient through Resend. HTML-capable clients receive a structured BugReceipt report, while the original Markdown remains the plain-text fallback and attached source. The complete email file set must total no more than 4 MiB; BugReceipt rejects larger sets instead of silently omitting evidence. The Resend key and recipient are never bundled into the extension.
+**Report an issue** opens the public GitHub issue form in a new tab. BugReceipt does not populate or submit that form, and it does not transmit capture data when opening the link.
 
-**Report an issue** sends the entered subject and description as `issue.md`. When **Include diagnosis report** is selected, BugReceipt also attaches `diagnosis.md` with the extension version, capture state, page and browser details, evidence counts, and locally filtered console and network metadata. It excludes recordings, screenshots, selected frames, and network request or response bodies.
-
-The manifest requests `activeTab`, `clipboardWrite`, `desktopCapture`, `downloads`, `scripting`, `sidePanel`, `storage`, and `tabs`. Site access is optional and requested for the current origin when capture begins. Report-server access is included only when a production endpoint is configured at build time.
-
-## Configure email delivery
-
-Email is optional. Without a configured endpoint, the review page labels capture sharing **Email unavailable** and disables **Send email** in the issue form while local export remains available.
-
-Copy the safe template:
-
-```bash
-cp .env.example .env
-```
-
-| Variable                          | Purpose                                                       |
-| --------------------------------- | ------------------------------------------------------------- |
-| `RESEND_API_KEY`                  | Server-side Resend API key                                    |
-| `BUGRECEIPT_REPORT_FROM`          | Sender on a verified Resend domain                            |
-| `BUGRECEIPT_REPORT_TO`            | Fixed recipient or comma-separated recipients                 |
-| `BUGRECEIPT_EXTENSION_ORIGIN`     | `*` for unpacked distribution, or one pinned extension origin |
-| `VITE_BUGRECEIPT_REPORT_ENDPOINT` | Optional report API override embedded in the extension build  |
-
-For local development, the extension uses `http://localhost:3000/api/reports`. Production builds default to `https://bugreceipt.netlify.app/api/reports` and replace a localhost override with that deployed endpoint. Set `BUGRECEIPT_EXTENSION_ORIGIN=*` for the distributed unpacked ZIP, because Chrome derives unpacked extension IDs from their install paths. Use one exact `chrome-extension://` origin only for a private or stable-ID build. The endpoint still validates the Chrome extension origin format, limits each client to five requests per hour per running server instance, fixes recipients on the server, and derives the Resend idempotency key from the capture ID plus the complete email payload. Identical retries deduplicate, while edited reports or visual evidence can be sent as a new delivery.
-
-Never commit a real `.env` file or put Resend credentials in client-side configuration.
+The manifest requests `activeTab`, `clipboardWrite`, `desktopCapture`, `downloads`, `scripting`, `sidePanel`, `storage`, and `tabs`. Site access is optional and requested for the current origin when capture begins. The extension has no report-server host permission.
 
 ## Deterministic test fixture
 
@@ -181,14 +153,14 @@ flowchart LR
     B --> F[Review workbench]
     C --> F
     F --> G[Markdown + local files]
-    F --> H[Explicit report delivery]
+    F --> H[GitHub issue link]
 ```
 
-The root workspace is named `bugreceipt-workspace`. Its background worker owns capture lifecycle and session transitions. Page instrumentation forwards bounded console and network events through an isolated bridge. Filtered session records live in extension storage; recordings, screenshots, selected frames, and annotation documents live in extension-owned IndexedDB. Review edits return through the background protocol before export or email delivery.
+The root workspace is named `bugreceipt-workspace`. Its background worker owns capture lifecycle and session transitions. Page instrumentation forwards bounded console and network events through an isolated bridge. Filtered session records live in extension storage; recordings, screenshots, selected frames, and annotation documents live in extension-owned IndexedDB. Review edits return through the background protocol before local export.
 
 ```text
 apps/extension          WXT Manifest V3 side panel, recorder, review page, and worker
-apps/web                TanStack Start landing page and report-delivery endpoint
+apps/web                TanStack Start landing page
 packages/capture-model  Zod schemas and extension message contracts
 packages/privacy        Deterministic text, URL, and diagnostic filtering
 packages/issue-export   Markdown and local report rendering
@@ -208,7 +180,7 @@ pnpm install --frozen-lockfile
 | Command                | Purpose                                                                         |
 | ---------------------- | ------------------------------------------------------------------------------- |
 | `pnpm dev:extension`   | Start WXT extension development mode                                            |
-| `pnpm dev:web`         | Start the landing page and report endpoint on port 3000                         |
+| `pnpm dev:web`         | Start the landing page on port 3000                                             |
 | `pnpm build:extension` | Build the unpacked Chrome extension                                             |
 | `pnpm build:web`       | Build the TanStack Start application and Netlify function                       |
 | `pnpm lint`            | Run workspace ESLint checks                                                     |
@@ -228,8 +200,6 @@ The public landing page is deployed at [bugreceipt.netlify.app](https://bugrecei
 - client output: `apps/web/dist/client`;
 - server output: `apps/web/.netlify/v1/functions`;
 - build filtering that skips extension-only changes while retaining web and shared-workspace changes.
-
-Configure the server-side Resend variables only when report email delivery is enabled. Do not put credentials in `netlify.toml` or commit a real environment file.
 
 ## Release process
 
@@ -253,7 +223,7 @@ Inspect the generated Chrome ZIP and confirm `manifest.json` is at its root. Pus
 | Chrome rejects the extension folder  | Select the extracted directory that contains `manifest.json` directly                      |
 | The side panel cannot capture a page | Use a normal HTTP/HTTPS tab; restricted Chrome pages cannot grant site access              |
 | **Download folder** fails            | Check Chrome download permissions and policy, then use **Download ZIP** for the same files |
-| Email delivery fails                 | Configure the server-side report variables and use `*` for unpacked extension distribution |
+| **Report an issue** does not open    | Check that Chrome can open the BugReceipt GitHub issue URL in a new tab                    |
 | A recording cannot be previewed      | Preserve the fallback screenshot or retry capture on the affected tab                      |
 
 For ordinary installation and usage help, follow [SUPPORT.md](SUPPORT.md).
@@ -266,8 +236,6 @@ For ordinary installation and usage help, follow [SUPPORT.md](SUPPORT.md).
 - Cross-origin navigation ends capture rather than following the user across sites.
 - GitHub release installs use Developer mode and do not update automatically.
 - Screen recordings and Markdown remain separate GitHub-issue attachments.
-- The complete report-email payload, including Markdown, diagnosis, and visual files, is limited to 4 MiB.
-- The report endpoint's in-memory rate limit is a baseline control, not a distributed production rate limiter.
 - Export does not authenticate with or create GitHub or Linear issues.
 - Automated tests cannot replace manual verification of Chrome permission, sharing, recording, download, and installation gestures.
 

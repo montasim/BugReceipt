@@ -38,13 +38,9 @@ A user-authored, local overlay that calls attention to reviewed evidence without
 
 User-approved Markdown and visual-evidence files produced from a reviewed reproduction draft, including its saved evidence annotations. Export does not upload, create a remote issue, or change the stored session state.
 
-### Report delivery
-
-An explicit user action that sends a reviewed reproduction draft to the configured BugReceipt server. The server owns the Resend credential and fixed recipient. Delivery is distinct from local export and changes the privacy boundary because selected evidence leaves the browser.
-
 ## Distinctions
 
 - A capture session is raw, temporary working state; a reproduction draft is the reviewed, editable form.
 - A page snapshot is metadata; visual evidence is the separate recording or screenshot fallback.
 - Export creates local artifacts; publishing to GitHub or Linear is a later capability.
-- Report delivery emails evidence to a fixed maintainer but does not create a GitHub or Linear issue.
+- The support link opens GitHub's public issue form; the extension does not submit or attach capture data.

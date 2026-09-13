@@ -107,7 +107,7 @@ For Azure-hosted automation, Microsoft prefers a managed identity; otherwise use
 
 A browser extension is a public client and cannot keep a client secret, service-principal credential, PAT, or Teams webhook URL confidential. Microsoft supports authorization code flow with PKCE for browser-based public clients without a client secret, but tokens still exist in the browser and need careful lifecycle/storage controls. [Microsoft identity platform: authorization code with PKCE](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow)
 
-BugReceipt already has a small server path for opt-in email delivery, so a backend-for-frontend is the stronger design:
+BugReceipt does not currently operate a report-delivery backend. If these integrations are added, a backend-for-frontend would be the stronger design:
 
 ```text
 Extension review UI

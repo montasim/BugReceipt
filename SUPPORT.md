@@ -8,7 +8,7 @@ Use [GitHub Issues](https://github.com/montasim/BugReceipt/issues) for non-sensi
 - the page type or a safe public reproduction URL;
 - the expected and actual behavior;
 - exact steps to reproduce;
-- whether screen, console, network, export, or email delivery failed.
+- whether screen, console, network, local export, or the built-in support form failed.
 
 Do not attach captures, recordings, screenshots, credentials, personal information, or production request bodies until you have reviewed and removed sensitive content.
 

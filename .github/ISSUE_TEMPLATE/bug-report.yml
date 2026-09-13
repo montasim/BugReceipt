@@ -55,7 +55,6 @@ body:
         - Network evidence
         - Review and redaction
         - Download or clipboard export
-        - Email delivery
         - Landing page or installation
         - Other
     validations:

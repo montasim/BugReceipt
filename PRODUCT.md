@@ -11,7 +11,7 @@ BugReceipt turns incomplete browser bug reports into privacy-filtered reproducti
 
 ## Core mechanism
 
-The user starts a tab-scoped capture from a persistent Chrome side panel, reproduces the failure, reviews every collected field, and explicitly exports or shares the resulting report.
+The user starts a tab-scoped capture from a persistent Chrome side panel, reproduces the failure, reviews every collected field, and explicitly exports the resulting report locally.
 
 ## Captured evidence
 
@@ -25,7 +25,7 @@ The user starts a tab-scoped capture from a persistent Chrome side panel, reprod
 - Captures start only after a user action.
 - Sensitive diagnostic values are filtered before extension storage.
 - Cookies, browser storage, page HTML, keystrokes, and form values are not captured directly.
-- Evidence remains in extension-owned local storage until the user downloads it or explicitly sends it through the configured email action.
+- Evidence remains in extension-owned local storage until the user downloads or deletes it.
 - Every captured item can be reviewed and selected evidence can be removed before export.
 
 ## Distribution
