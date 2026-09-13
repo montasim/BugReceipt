@@ -11,7 +11,7 @@ BugReceipt is a local-first Chrome extension for people reporting web applicatio
 
 **[Open the landing page](https://bugreceipt.netlify.app) · [Download the latest release](https://github.com/montasim/BugReceipt/releases/latest) · [Try the deterministic fixture](#deterministic-test-fixture) · [Report a non-sensitive bug](https://github.com/montasim/BugReceipt/issues/new/choose)**
 
-**Release status:** the source tree is prepared for version `0.1.5`, targeting Chrome 120 and newer. GitHub Releases distributes BugReceipt as a checksummed, unpacked extension archive; it is not currently available through the Chrome Web Store.
+**Release status:** the source tree is prepared for version `0.1.6`, targeting Chrome 120 and newer. GitHub Releases distributes BugReceipt as a checksummed, unpacked extension archive; it is not currently available through the Chrome Web Store.
 
 ## Why BugReceipt?
 
@@ -203,7 +203,7 @@ The public landing page is deployed at [bugreceipt.netlify.app](https://bugrecei
 
 ## Release process
 
-The workspace packages, landing-page release copy, and extension manifest derive from version `0.1.5`. The release validator rejects a built manifest whose version differs from `apps/extension/package.json`.
+The workspace packages, landing-page release copy, and extension manifest derive from version `0.1.6`. The release validator rejects a built manifest whose version differs from `apps/extension/package.json`.
 
 Before tagging a release:
 
@@ -214,7 +214,7 @@ pnpm release:zip
 
 Inspect the generated Chrome ZIP and confirm `manifest.json` is at its root. Pushing a tag matching `v*` starts the [release workflow](.github/workflows/release.yml), which rebuilds the extension, renames the archive to `BugReceipt-<tag>-chrome-unpacked.zip`, verifies its layout, creates `SHA256SUMS.txt`, and publishes both files with [.github/RELEASE_NOTES.md](.github/RELEASE_NOTES.md).
 
-`v0.1.5` is prepared from the source changes after the published [v0.1.4 release](https://github.com/montasim/BugReceipt/releases/tag/v0.1.4). Historical tags and attached archives remain immutable.
+`v0.1.6` is prepared from the source changes after the published [v0.1.5 release](https://github.com/montasim/BugReceipt/releases/tag/v0.1.5). Historical tags and attached archives remain immutable.
 
 ## Troubleshooting
 

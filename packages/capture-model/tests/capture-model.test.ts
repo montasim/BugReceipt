@@ -213,7 +213,7 @@ describe('capture contracts', () => {
       describeCaptureEnvironment({
         userAgent,
         platform: 'Win32',
-        reproKitVersion: '0.1.5',
+        reproKitVersion: '0.1.6',
       }),
     ).toEqual({
       browser: 'Microsoft Edge 140.0.0.0',

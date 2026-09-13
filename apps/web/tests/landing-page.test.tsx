@@ -14,7 +14,7 @@ describe('extension landing page', () => {
     expect(source).toContain('Download BugReceipt');
     expect(source).toContain('Load unpacked');
     expect(source).toContain('What does BugReceipt capture?');
-    expect(source).toContain('BugReceipt-v0.1.5-chrome-unpacked.zip');
+    expect(source).toContain('BugReceipt-v0.1.6-chrome-unpacked.zip');
     expect(source).toContain('manifest.json');
     expect(source).toContain('/brand/bugreceipt-extension-tour.gif');
     expect(source).toContain('/brand/bugreceipt-extension-tour-poster.jpg');

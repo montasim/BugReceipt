@@ -81,7 +81,7 @@ const session: CaptureSession = {
   environment: {
     userAgent: 'Chrome test agent',
     platform: 'Win32',
-    reproKitVersion: '0.1.5',
+    reproKitVersion: '0.1.6',
   },
   filtering: { redactionCount: 2, droppedEventCount: 1 },
 };
@@ -107,7 +107,7 @@ describe('diagnostic evidence downloads', () => {
     const entry = output.log.entries[0];
 
     expect(output.log.version).toBe('1.2');
-    expect(output.log.creator).toEqual({ name: 'BugReceipt', version: '0.1.5' });
+    expect(output.log.creator).toEqual({ name: 'BugReceipt', version: '0.1.6' });
     expect(entry).toMatchObject({
       startedDateTime: '2026-08-27T12:00:15.100Z',
       time: 235,

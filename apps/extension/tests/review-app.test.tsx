@@ -76,7 +76,7 @@ const session: CaptureSession = {
   environment: {
     userAgent,
     platform: 'Win32',
-    reproKitVersion: '0.1.5',
+    reproKitVersion: '0.1.6',
   },
   filtering: { redactionCount: 0, droppedEventCount: 0 },
 };
@@ -168,7 +168,7 @@ describe('review editor', () => {
     expect(screen.getByText('Chrome 140.0.0.0')).toBeDefined();
     expect(screen.getByText('Win32')).toBeDefined();
     expect(screen.getByText(userAgent)).toBeDefined();
-    expect(screen.getByText('0.1.5')).toBeDefined();
+    expect(screen.getByText('0.1.6')).toBeDefined();
   });
 
   it('offers visual, console, and network evidence in keyboard-accessible tabs', async () => {
