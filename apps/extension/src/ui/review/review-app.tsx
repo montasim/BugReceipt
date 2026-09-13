@@ -43,7 +43,6 @@ import {
 import { createReportBundle, type ReportBundleVisual } from '../../infrastructure/report-bundle';
 import { readRecording } from '../../infrastructure/recording-store';
 import { downloadReportFolder } from '../../infrastructure/report-folder-download';
-import { isReportEmailConfigured, sendReportEmail } from '../../infrastructure/report-email';
 import {
   deleteScreenshot,
   readScreenshot,
@@ -55,15 +54,14 @@ import {
   getTextAnnotationDocument,
   saveTextAnnotationDocument,
 } from '../../infrastructure/text-annotation-store';
-import { ActivityIndicator } from '../activity-indicator';
 import { Brand } from '../brand';
+import { IssueLink } from '../issue-link';
 import { SupportLink } from '../support-link';
 import { useOffensiveLanguageValidation } from '../use-offensive-language-validation';
 import { AnnotatedEvidenceText } from './annotated-evidence-text';
 import { AnnotateIcon } from './annotation-icons';
 import { AnnotationOverlay } from './annotation-overlay';
 import { AnnotationToolbar } from './annotation-toolbar';
-import { ReportIssueControl } from './report-issue-control';
 
 type ArtifactState = 'loading' | 'ready' | 'missing' | 'failed';
 type EvidenceView = 'visual' | 'console' | 'network';
@@ -134,8 +132,6 @@ export function ReviewApp() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
-  const [emailed, setEmailed] = useState(false);
-  const [emailing, setEmailing] = useState(false);
   const [evidenceView, setEvidenceView] = useState<EvidenceView>('visual');
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
   const selectedFrames = useMemo(() => getSelectedFrames(session?.page), [session?.page]);
@@ -175,7 +171,6 @@ export function ReviewApp() {
   );
   const validationErrors = [...issueValidationErrors, ...moderationValidationErrors];
   const exportReady = validationErrors.length === 0;
-  const emailConfigured = isReportEmailConfigured();
   const annotationDocument = annotations.present;
   const annotationCount = annotationDocument.items.length;
   const textAnnotationDocument = textAnnotations.present;
@@ -1004,31 +999,6 @@ export function ReviewApp() {
     });
   }
 
-  async function emailReport() {
-    await withPreparedExport(async (saved) => {
-      setEmailing(true);
-      try {
-        const visuals = await readExportVisuals(saved, recordingUrl, screenshotUrl);
-        await sendReportEmail({
-          sessionId: saved.id,
-          subject: saved.summary,
-          markdown: renderGitHubIssue(saved, textAnnotationDocument.items),
-          visuals,
-        });
-        setEmailed(true);
-        setNotice(
-          visuals.length > 0
-            ? `Emailed issue.md and ${visuals.length} visual ${visuals.length === 1 ? 'file' : 'files'}`
-            : 'Emailed issue.md',
-        );
-      } catch (reason) {
-        setError(reason instanceof Error ? reason.message : 'The report email could not be sent.');
-      } finally {
-        setEmailing(false);
-      }
-    });
-  }
-
   async function discard() {
     const response = await sendRuntimeMessage({ type: 'session:discard' });
     if (response.ok) {
@@ -1067,21 +1037,10 @@ export function ReviewApp() {
           </div>
           <div className="review-header-meta">
             <div className="review-status">
-              <span /> {emailed ? 'Report sent by email' : 'Nothing has been uploaded'}
+              <span /> Report stays local
             </div>
             <div className="review-header-controls">
-              <ReportIssueControl
-                session={session}
-                emailConfigured={emailConfigured}
-                onSent={(diagnosisIncluded) => {
-                  setEmailed(true);
-                  setNotice(
-                    diagnosisIncluded
-                      ? 'Issue emailed with diagnosis.md'
-                      : 'Issue emailed without a diagnosis report',
-                  );
-                }}
-              />
+              <IssueLink />
               <SupportLink />
             </div>
           </div>
@@ -1107,29 +1066,6 @@ export function ReviewApp() {
             aria-describedby={!exportReady ? 'report-check-heading' : undefined}
           >
             Copy Markdown
-          </button>
-          <button
-            className="button quiet email-action"
-            type="button"
-            onClick={() => void emailReport()}
-            disabled={reviewActionsDisabled || emailed || !emailConfigured}
-            aria-busy={emailing}
-            aria-label={emailing ? 'Sending report by email' : undefined}
-            aria-describedby={!exportReady ? 'report-check-heading' : undefined}
-            title={
-              emailConfigured
-                ? undefined
-                : 'Set VITE_BUGRECEIPT_REPORT_ENDPOINT when building the extension.'
-            }
-          >
-            {emailing ? <ActivityIndicator /> : null}
-            {emailing
-              ? 'Sending…'
-              : emailed
-                ? 'Report emailed'
-                : emailConfigured
-                  ? 'Share by email'
-                  : 'Email unavailable'}
           </button>
           <div className="review-download-control" ref={downloadMenuRef}>
             <button

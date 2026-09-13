@@ -213,7 +213,7 @@ function ErrorScreen({
           </dl>
           <div className="flex justify-between gap-5 px-[18px] py-[15px] font-mono text-[0.6875rem] font-[650] tracking-[0.08em] text-muted-text uppercase">
             <span>BugReceipt</span>
-            <span className="text-trace-text">Nothing uploaded</span>
+            <span className="text-trace-text">Local export</span>
           </div>
         </article>
       </main>

@@ -13,4 +13,3 @@ apps/web/deno.lock
 *.key
 .env
 .env.*
-!.env.example

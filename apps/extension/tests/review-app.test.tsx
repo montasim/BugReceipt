@@ -1,5 +1,5 @@
 import type { CaptureSession, RuntimeRequest, RuntimeResponse } from '@bugreceipt/capture-model';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import JSZip from 'jszip';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAnnotationDocument } from '../src/application/annotation-model';
@@ -13,7 +13,6 @@ import {
 } from '../src/infrastructure/annotation-store';
 import { readRecording } from '../src/infrastructure/recording-store';
 import { downloadReportFolder } from '../src/infrastructure/report-folder-download';
-import { isReportEmailConfigured, sendReportEmail } from '../src/infrastructure/report-email';
 import {
   deleteScreenshot,
   readScreenshot,
@@ -33,10 +32,6 @@ vi.mock('../src/infrastructure/recording-store', () => ({
 }));
 vi.mock('../src/infrastructure/report-folder-download', () => ({
   downloadReportFolder: vi.fn().mockResolvedValue(undefined),
-}));
-vi.mock('../src/infrastructure/report-email', () => ({
-  isReportEmailConfigured: vi.fn().mockReturnValue(true),
-  sendReportEmail: vi.fn().mockResolvedValue({ visualAttached: false }),
 }));
 vi.mock('../src/infrastructure/screenshot-store', () => ({
   deleteScreenshot: vi.fn().mockResolvedValue(undefined),
@@ -93,8 +88,6 @@ const screenshot = vi.mocked(readScreenshot);
 const saveFrame = vi.mocked(saveScreenshotBlob);
 const removeFrameBlob = vi.mocked(deleteScreenshot);
 const captureFrame = vi.mocked(captureVideoFrame);
-const email = vi.mocked(sendReportEmail);
-const emailConfigured = vi.mocked(isReportEmailConfigured);
 const readAnnotations = vi.mocked(getAnnotationDocument);
 const saveAnnotations = vi.mocked(saveAnnotationDocument);
 const deleteAnnotations = vi.mocked(deleteAnnotationDocument);
@@ -123,8 +116,6 @@ beforeEach(() => {
   readTextAnnotations.mockResolvedValue(null);
   saveTextAnnotations.mockResolvedValue(undefined);
   renderAnnotations.mockImplementation((source) => Promise.resolve(source));
-  emailConfigured.mockReturnValue(true);
-  email.mockResolvedValue({ visualAttached: false });
   Object.defineProperty(navigator, 'clipboard', {
     configurable: true,
     value: { writeText: writeClipboard },
@@ -155,137 +146,19 @@ afterEach(() => {
 });
 
 describe('review editor', () => {
-  it('keeps the local upload status and puts support in the review navbar', async () => {
+  it('keeps the report local and puts support in the review navbar', async () => {
     render(<ReviewApp />);
 
-    expect(await screen.findByText('Nothing has been uploaded')).toBeDefined();
+    expect(await screen.findByText('Report stays local')).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Share by email' })).toBeNull();
+    const reportIssue = screen.getByRole('link', { name: 'Report an issue on GitHub' });
     const support = screen.getByRole('link', { name: 'Support BugReceipt on SupportKori' });
-    const reportIssue = screen.getByRole('button', { name: 'Report an issue' });
+    expect(reportIssue.getAttribute('href')).toBe(
+      'https://github.com/montasim/BugReceipt/issues/new/choose',
+    );
+    expect(reportIssue.getAttribute('target')).toBe('_blank');
     expect(support.getAttribute('href')).toBe('https://www.supportkori.com/montasim');
-    expect(support.getAttribute('target')).toBe('_blank');
     expect(reportIssue.nextElementSibling).toBe(support);
-  });
-
-  it('opens the issue form and sends the subject and description by email', async () => {
-    render(<ReviewApp />);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Report an issue' }));
-    expect(screen.getByRole('dialog', { name: 'Report an issue' })).toBeDefined();
-    expect(screen.getByRole('checkbox', { name: /Include diagnosis report/ })).toBeDefined();
-
-    fireEvent.change(screen.getByLabelText('Subject'), {
-      target: { value: 'Review controls stop responding' },
-    });
-    fireEvent.change(screen.getByLabelText('Description'), {
-      target: { value: 'The annotation toolbar stops responding after I save a frame.' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Send email' }));
-
-    await waitFor(() => expect(email).toHaveBeenCalledTimes(1));
-    const sentIssue = email.mock.calls[0]?.[0];
-    expect(sentIssue?.sessionId).toBe(session.id);
-    expect(sentIssue?.subject).toBe('Extension issue: Review controls stop responding');
-    expect(sentIssue?.markdown).toContain(
-      'The annotation toolbar stops responding after I save a frame.',
-    );
-    expect(sentIssue).not.toHaveProperty('diagnosis');
-    expect(screen.queryByRole('dialog', { name: 'Report an issue' })).toBeNull();
-    expect(await screen.findByText('Issue emailed without a diagnosis report')).toBeDefined();
-  });
-
-  it('shows a loading state while sending an issue report', async () => {
-    let finishEmail: ((result: { visualAttached: boolean }) => void) | undefined;
-    email.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          finishEmail = resolve;
-        }),
-    );
-    render(<ReviewApp />);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Report an issue' }));
-    fireEvent.change(screen.getByLabelText('Subject'), {
-      target: { value: 'Review controls stop responding' },
-    });
-    fireEvent.change(screen.getByLabelText('Description'), {
-      target: { value: 'The review page stopped responding.' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Send email' }));
-
-    const sendingButton = await screen.findByRole<HTMLButtonElement>('button', {
-      name: 'Sending issue by email',
-    });
-    expect(sendingButton.disabled).toBe(true);
-    expect(sendingButton.getAttribute('aria-busy')).toBe('true');
-
-    finishEmail?.({ visualAttached: false });
-    expect(await screen.findByText('Issue emailed without a diagnosis report')).toBeDefined();
-  });
-
-  it('attaches the extension diagnosis only after checkbox consent', async () => {
-    render(<ReviewApp />);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Report an issue' }));
-    fireEvent.change(screen.getByLabelText('Subject'), {
-      target: { value: 'Review controls stop responding' },
-    });
-    fireEvent.change(screen.getByLabelText('Description'), {
-      target: { value: 'The review page stopped responding.' },
-    });
-    fireEvent.click(screen.getByRole('checkbox', { name: /Include diagnosis report/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Send email' }));
-
-    await waitFor(() => expect(email).toHaveBeenCalledTimes(1));
-    expect(email.mock.calls[0]?.[0].diagnosis).toContain('# BugReceipt diagnosis report');
-    expect(await screen.findByText('Issue emailed with diagnosis.md')).toBeDefined();
-  });
-
-  it('shows required errors before sending an empty issue report', async () => {
-    render(<ReviewApp />);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Report an issue' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Send email' }));
-
-    expect(await screen.findByText('Enter a subject.')).toBeDefined();
-    expect(screen.getByText('Describe the problem.')).toBeDefined();
-    expect(email).not.toHaveBeenCalled();
-  });
-
-  it('validates the issue subject and description while the user types', async () => {
-    render(<ReviewApp />);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Report an issue' }));
-    const subject = screen.getByLabelText<HTMLInputElement>('Subject');
-    const description = screen.getByLabelText<HTMLTextAreaElement>('Description');
-    const sendIssue = screen.getByRole<HTMLButtonElement>('button', { name: 'Send email' });
-
-    for (const field of [subject, description]) {
-      fireEvent.change(field, { target: { value: 'This fucking extension is broken' } });
-      await waitFor(() => expect(field.getAttribute('aria-invalid')).toBe('true'));
-      const errorId = field.getAttribute('aria-describedby');
-      expect(errorId).toBeTruthy();
-      expect(document.getElementById(errorId!)?.textContent).toBe(OFFENSIVE_LANGUAGE_ERROR);
-      expect(sendIssue.disabled).toBe(true);
-
-      fireEvent.change(field, { target: { value: 'The review controls stopped responding' } });
-      await waitFor(() => expect(field.getAttribute('aria-invalid')).toBe('false'));
-    }
-  });
-
-  it('checks the issue fields again before sending an email', async () => {
-    render(<ReviewApp />);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Report an issue' }));
-    fireEvent.change(screen.getByLabelText('Subject'), {
-      target: { value: 'This fucking extension is broken' },
-    });
-    fireEvent.change(screen.getByLabelText('Description'), {
-      target: { value: 'The review controls stopped responding.' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Send email' }));
-
-    expect(await screen.findByText(OFFENSIVE_LANGUAGE_ERROR)).toBeDefined();
-    expect(email).not.toHaveBeenCalled();
   });
 
   it('shows readable and raw capture environment metadata', async () => {
@@ -837,14 +710,6 @@ describe('review editor', () => {
     expect(await archive.file('selected-frame-01.png')?.async('string')).toBe('first-frame');
     expect(await archive.file('selected-frame-02.png')?.async('string')).toBe('second-frame');
     expect(await archive.file('issue.md')?.async('string')).toContain('./selected-frame-02.png');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Share by email' }));
-    await waitFor(() => expect(email).toHaveBeenCalledTimes(1));
-    const emailedVisuals = email.mock.calls[0]?.[0].visuals ?? [];
-    expect(emailedVisuals.map((visual) => visual.filename)).toEqual([
-      'selected-frame-01.png',
-      'selected-frame-02.png',
-    ]);
   });
 
   it('captures the current playback frame as local PNG evidence', async () => {
@@ -1178,8 +1043,10 @@ describe('review editor', () => {
       clientY: 20,
       pointerId: 7,
     });
-    fireEvent.pointerMove(annotationCanvas, { clientX: 220, clientY: 120, pointerId: 7 });
-    fireEvent.pointerUp(annotationCanvas, { clientX: 220, clientY: 120, pointerId: 7 });
+    act(() => {
+      fireEvent.pointerMove(annotationCanvas, { clientX: 220, clientY: 120, pointerId: 7 });
+      fireEvent.pointerUp(annotationCanvas, { clientX: 220, clientY: 120, pointerId: 7 });
+    });
     fireEvent.click(noteFrame as SVGForeignObjectElement);
     expect(screen.queryByLabelText('Note text')).toBeNull();
     await waitFor(() => {
@@ -1436,77 +1303,5 @@ describe('review editor', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Keep capture' }));
     expect(screen.queryByText('Delete this capture permanently?')).toBeNull();
-  });
-
-  it('auto-saves a complete report before sharing it by email', async () => {
-    render(<ReviewApp />);
-
-    await screen.findByDisplayValue('Checkout fails');
-    fireEvent.change(screen.getByLabelText('Expected behavior (optional)'), {
-      target: { value: 'The order should complete.' },
-    });
-    fireEvent.change(screen.getByLabelText('Actual behavior (optional)'), {
-      target: { value: 'The payment button stays disabled.' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Share by email' }));
-
-    await waitFor(() => expect(email).toHaveBeenCalledTimes(1));
-    expect(send).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'session:update-review',
-        expectedBehavior: 'The order should complete.',
-        actualBehavior: 'The payment button stays disabled.',
-      }),
-    );
-    expect(email).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionId: session.id,
-        subject: 'Checkout fails',
-        visuals: [],
-      }),
-    );
-    expect(await screen.findByText('Emailed issue.md')).toBeDefined();
-  });
-
-  it('shows a loading state and prevents duplicate clicks while sharing by email', async () => {
-    let finishEmail: ((result: { visualAttached: boolean }) => void) | undefined;
-    email.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          finishEmail = resolve;
-        }),
-    );
-    render(<ReviewApp />);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Share by email' }));
-
-    const sendingButton = await screen.findByRole<HTMLButtonElement>('button', {
-      name: 'Sending report by email',
-    });
-    expect(sendingButton.disabled).toBe(true);
-    expect(sendingButton.getAttribute('aria-busy')).toBe('true');
-    fireEvent.click(sendingButton);
-    expect(email).toHaveBeenCalledTimes(1);
-
-    finishEmail?.({ visualAttached: false });
-    expect(await screen.findByRole('button', { name: 'Report emailed' })).toBeDefined();
-  });
-
-  it('labels email as unavailable when the build has no report endpoint', async () => {
-    emailConfigured.mockReturnValue(false);
-    render(<ReviewApp />);
-
-    await screen.findByDisplayValue('Checkout fails');
-    const emailButton = screen.getByRole('button', { name: 'Email unavailable' });
-    expect((emailButton as HTMLButtonElement).disabled).toBe(true);
-    expect(emailButton.getAttribute('title')).toContain('VITE_BUGRECEIPT_REPORT_ENDPOINT');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Report an issue' }));
-    expect(
-      screen.getByText('Email delivery is unavailable in this extension build.'),
-    ).toBeDefined();
-    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Send email' }).disabled).toBe(
-      true,
-    );
   });
 });

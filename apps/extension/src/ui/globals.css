@@ -95,8 +95,8 @@ button:disabled {
   background: rgb(255 255 255 / 96%);
   backdrop-filter: blur(12px);
 }
-.support-link,
-.report-issue-trigger {
+.issue-link,
+.support-link {
   min-height: 36px;
   display: inline-flex;
   align-items: center;
@@ -116,21 +116,21 @@ button:disabled {
     transform var(--motion-fast) ease,
     box-shadow var(--motion-ui) ease;
 }
-.support-link:hover,
-.report-issue-trigger:hover {
+.issue-link:hover,
+.support-link:hover {
   border-color: var(--trace);
   color: #116571;
   background: #eef8f8;
   box-shadow: 0 5px 14px rgb(31 159 174 / 12%);
   transform: translateY(-1px);
 }
-.support-link:active,
-.report-issue-trigger:active {
+.issue-link:active,
+.support-link:active {
   box-shadow: none;
   transform: translateY(0) scale(0.985);
 }
-.support-link svg,
-.report-issue-trigger svg {
+.issue-link svg,
+.support-link svg {
   width: 15px;
   height: 15px;
   fill: none;
@@ -302,7 +302,6 @@ h1 em {
   width: 100%;
   padding-block: var(--space-3);
 }
-.email-action,
 .button-with-status {
   display: inline-flex;
   align-items: center;
@@ -1703,201 +1702,6 @@ h1 em {
   align-items: center;
   gap: var(--space-2);
 }
-.report-issue-layer {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  padding: var(--space-5);
-  display: grid;
-  place-items: center;
-  overflow: auto;
-  background: rgb(16 35 50 / 52%);
-  animation: report-backdrop-enter var(--motion-ui) ease-out both;
-}
-.report-issue-dialog {
-  width: min(540px, 100%);
-  max-height: calc(100vh - (var(--space-5) * 2));
-  overflow: auto;
-  border: 1px solid var(--ink);
-  background: var(--paper);
-  box-shadow: 12px 18px 42px rgb(16 35 50 / 24%);
-  animation: report-sheet-enter var(--motion-panel) var(--ease-out) both;
-}
-@keyframes report-backdrop-enter {
-  from {
-    background: rgb(16 35 50 / 0%);
-  }
-}
-@keyframes report-sheet-enter {
-  from {
-    opacity: 0.78;
-    filter: blur(1px);
-    clip-path: inset(0 0 18px 0);
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-    clip-path: inset(0);
-    transform: translateY(0);
-  }
-}
-.report-issue-dialog-heading {
-  padding: var(--space-5);
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-5);
-}
-.report-issue-dialog-heading h2 {
-  margin: 0;
-  font-size: 22px;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-}
-.report-issue-dialog-heading p {
-  max-width: 54ch;
-  margin: var(--space-2) 0 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.5;
-}
-.report-issue-close {
-  flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid var(--line);
-  display: inline-grid;
-  place-items: center;
-  background: transparent;
-  color: var(--ink);
-}
-.report-issue-close:hover:not(:disabled) {
-  border-color: var(--signal);
-  color: #812b19;
-  background: #fff0ec;
-}
-.report-issue-close svg {
-  width: 17px;
-  height: 17px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: square;
-}
-.report-issue-form {
-  padding: var(--space-5);
-  display: grid;
-  gap: var(--space-4);
-}
-.report-issue-field {
-  display: grid;
-  gap: 7px;
-}
-.report-issue-field label {
-  color: var(--ink);
-  font:
-    700 10px/1.4 'JetBrains Mono Variable',
-    monospace;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-.report-issue-field input,
-.report-issue-field textarea {
-  width: 100%;
-  border: 1px solid var(--line);
-  padding: var(--space-3);
-  background: #fff;
-  color: var(--ink);
-  caret-color: var(--trace);
-  line-height: 1.45;
-  resize: vertical;
-  transition:
-    border-color 140ms ease,
-    background-color 140ms ease;
-}
-.report-issue-field input:hover,
-.report-issue-field textarea:hover {
-  border-color: #86a5b0;
-}
-.report-issue-field input:focus,
-.report-issue-field textarea:focus {
-  border-color: var(--trace);
-}
-.report-issue-field input[aria-invalid='true'],
-.report-issue-field textarea[aria-invalid='true'] {
-  border-color: var(--signal);
-  background: #fff8f5;
-}
-.report-issue-field textarea::placeholder {
-  color: var(--muted);
-}
-.report-issue-field input::selection,
-.report-issue-field textarea::selection {
-  background: var(--trace-soft);
-  color: var(--ink);
-}
-.diagnosis-consent {
-  padding: var(--space-3);
-  border: 1px solid #add3d7;
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  background: #eef8f8;
-  cursor: pointer;
-  transition:
-    background-color var(--motion-ui) ease,
-    border-color var(--motion-ui) ease,
-    box-shadow var(--motion-ui) ease;
-}
-.diagnosis-consent:hover {
-  border-color: var(--trace);
-  background: #e4f5f6;
-  box-shadow: inset 3px 0 var(--trace);
-}
-.diagnosis-consent input {
-  width: 17px;
-  height: 17px;
-  margin: 2px 0 0;
-  flex: 0 0 auto;
-  accent-color: var(--trace);
-}
-.diagnosis-consent span {
-  min-width: 0;
-  display: grid;
-  gap: 3px;
-}
-.diagnosis-consent strong {
-  color: var(--ink);
-  font-size: 13px;
-}
-.diagnosis-consent small {
-  color: #3e6b72;
-  font-size: 11px;
-  line-height: 1.45;
-}
-.report-issue-configuration,
-.report-issue-error {
-  margin: 0;
-  padding: var(--space-3);
-  border: 1px solid #e1a99c;
-  background: #fff0ec;
-  color: #812b19;
-  font-size: 12px;
-  line-height: 1.45;
-}
-.report-issue-actions {
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--line);
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
-}
-.report-issue-actions .button {
-  min-width: 112px;
-}
 .review-commandbar {
   position: sticky;
   top: 68px;
@@ -2629,7 +2433,7 @@ h1 em {
     font-size: 11px;
   }
   .review-download-control {
-    grid-column: 1 / -1;
+    grid-column: auto;
     align-self: stretch;
   }
   .review-download-trigger {
@@ -2700,37 +2504,17 @@ h1 em {
     gap: var(--space-2);
   }
   .review-header .brand-version,
+  .review-header .issue-link-label,
   .review-header .support-link-label {
     display: none;
   }
+  .review-header .issue-link,
   .review-header .support-link {
     width: 38px;
     padding: 0;
   }
   .review-header-controls {
     gap: 6px;
-  }
-  .report-issue-trigger {
-    padding-inline: 10px;
-  }
-  .report-issue-layer {
-    padding: var(--space-3);
-    place-items: start center;
-  }
-  .report-issue-dialog {
-    max-height: calc(100vh - (var(--space-3) * 2));
-  }
-  .report-issue-dialog-heading,
-  .report-issue-form {
-    padding: var(--space-4);
-  }
-  .report-issue-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-  .report-issue-actions .button {
-    width: 100%;
-    min-width: 0;
   }
 }
 

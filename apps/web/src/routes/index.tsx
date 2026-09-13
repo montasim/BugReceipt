@@ -45,7 +45,7 @@ const questions = [
   {
     question: 'Does a recording upload automatically?',
     answer:
-      'No. The capture stays in extension-owned browser storage. Downloading creates a local report bundle; email delivery happens only after you explicitly choose it.',
+      'No. The capture stays in extension-owned browser storage. Copying Markdown or downloading a folder or ZIP creates only local output.',
   },
   {
     question: 'Why do I need Chrome Developer mode?',
@@ -254,10 +254,10 @@ function Home() {
               id="privacy-title"
               className="m-0 self-center px-0 py-8 pr-8 text-[clamp(1.5rem,2vw,2rem)] leading-[1.08] font-[570] tracking-[-0.035em] max-[1180px]:col-span-full max-[1180px]:border-b max-[1180px]:border-line-soft max-[620px]:px-4 max-[620px]:py-5"
             >
-              Local until you choose to <em className="not-italic text-signal-text">share.</em>
+              Review locally. Export only what you choose.
             </h2>
             <PrivacyPrinciple icon="lock" title="Everything stays on your device">
-              No upload. No cloud. No third-party servers.
+              Capture evidence is never uploaded by report export.
             </PrivacyPrinciple>
             <PrivacyPrinciple icon="eye-off" title="Captures only after you start">
               Before you click record, nothing is collected.
@@ -266,7 +266,7 @@ function Home() {
               Review, filter, annotate, and remove before export.
             </PrivacyPrinciple>
             <PrivacyPrinciple icon="download" title="Export is always your choice">
-              Send it to a team, or keep it for later.
+              Copy Markdown, download a folder, or keep one ZIP.
             </PrivacyPrinciple>
           </div>
         </section>

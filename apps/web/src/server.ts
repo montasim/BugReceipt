@@ -1,5 +1,4 @@
 import handler, { createServerEntry } from '@tanstack/react-start/server-entry';
-import { handleReportEmailRequest } from './server/report-email';
 
 const LANDING_DESIGN_CONTRACT = `<!--
 THESIS: One uninterrupted evidence trace turns a browser failure into a reproducible local report; this surface refuses the stacked hero-and-feature-card landing page.
@@ -13,9 +12,6 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 export default createServerEntry({
   async fetch(request) {
     const url = new URL(request.url);
-    if (url.pathname === '/api/reports' && ['OPTIONS', 'POST'].includes(request.method)) {
-      return handleReportEmailRequest(request);
-    }
     const response = await handler.fetch(request);
     if (
       request.method === 'GET' &&

@@ -23,7 +23,7 @@ describe('extension landing page', () => {
     expect(source).toContain('Extension workflow · Live preview');
     expect(source).toContain('Turn broken into');
     expect(source).toContain('Evidence trace');
-    expect(source).toContain('Local until you choose to');
+    expect(source).toContain('Review locally. Export only what you choose.');
   });
 
   it('keeps the landing-page design contract in the rendered response', () => {
@@ -126,7 +126,7 @@ describe('extension landing page', () => {
     expect(source).toContain('code="404"');
     expect(source).toContain('code="500"');
     expect(source).toContain('Try again');
-    expect(source).toContain('Nothing uploaded');
+    expect(source).toContain('Local export');
     expect(source).toContain('shadow-[0_22px_48px_rgb(16_35_50_/_0.14)]');
 
     const notFoundMarkup = renderToStaticMarkup(<NotFound />);
