@@ -1058,6 +1058,36 @@ export function ReviewApp() {
           </p>
         </div>
         <div className="review-actions">
+          {confirmDelete ? (
+            <div className="delete-confirmation" role="group" aria-label="Confirm capture deletion">
+              <span>Delete this capture permanently?</span>
+              <button
+                className="button danger"
+                type="button"
+                onClick={() => void discard()}
+                disabled={busy}
+              >
+                Delete now
+              </button>
+              <button
+                className="button quiet"
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={busy}
+              >
+                Keep capture
+              </button>
+            </div>
+          ) : (
+            <button
+              className="button danger"
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              disabled={busy}
+            >
+              Delete local capture
+            </button>
+          )}
           <button
             className="button quiet"
             type="button"
@@ -1898,36 +1928,6 @@ export function ReviewApp() {
         <p aria-live="polite">
           {notice || 'Export creates local files only. You choose whether to publish them.'}
         </p>
-        {confirmDelete ? (
-          <div className="delete-confirmation" role="group" aria-label="Confirm capture deletion">
-            <span>Delete this capture permanently?</span>
-            <button
-              className="button danger"
-              type="button"
-              onClick={() => void discard()}
-              disabled={busy}
-            >
-              Delete now
-            </button>
-            <button
-              className="button quiet"
-              type="button"
-              onClick={() => setConfirmDelete(false)}
-              disabled={busy}
-            >
-              Keep capture
-            </button>
-          </div>
-        ) : (
-          <button
-            className="button danger"
-            type="button"
-            onClick={() => setConfirmDelete(true)}
-            disabled={busy}
-          >
-            Delete local capture
-          </button>
-        )}
       </footer>
       {error && (
         <p className="error-banner fixed" role="alert">

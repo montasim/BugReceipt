@@ -2436,6 +2436,10 @@ h1 em {
     grid-column: auto;
     align-self: stretch;
   }
+  .review-actions .delete-confirmation {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
   .review-download-trigger {
     width: 100%;
   }
@@ -2551,7 +2555,7 @@ h1 em {
     min-width: 44px;
   }
   .review-footer,
-  .delete-confirmation {
+  .review-actions .delete-confirmation {
     align-items: stretch;
     flex-direction: column;
   }
