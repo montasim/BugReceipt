@@ -56,6 +56,15 @@ export function BorderIcon(props: IconProps) {
   );
 }
 
+export function AddTextIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M5 6h10M10 6v12M7 18h6" />
+      <path d="M16 12v7M12.5 15.5h7" />
+    </IconBase>
+  );
+}
+
 export function UndoIcon(props: IconProps) {
   return (
     <IconBase {...props}>

@@ -1144,6 +1144,9 @@ h1 em {
   cursor: default;
   touch-action: pan-y;
 }
+.frame-annotation-interaction-surface {
+  pointer-events: all;
+}
 .frame-annotation-shape {
   pointer-events: none;
 }
@@ -1151,11 +1154,91 @@ h1 em {
   cursor: move;
   pointer-events: all;
 }
+.frame-annotation-shape.is-text-editing {
+  cursor: text;
+  pointer-events: all !important;
+}
+.frame-annotation-note {
+  overflow: visible;
+}
+.frame-annotation-note-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: calc(var(--annotation-note-font-size) * 0.58);
+  padding-top: calc(var(--annotation-note-font-size) * 0.82);
+  border: calc(var(--annotation-note-font-size) * 0.07) solid var(--annotation-note-color);
+  border-top-width: calc(var(--annotation-note-font-size) * 0.24);
+  color: var(--ink);
+  background: rgb(255 253 247 / 96%);
+  box-shadow: 0 calc(var(--annotation-note-font-size) * 0.18)
+    calc(var(--annotation-note-font-size) * 0.46) rgb(16 35 50 / 18%);
+  font:
+    600 var(--annotation-note-font-size) / 1.34 'Bricolage Grotesque Variable',
+    sans-serif;
+  text-align: left;
+}
+.frame-annotation-note-card.is-editing {
+  pointer-events: auto;
+  outline: calc(var(--annotation-note-font-size) * 0.06) solid var(--trace);
+  outline-offset: calc(var(--annotation-note-font-size) * -0.06);
+}
+.frame-annotation-note-card p {
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.frame-annotation-note-card textarea {
+  width: auto;
+  height: auto;
+  min-height: 0;
+  field-sizing: content;
+  padding: 0;
+  resize: none;
+  border: 0;
+  outline: 0;
+  color: inherit;
+  background: transparent;
+  caret-color: var(--annotation-note-color);
+  font: inherit;
+  line-height: inherit;
+}
+.frame-annotation-note-card textarea::placeholder {
+  color: #526771;
+  opacity: 1;
+}
+.frame-annotation-note-card textarea[aria-invalid='true'] {
+  color: #812b19;
+}
+.frame-annotation-note-error {
+  position: absolute;
+  right: calc(var(--annotation-note-font-size) * 0.42);
+  bottom: calc(var(--annotation-note-font-size) * 0.34);
+  left: calc(var(--annotation-note-font-size) * 0.42);
+  padding: calc(var(--annotation-note-font-size) * 0.18)
+    calc(var(--annotation-note-font-size) * 0.28);
+  color: #812b19;
+  background: #fff0eb;
+  font-size: calc(var(--annotation-note-font-size) * 0.54);
+  font-weight: 750;
+  line-height: 1.25;
+}
 .frame-annotation-hit-area {
   fill: transparent;
   stroke: transparent;
   stroke-width: 12px;
   vector-effect: non-scaling-stroke;
+  pointer-events: all;
+  touch-action: none;
+  user-select: none;
+}
+.frame-annotation-note-move-surface {
+  cursor: grab;
 }
 .frame-annotation-selection > rect:first-child {
   fill: none;
@@ -1165,14 +1248,21 @@ h1 em {
   vector-effect: non-scaling-stroke;
 }
 .frame-annotation-handle {
-  cursor: nwse-resize;
   fill: var(--paper);
   stroke: var(--trace);
   stroke-width: 1.5px;
   vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
-.frame-annotation-handle:nth-of-type(3),
-.frame-annotation-handle:nth-of-type(4) {
+.frame-annotation-handle-hit-area {
+  fill: transparent;
+  pointer-events: all;
+  touch-action: none;
+}
+.frame-annotation-resize-control.is-nwse .frame-annotation-handle-hit-area {
+  cursor: nwse-resize;
+}
+.frame-annotation-resize-control.is-nesw .frame-annotation-handle-hit-area {
   cursor: nesw-resize;
 }
 .capture-warning {

@@ -494,13 +494,31 @@ describe('review editor', () => {
     expect(screen.getByRole('button', { name: 'Marker' })).toBeDefined();
     expect(screen.getByRole('button', { name: 'Highlight' })).toBeDefined();
     expect(screen.getByRole('button', { name: 'Border' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Add text' })).toBeDefined();
     expect(screen.getByRole<HTMLButtonElement>('tab', { name: /^Network 1$/ }).disabled).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Clear all' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add text' }));
+    const consoleInteractionSurface = consoleAnnotationCanvas.querySelector(
+      '.frame-annotation-interaction-surface',
+    );
+    expect(consoleInteractionSurface).not.toBeNull();
+    fireEvent.click(consoleInteractionSurface as SVGRectElement, { clientX: 100, clientY: 80 });
+    const consoleNote = screen.getByLabelText<HTMLTextAreaElement>('Note text');
+    fireEvent.change(consoleNote, { target: { value: 'This fucking request failed' } });
+    await waitFor(() => expect(consoleNote.getAttribute('aria-invalid')).toBe('true'));
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(await screen.findByText(`Text note: ${OFFENSIVE_LANGUAGE_ERROR}`)).toBeDefined();
+    expect(saveAnnotations).not.toHaveBeenCalled();
+
+    fireEvent.change(consoleNote, { target: { value: 'Check the failed request.' } });
+    await waitFor(() => expect(consoleNote.getAttribute('aria-invalid')).toBe('false'));
     fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     await waitFor(() =>
       expect(saveAnnotations).toHaveBeenCalledWith(
         `${diagnosticSession.id}:evidence:console`,
-        expect.objectContaining({ items: [] }),
+        expect.objectContaining({
+          items: [expect.objectContaining({ kind: 'text', text: 'Check the failed request.' })],
+        }),
       ),
     );
 
@@ -1102,12 +1120,127 @@ describe('review editor', () => {
       'true',
     );
     fireEvent.click(screen.getByRole('button', { name: 'Clear all' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add text' }));
+    expect(screen.getByRole('button', { name: 'Add text' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    const annotationCanvas = screen.getByRole('application', {
+      name: 'Selected frame annotation canvas',
+    });
+    const interactionSurface = annotationCanvas.querySelector(
+      '.frame-annotation-interaction-surface',
+    );
+    expect(interactionSurface).not.toBeNull();
+    fireEvent.click(interactionSurface as SVGRectElement, { clientX: 120, clientY: 90 });
+    const note = screen.getByLabelText<HTMLTextAreaElement>('Note text');
+    expect(note.getAttribute('placeholder')).toBe('Type a note…');
+    expect(screen.getByRole('button', { name: 'Select' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    fireEvent.change(note, { target: { value: 'This fucking total is wrong' } });
+    await waitFor(() => expect(note.getAttribute('aria-invalid')).toBe('true'));
+    expect(screen.getByText(OFFENSIVE_LANGUAGE_ERROR)).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(await screen.findByText(`Text note: ${OFFENSIVE_LANGUAGE_ERROR}`)).toBeDefined();
+    expect(saveAnnotations).not.toHaveBeenCalled();
+
+    fireEvent.change(note, { target: { value: 'Check the total before submitting.' } });
+    await waitFor(() => expect(note.getAttribute('aria-invalid')).toBe('false'));
+    fireEvent.blur(note);
+
+    vi.spyOn(annotationCanvas, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      right: 1_280,
+      bottom: 720,
+      left: 0,
+      width: 1_280,
+      height: 720,
+      toJSON: () => ({}),
+    });
+    Object.defineProperties(annotationCanvas, {
+      setPointerCapture: { configurable: true, value: vi.fn() },
+      releasePointerCapture: { configurable: true, value: vi.fn() },
+      hasPointerCapture: { configurable: true, value: vi.fn(() => true) },
+    });
+
+    const textAnnotation = screen.getByRole('button', { name: 'text annotation' });
+    const noteFrame = textAnnotation.querySelector('foreignObject');
+    const moveSurface = textAnnotation.querySelector('.frame-annotation-note-move-surface');
+    expect(noteFrame).not.toBeNull();
+    expect(moveSurface).not.toBeNull();
+    const initialX = Number(noteFrame?.getAttribute('x'));
+    const initialY = Number(noteFrame?.getAttribute('y'));
+    fireEvent.pointerDown(moveSurface as SVGRectElement, {
+      clientX: 20,
+      clientY: 20,
+      pointerId: 7,
+    });
+    fireEvent.pointerMove(annotationCanvas, { clientX: 220, clientY: 120, pointerId: 7 });
+    fireEvent.pointerUp(annotationCanvas, { clientX: 220, clientY: 120, pointerId: 7 });
+    fireEvent.click(noteFrame as SVGForeignObjectElement);
+    expect(screen.queryByLabelText('Note text')).toBeNull();
+    await waitFor(() => {
+      expect(Number(noteFrame?.getAttribute('x'))).toBeGreaterThan(initialX);
+      expect(Number(noteFrame?.getAttribute('y'))).toBeGreaterThan(initialY);
+    });
+
+    const resizeHandles = annotationCanvas.querySelectorAll('.frame-annotation-handle-hit-area');
+    const bottomRightHandle = resizeHandles.item(resizeHandles.length - 1);
+    const initialWidth = Number(noteFrame?.getAttribute('width'));
+    const initialHeight = Number(noteFrame?.getAttribute('height'));
+    fireEvent.pointerDown(bottomRightHandle, {
+      clientX: 610,
+      clientY: 230,
+      pointerId: 8,
+    });
+    fireEvent.pointerMove(annotationCanvas, { clientX: 800, clientY: 350, pointerId: 8 });
+    fireEvent.pointerUp(annotationCanvas, { clientX: 800, clientY: 350, pointerId: 8 });
+    await waitFor(() => {
+      expect(Number(noteFrame?.getAttribute('width'))).toBeGreaterThan(initialWidth);
+      expect(Number(noteFrame?.getAttribute('height'))).toBeGreaterThan(initialHeight);
+    });
+    const resizedWidth = Number(noteFrame?.getAttribute('width'));
+    const resizedHeight = Number(noteFrame?.getAttribute('height'));
+
+    fireEvent.pointerDown(interactionSurface as SVGRectElement);
+    expect((noteFrame as SVGForeignObjectElement).style.pointerEvents).toBe('all');
+    fireEvent.pointerDown(noteFrame as SVGForeignObjectElement, {
+      clientX: 300,
+      clientY: 180,
+      pointerId: 9,
+    });
+    fireEvent.pointerUp(annotationCanvas, { clientX: 300, clientY: 180, pointerId: 9 });
+    const reopenedNote = screen.getByLabelText<HTMLTextAreaElement>('Note text');
+    expect(reopenedNote.value).toBe('Check the total before submitting.');
+    fireEvent.change(reopenedNote, { target: { value: 'Short note' } });
+    await waitFor(() =>
+      expect(Number(noteFrame?.getAttribute('width'))).toBeLessThan(initialWidth),
+    );
+    const singleLineHeight = Number(noteFrame?.getAttribute('height'));
+    fireEvent.change(reopenedNote, { target: { value: 'Short note\nNext' } });
+    fireEvent.blur(reopenedNote);
+    await waitFor(() => {
+      expect(Number(noteFrame?.getAttribute('width'))).toBeLessThan(resizedWidth);
+      expect(Number(noteFrame?.getAttribute('height'))).toBeLessThan(resizedHeight);
+      expect(Number(noteFrame?.getAttribute('height'))).toBeGreaterThan(singleLineHeight);
+    });
+
     fireEvent.click(screen.getByRole('button', { name: 'Done' }));
 
     await waitFor(() =>
       expect(saveAnnotations).toHaveBeenCalledWith(
         '00000000-0000-4000-8000-000000000004',
-        expect.objectContaining({ items: [] }),
+        expect.objectContaining({
+          items: [
+            expect.objectContaining({
+              kind: 'text',
+              text: 'Short note\nNext',
+            }),
+          ],
+        }),
       ),
     );
     expect(

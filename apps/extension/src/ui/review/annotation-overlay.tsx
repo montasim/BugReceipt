@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState, type CSSProperties } from 'react';
 import type {
   Annotation,
   AnnotationColor,
@@ -6,17 +6,21 @@ import type {
   AnnotationPoint,
   AnnotationTool,
   MarkerAnnotation,
-  RectangleAnnotation,
+  ResizableAnnotation,
   RectangleHandle,
+  TextNoteAnnotation,
 } from '../../application/annotation-model';
 import {
   clientPointToImage,
   createRectangleAnnotation,
+  createTextNoteAnnotation,
   displayStrokeToImage,
   getAnnotationBounds,
+  MAX_ANNOTATION_NOTE_LENGTH,
   resizeRectangleAnnotation,
   translateAnnotation,
 } from '../../application/annotation-model';
+import { useOffensiveLanguageValidation } from '../use-offensive-language-validation';
 
 type Gesture =
   | { type: 'draw-rectangle'; start: AnnotationPoint }
@@ -25,7 +29,7 @@ type Gesture =
   | {
       type: 'resize';
       start: AnnotationPoint;
-      source: RectangleAnnotation;
+      source: ResizableAnnotation;
       handle: RectangleHandle;
     };
 
@@ -40,6 +44,9 @@ type AnnotationOverlayProps = {
   onSelect: (id: string | null) => void;
   onAdd: (annotation: Annotation) => void;
   onReplace: (annotation: Annotation) => void;
+  onUpdate: (annotation: Annotation) => void;
+  onRemove: (id: string) => void;
+  onTextPlaced: () => void;
 };
 
 export function AnnotationOverlay({
@@ -53,15 +60,27 @@ export function AnnotationOverlay({
   onSelect,
   onAdd,
   onReplace,
+  onUpdate,
+  onRemove,
+  onTextPlaced,
 }: AnnotationOverlayProps) {
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const [draft, setDraft] = useState<Annotation | null>(null);
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
+  const [textEditHasHistoryEntry, setTextEditHasHistoryEntry] = useState(false);
+  const suppressTextClick = useRef(false);
   const selected = document.items.find((item) => item.id === selectedId) ?? null;
+  const activeEditingTextId =
+    editing &&
+    (tool === 'select' || tool === 'text') &&
+    document.items.some((item) => item.id === editingTextId)
+      ? editingTextId
+      : null;
   const items = draft
     ? [...document.items.filter((item) => item.id !== draft.id), draft]
     : document.items;
 
-  function imagePoint(event: React.PointerEvent<SVGSVGElement>): AnnotationPoint {
+  function imagePoint(event: React.MouseEvent<SVGSVGElement>): AnnotationPoint {
     return clientPointToImage(
       event.clientX,
       event.clientY,
@@ -76,6 +95,7 @@ export function AnnotationOverlay({
       onSelect(null);
       return;
     }
+    if (tool === 'text') return;
     const start = imagePoint(event);
     const strokeWidth = displayStrokeToImage(
       displayStrokeWidth,
@@ -103,6 +123,29 @@ export function AnnotationOverlay({
     onSelect(id);
   }
 
+  function click(event: React.MouseEvent<SVGSVGElement>) {
+    if (
+      !editing ||
+      tool !== 'text' ||
+      !(event.target instanceof Element) ||
+      !event.target.classList.contains('frame-annotation-interaction-surface')
+    ) {
+      return;
+    }
+    const id = createAnnotationId();
+    const annotation = createTextNoteAnnotation({
+      id,
+      anchor: imagePoint(event),
+      color,
+      document,
+    });
+    onAdd(annotation);
+    onSelect(id);
+    setEditingTextId(id);
+    setTextEditHasHistoryEntry(true);
+    onTextPlaced();
+  }
+
   function pointerMove(event: React.PointerEvent<SVGSVGElement>) {
     if (!gesture || !draft) return;
     const point = imagePoint(event);
@@ -112,11 +155,17 @@ export function AnnotationOverlay({
       setDraft({ ...draft, points: [...draft.points, point] });
       return;
     }
-    if (gesture.type === 'draw-rectangle' && draft.kind !== 'marker') {
+    if (gesture.type === 'draw-rectangle' && draft.kind !== 'marker' && draft.kind !== 'text') {
       setDraft(createRectangleAnnotation({ ...draft, start: gesture.start, end: point }));
       return;
     }
     if (gesture.type === 'move') {
+      if (
+        gesture.source.kind === 'text' &&
+        Math.hypot(point.x - gesture.start.x, point.y - gesture.start.y) > 3
+      ) {
+        suppressTextClick.current = true;
+      }
       setDraft(
         translateAnnotation(
           gesture.source,
@@ -136,23 +185,39 @@ export function AnnotationOverlay({
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    if (gesture.type === 'move' && gesture.source.kind === 'text' && !suppressTextClick.current) {
+      setEditingTextId(gesture.source.id);
+      setTextEditHasHistoryEntry(false);
+      onSelect(gesture.source.id);
+      setGesture(null);
+      setDraft(null);
+      return;
+    }
     const isNew = gesture.type === 'draw-marker' || gesture.type === 'draw-rectangle';
     const isUseful =
       draft.kind === 'marker'
         ? draft.points.length > 1
-        : draft.width >= draft.strokeWidth && draft.height >= draft.strokeWidth;
+        : draft.kind === 'text'
+          ? draft.width >= draft.fontSize * 4 && draft.height >= draft.fontSize * 2.5
+          : draft.width >= draft.strokeWidth && draft.height >= draft.strokeWidth;
     if (isUseful) {
       if (isNew) onAdd(draft);
       else onReplace(draft);
     } else if (isNew) {
       onSelect(null);
     }
+    if (suppressTextClick.current) {
+      globalThis.setTimeout(() => {
+        suppressTextClick.current = false;
+      }, 0);
+    }
     setGesture(null);
     setDraft(null);
   }
 
-  function startMove(event: React.PointerEvent<SVGGElement>, annotation: Annotation) {
+  function startMove(event: React.PointerEvent<SVGElement>, annotation: Annotation) {
     if (!editing || tool !== 'select') return;
+    suppressTextClick.current = false;
     event.stopPropagation();
     const svg = event.currentTarget.ownerSVGElement;
     if (!svg) return;
@@ -170,7 +235,7 @@ export function AnnotationOverlay({
 
   function startResize(
     event: React.PointerEvent<SVGRectElement>,
-    annotation: RectangleAnnotation,
+    annotation: ResizableAnnotation,
     handle: RectangleHandle,
   ) {
     if (!editing || tool !== 'select') return;
@@ -188,6 +253,42 @@ export function AnnotationOverlay({
     setDraft(annotation);
   }
 
+  function beginTextEdit(event: React.SyntheticEvent, annotation: TextNoteAnnotation) {
+    if (!editing || tool !== 'select') return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (suppressTextClick.current) {
+      suppressTextClick.current = false;
+      return;
+    }
+    setEditingTextId(annotation.id);
+    setTextEditHasHistoryEntry(false);
+    onSelect(annotation.id);
+  }
+
+  function updateTextNote(annotation: TextNoteAnnotation, text: string) {
+    const size = measureTextNote(text, annotation, document);
+    const next = {
+      ...annotation,
+      text: text.slice(0, MAX_ANNOTATION_NOTE_LENGTH),
+      ...size,
+    };
+    if (textEditHasHistoryEntry) {
+      onUpdate(next);
+    } else {
+      onReplace(next);
+      setTextEditHasHistoryEntry(true);
+    }
+  }
+
+  function finishTextEdit(annotation: TextNoteAnnotation) {
+    setEditingTextId(null);
+    if (!annotation.text.trim()) {
+      onRemove(annotation.id);
+      onSelect(null);
+    }
+  }
+
   return (
     <svg
       className={`frame-annotation-overlay${editing ? ' is-editing' : ''}${tool !== 'select' ? ' is-drawing' : ''}`}
@@ -200,7 +301,16 @@ export function AnnotationOverlay({
       onPointerMove={pointerMove}
       onPointerUp={pointerUp}
       onPointerCancel={pointerUp}
+      onClick={click}
     >
+      <rect
+        className="frame-annotation-interaction-surface"
+        x="0"
+        y="0"
+        width={document.imageWidth}
+        height={document.imageHeight}
+        fill="transparent"
+      />
       {items.map((annotation) => (
         <AnnotationShape
           key={annotation.id}
@@ -208,11 +318,24 @@ export function AnnotationOverlay({
           editing={editing}
           selected={annotation.id === selectedId}
           tool={tool}
+          textEditing={annotation.kind === 'text' && annotation.id === activeEditingTextId}
           onPointerDown={(event) => startMove(event, annotation)}
           onFocus={() => onSelect(annotation.id)}
+          onBeginTextEdit={(event) =>
+            annotation.kind === 'text' ? beginTextEdit(event, annotation) : undefined
+          }
+          onTextChange={(text) =>
+            annotation.kind === 'text' ? updateTextNote(annotation, text) : undefined
+          }
+          onFinishTextEdit={() =>
+            annotation.kind === 'text' ? finishTextEdit(annotation) : undefined
+          }
         />
       ))}
-      {selected && selected.kind !== 'marker' && tool === 'select' ? (
+      {selected &&
+      selected.kind !== 'marker' &&
+      tool === 'select' &&
+      activeEditingTextId !== selected.id ? (
         <SelectionHandles
           annotation={draft?.id === selected.id && draft.kind !== 'marker' ? draft : selected}
           imageWidth={document.imageWidth}
@@ -228,25 +351,38 @@ function AnnotationShape({
   editing,
   selected,
   tool,
+  textEditing,
   onPointerDown,
   onFocus,
+  onBeginTextEdit,
+  onTextChange,
+  onFinishTextEdit,
 }: {
   annotation: Annotation;
   editing: boolean;
   selected: boolean;
   tool: AnnotationTool;
-  onPointerDown: (event: React.PointerEvent<SVGGElement>) => void;
+  textEditing: boolean;
+  onPointerDown: (event: React.PointerEvent<SVGElement>) => void;
   onFocus: () => void;
+  onBeginTextEdit: (event: React.SyntheticEvent) => void;
+  onTextChange: (text: string) => void;
+  onFinishTextEdit: () => void;
 }) {
   const bounds = getAnnotationBounds(annotation);
   return (
     <g
-      className={`frame-annotation-shape${selected ? ' is-selected' : ''}`}
+      className={`frame-annotation-shape${selected ? ' is-selected' : ''}${textEditing ? ' is-text-editing' : ''}`}
       data-annotation-id={annotation.id}
-      role={editing ? 'button' : undefined}
+      role={editing && !textEditing ? 'button' : undefined}
       aria-label={editing ? `${annotation.kind} annotation` : undefined}
-      tabIndex={editing && tool === 'select' ? 0 : -1}
+      tabIndex={editing && tool === 'select' && !textEditing ? 0 : -1}
       onPointerDown={onPointerDown}
+      onClick={annotation.kind === 'text' ? onBeginTextEdit : undefined}
+      onDoubleClick={annotation.kind === 'text' ? onBeginTextEdit : undefined}
+      onKeyDown={(event) => {
+        if (annotation.kind === 'text' && event.key === 'Enter') onBeginTextEdit(event);
+      }}
       onFocus={onFocus}
     >
       {annotation.kind === 'marker' ? (
@@ -269,6 +405,13 @@ function AnnotationShape({
           fill={annotation.color}
           opacity="0.28"
         />
+      ) : annotation.kind === 'text' ? (
+        <TextNoteShape
+          annotation={annotation}
+          editing={textEditing}
+          onChange={onTextChange}
+          onFinish={onFinishTextEdit}
+        />
       ) : (
         <rect
           x={annotation.x + annotation.strokeWidth / 2}
@@ -281,17 +424,111 @@ function AnnotationShape({
           vectorEffect="non-scaling-stroke"
         />
       )}
-      {selected ? (
+      {selected && !textEditing ? (
         <rect
-          className="frame-annotation-hit-area"
+          className={`frame-annotation-hit-area${annotation.kind === 'text' ? ' frame-annotation-note-move-surface' : ''}`}
           x={bounds.x}
           y={bounds.y}
           width={bounds.width}
           height={bounds.height}
+          onPointerDown={annotation.kind === 'text' ? onPointerDown : undefined}
         />
       ) : null}
     </g>
   );
+}
+
+function TextNoteShape({
+  annotation,
+  editing,
+  onChange,
+  onFinish,
+}: {
+  annotation: TextNoteAnnotation;
+  editing: boolean;
+  onChange: (text: string) => void;
+  onFinish: () => void;
+}) {
+  const moderation = useOffensiveLanguageValidation(annotation.text);
+  const errorId = `annotation-note-error-${annotation.id}`;
+  const style = {
+    '--annotation-note-color': annotation.color,
+    '--annotation-note-font-size': `${annotation.fontSize}px`,
+  } as CSSProperties;
+  return (
+    <foreignObject
+      className="frame-annotation-note"
+      x={annotation.x}
+      y={annotation.y}
+      width={annotation.width}
+      height={annotation.height}
+      style={{ pointerEvents: 'all' }}
+    >
+      <div className={`frame-annotation-note-card${editing ? ' is-editing' : ''}`} style={style}>
+        {editing ? (
+          <>
+            <textarea
+              autoFocus
+              aria-label="Note text"
+              aria-busy={moderation.checking}
+              aria-invalid={Boolean(moderation.error)}
+              aria-describedby={moderation.error ? errorId : undefined}
+              maxLength={MAX_ANNOTATION_NOTE_LENGTH}
+              placeholder="Type a note…"
+              value={annotation.text}
+              onChange={(event) => onChange(event.currentTarget.value)}
+              onBlur={onFinish}
+              onPointerDown={(event) => event.stopPropagation()}
+              onKeyDown={(event) => {
+                event.stopPropagation();
+                if (
+                  event.key === 'Escape' ||
+                  ((event.metaKey || event.ctrlKey) && event.key === 'Enter')
+                ) {
+                  event.currentTarget.blur();
+                }
+              }}
+            />
+            {moderation.error ? (
+              <span id={errorId} className="frame-annotation-note-error" role="alert">
+                {moderation.error}
+              </span>
+            ) : null}
+          </>
+        ) : (
+          <p>{annotation.text || 'Type a note…'}</p>
+        )}
+      </div>
+    </foreignObject>
+  );
+}
+
+function measureTextNote(
+  text: string,
+  annotation: TextNoteAnnotation,
+  document: Pick<AnnotationDocument, 'imageWidth' | 'imageHeight'>,
+): Pick<TextNoteAnnotation, 'width' | 'height'> {
+  const horizontalChrome = annotation.fontSize * 1.3;
+  const verticalChrome = annotation.fontSize * 1.71;
+  const availableWidth = Math.max(
+    annotation.fontSize * 3,
+    document.imageWidth - annotation.x - horizontalChrome,
+  );
+  const characterWidth = annotation.fontSize * 0.58;
+  const lines = (text || 'Type a note…').split('\n');
+  const lineWidths = lines.map((line) => Math.max(characterWidth, line.length * characterWidth));
+  const contentWidth = Math.min(Math.max(...lineWidths), availableWidth);
+  const visualLineCount = lineWidths.reduce(
+    (count, width) => count + Math.max(1, Math.ceil(width / availableWidth)),
+    0,
+  );
+  return {
+    width: Math.ceil(contentWidth + horizontalChrome),
+    height: Math.min(
+      Math.ceil(visualLineCount * annotation.fontSize * 1.34 + verticalChrome),
+      document.imageHeight - annotation.y,
+    ),
+  };
 }
 
 function SelectionHandles({
@@ -299,16 +536,18 @@ function SelectionHandles({
   imageWidth,
   onPointerDown,
 }: {
-  annotation: RectangleAnnotation;
+  annotation: ResizableAnnotation;
   imageWidth: number;
   onPointerDown: (
     event: React.PointerEvent<SVGRectElement>,
-    annotation: RectangleAnnotation,
+    annotation: ResizableAnnotation,
     handle: RectangleHandle,
   ) => void;
 }) {
   const handleSize = Math.max(12, imageWidth / 95);
   const half = handleSize / 2;
+  const hitSize = Math.max(handleSize * 2.25, imageWidth / 42);
+  const hitHalf = hitSize / 2;
   const handles: Array<{ name: RectangleHandle; x: number; y: number }> = [
     { name: 'top-left', x: annotation.x, y: annotation.y },
     { name: 'top-right', x: annotation.x + annotation.width, y: annotation.y },
@@ -322,17 +561,29 @@ function SelectionHandles({
   return (
     <g className="frame-annotation-selection">
       <rect x={annotation.x} y={annotation.y} width={annotation.width} height={annotation.height} />
-      {handles.map((handle) => (
-        <rect
-          key={handle.name}
-          className="frame-annotation-handle"
-          x={handle.x - half}
-          y={handle.y - half}
-          width={handleSize}
-          height={handleSize}
-          onPointerDown={(event) => onPointerDown(event, annotation, handle.name)}
-        />
-      ))}
+      {handles.map((handle) => {
+        const cursor =
+          handle.name === 'top-left' || handle.name === 'bottom-right' ? 'nwse' : 'nesw';
+        return (
+          <g key={handle.name} className={`frame-annotation-resize-control is-${cursor}`}>
+            <rect
+              className="frame-annotation-handle-hit-area"
+              x={handle.x - hitHalf}
+              y={handle.y - hitHalf}
+              width={hitSize}
+              height={hitSize}
+              onPointerDown={(event) => onPointerDown(event, annotation, handle.name)}
+            />
+            <rect
+              className="frame-annotation-handle"
+              x={handle.x - half}
+              y={handle.y - half}
+              width={handleSize}
+              height={handleSize}
+            />
+          </g>
+        );
+      })}
     </g>
   );
 }

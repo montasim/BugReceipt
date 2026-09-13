@@ -5,6 +5,7 @@ import {
   type AnnotationTool,
 } from '../../application/annotation-model';
 import {
+  AddTextIcon,
   BorderIcon,
   CheckIcon,
   ClearIcon,
@@ -39,6 +40,7 @@ const tools = [
   { id: 'marker', label: 'Marker', icon: <MarkerIcon /> },
   { id: 'highlight', label: 'Highlight', icon: <HighlightIcon /> },
   { id: 'border', label: 'Border', icon: <BorderIcon /> },
+  { id: 'text', label: 'Add text', icon: <AddTextIcon /> },
 ] as const;
 
 export function AnnotationToolbar({
@@ -102,7 +104,8 @@ export function AnnotationToolbar({
           <select
             value={strokeWidth}
             aria-label="Annotation width"
-            disabled={saving}
+            disabled={saving || tool === 'text'}
+            title={tool === 'text' ? 'Width does not apply to text notes' : undefined}
             onChange={(event) => onStrokeWidthChange(Number(event.target.value))}
           >
             <option value="3">Thin</option>

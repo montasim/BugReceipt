@@ -13,12 +13,15 @@ import {
   createAnnotationHistory,
   isAnnotationDocument,
   redoAnnotation,
+  updateAnnotationDocument,
   undoAnnotation,
   type Annotation,
   type AnnotationColor,
+  type AnnotationDocument,
   type AnnotationHistory,
   type AnnotationTool,
 } from '../../application/annotation-model';
+import { getOffensiveLanguageError } from '../../application/content-moderation';
 import { sendRuntimeMessage } from '../../application/protocol';
 import { renderAnnotatedPng } from '../../application/render-annotations';
 import {
@@ -631,6 +634,7 @@ export function ReviewApp() {
       marker: 'Draw directly on the frame with the marker',
       highlight: 'Drag over an area to add a translucent highlight',
       border: 'Drag around an area to add a border',
+      text: 'Click the frame to place a note, then type inside it',
     };
     setNotice(instructions[tool]);
   }
@@ -649,6 +653,12 @@ export function ReviewApp() {
     setSavingAnnotations(true);
     setError('');
     try {
+      const noteError = await getAnnotationNoteError(annotationDocument);
+      if (noteError) {
+        setError(`Text note: ${noteError}`);
+        setNotice('Update or remove the flagged note before saving annotations');
+        return;
+      }
       await saveAnnotationDocument(frameId, annotationDocument);
       annotationBaseline.current = null;
       setSelectedAnnotationId(null);
@@ -676,6 +686,19 @@ export function ReviewApp() {
 
   function replaceAnnotation(annotation: Annotation) {
     setAnnotations((history) => commitAnnotation(history, { type: 'replace', annotation }));
+  }
+
+  function updateAnnotation(annotation: Annotation) {
+    setAnnotations((history) => ({
+      ...history,
+      present: updateAnnotationDocument(history.present, { type: 'replace', annotation }),
+      future: [],
+    }));
+  }
+
+  function removeAnnotation(id: string) {
+    setAnnotations((history) => commitAnnotation(history, { type: 'remove', id }));
+    setSelectedAnnotationId(null);
   }
 
   function updateEvidenceAnnotationHistory(
@@ -712,6 +735,7 @@ export function ReviewApp() {
       marker: 'Draw directly on the evidence with the marker',
       highlight: 'Drag over evidence to add a translucent highlight',
       border: 'Drag around evidence to add a border',
+      text: 'Click the evidence to place a note, then type inside it',
     };
     setNotice(instructions[tool]);
   }
@@ -737,6 +761,12 @@ export function ReviewApp() {
     setSavingEvidenceAnnotations(true);
     setError('');
     try {
+      const noteError = await getAnnotationNoteError(document);
+      if (noteError) {
+        setError(`Text note: ${noteError}`);
+        setNotice(`Update or remove the flagged ${source} note before saving annotations`);
+        return;
+      }
       await saveAnnotationDocument(getEvidenceAnnotationTargetId(session.id, source), document);
       evidenceAnnotationBaseline.current = null;
       setSelectedEvidenceAnnotationId(null);
@@ -770,6 +800,23 @@ export function ReviewApp() {
     updateEvidenceAnnotationHistory(annotatingEvidence, (history) =>
       commitAnnotation(history, { type: 'replace', annotation }),
     );
+  }
+
+  function updateEvidenceAnnotation(annotation: Annotation) {
+    if (!annotatingEvidence) return;
+    updateEvidenceAnnotationHistory(annotatingEvidence, (history) => ({
+      ...history,
+      present: updateAnnotationDocument(history.present, { type: 'replace', annotation }),
+      future: [],
+    }));
+  }
+
+  function removeEvidenceAnnotation(id: string) {
+    if (!annotatingEvidence) return;
+    updateEvidenceAnnotationHistory(annotatingEvidence, (history) =>
+      commitAnnotation(history, { type: 'remove', id }),
+    );
+    setSelectedEvidenceAnnotationId(null);
   }
 
   async function removeStoredTextAnnotationsForEvent(eventId: string) {
@@ -1707,6 +1754,9 @@ export function ReviewApp() {
                           onSelect={setSelectedAnnotationId}
                           onAdd={addAnnotation}
                           onReplace={replaceAnnotation}
+                          onUpdate={updateAnnotation}
+                          onRemove={removeAnnotation}
+                          onTextPlaced={() => setAnnotationTool('select')}
                         />
                       </div>
                     </>
@@ -1824,6 +1874,9 @@ export function ReviewApp() {
                 onSelectAnnotation={setSelectedEvidenceAnnotationId}
                 onAddAnnotation={addEvidenceAnnotation}
                 onReplaceAnnotation={replaceEvidenceAnnotation}
+                onUpdateAnnotation={updateEvidenceAnnotation}
+                onRemoveAnnotation={removeEvidenceAnnotation}
+                onTextPlaced={() => setEvidenceAnnotationTool('select')}
                 onRemove={removeDiagnostic}
               />
             )}
@@ -1895,6 +1948,9 @@ export function ReviewApp() {
                 onSelectAnnotation={setSelectedEvidenceAnnotationId}
                 onAddAnnotation={addEvidenceAnnotation}
                 onReplaceAnnotation={replaceEvidenceAnnotation}
+                onUpdateAnnotation={updateEvidenceAnnotation}
+                onRemoveAnnotation={removeEvidenceAnnotation}
+                onTextPlaced={() => setEvidenceAnnotationTool('select')}
                 onRemove={removeNetworkEvent}
               />
             )}
@@ -1958,6 +2014,9 @@ interface AnnotatableEvidenceWindowProps {
   onSelectAnnotation: (id: string | null) => void;
   onAddAnnotation: (annotation: Annotation) => void;
   onReplaceAnnotation: (annotation: Annotation) => void;
+  onUpdateAnnotation: (annotation: Annotation) => void;
+  onRemoveAnnotation: (id: string) => void;
+  onTextPlaced: () => void;
   onRemove: (id: string) => Promise<void> | void;
 }
 
@@ -1978,6 +2037,9 @@ function ConsoleEvidenceWindow({
   onSelectAnnotation,
   onAddAnnotation,
   onReplaceAnnotation,
+  onUpdateAnnotation,
+  onRemoveAnnotation,
+  onTextPlaced,
   onRemove,
 }: ConsoleEvidenceWindowProps) {
   return (
@@ -2030,6 +2092,9 @@ function ConsoleEvidenceWindow({
           onSelect={onSelectAnnotation}
           onAdd={onAddAnnotation}
           onReplace={onReplaceAnnotation}
+          onUpdate={onUpdateAnnotation}
+          onRemove={onRemoveAnnotation}
+          onTextPlaced={onTextPlaced}
         />
       </div>
     </div>
@@ -2053,6 +2118,9 @@ function NetworkEvidenceWindow({
   onSelectAnnotation,
   onAddAnnotation,
   onReplaceAnnotation,
+  onUpdateAnnotation,
+  onRemoveAnnotation,
+  onTextPlaced,
   onRemove,
 }: NetworkEvidenceWindowProps) {
   return (
@@ -2188,6 +2256,9 @@ function NetworkEvidenceWindow({
           onSelect={onSelectAnnotation}
           onAdd={onAddAnnotation}
           onReplace={onReplaceAnnotation}
+          onUpdate={onUpdateAnnotation}
+          onRemove={onRemoveAnnotation}
+          onTextPlaced={onTextPlaced}
         />
       </div>
     </div>
@@ -2201,6 +2272,15 @@ function downloadBlob(blob: Blob, filename: string) {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+async function getAnnotationNoteError(document: AnnotationDocument): Promise<string> {
+  for (const annotation of document.items) {
+    if (annotation.kind !== 'text' || !annotation.text.trim()) continue;
+    const error = await getOffensiveLanguageError(annotation.text);
+    if (error) return error;
+  }
+  return '';
 }
 
 function downloadBlobFromUrl(url: string, filename: string) {
