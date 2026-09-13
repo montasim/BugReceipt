@@ -66,9 +66,11 @@ export function AnnotationOverlay({
 }: AnnotationOverlayProps) {
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const [draft, setDraft] = useState<Annotation | null>(null);
+  const draftRef = useRef<Annotation | null>(null);
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
   const [textEditHasHistoryEntry, setTextEditHasHistoryEntry] = useState(false);
   const suppressTextClick = useRef(false);
+  const gestureHasHistoryEntry = useRef(false);
   const selected = document.items.find((item) => item.id === selectedId) ?? null;
   const activeEditingTextId =
     editing &&
@@ -79,6 +81,11 @@ export function AnnotationOverlay({
   const items = draft
     ? [...document.items.filter((item) => item.id !== draft.id), draft]
     : document.items;
+
+  function updateDraft(next: Annotation | null) {
+    draftRef.current = next;
+    setDraft(next);
+  }
 
   function imagePoint(event: React.MouseEvent<SVGSVGElement>): AnnotationPoint {
     return clientPointToImage(
@@ -113,10 +120,10 @@ export function AnnotationOverlay({
         points: [start],
       };
       setGesture({ type: 'draw-marker', start });
-      setDraft(annotation);
+      updateDraft(annotation);
     } else {
       setGesture({ type: 'draw-rectangle', start });
-      setDraft(
+      updateDraft(
         createRectangleAnnotation({ id, kind: tool, start, end: start, color, strokeWidth }),
       );
     }
@@ -152,36 +159,46 @@ export function AnnotationOverlay({
     if (gesture.type === 'draw-marker' && draft.kind === 'marker') {
       const previous = draft.points.at(-1) ?? gesture.start;
       if (Math.hypot(point.x - previous.x, point.y - previous.y) < draft.strokeWidth / 3) return;
-      setDraft({ ...draft, points: [...draft.points, point] });
+      updateDraft({ ...draft, points: [...draft.points, point] });
       return;
     }
     if (gesture.type === 'draw-rectangle' && draft.kind !== 'marker' && draft.kind !== 'text') {
-      setDraft(createRectangleAnnotation({ ...draft, start: gesture.start, end: point }));
+      updateDraft(createRectangleAnnotation({ ...draft, start: gesture.start, end: point }));
       return;
     }
     if (gesture.type === 'move') {
-      if (
-        gesture.source.kind === 'text' &&
-        Math.hypot(point.x - gesture.start.x, point.y - gesture.start.y) > 3
-      ) {
+      const distance = Math.hypot(point.x - gesture.start.x, point.y - gesture.start.y);
+      if (gesture.source.kind === 'text' && distance <= 3) return;
+      if (gesture.source.kind === 'text' && distance > 3) {
         suppressTextClick.current = true;
       }
-      setDraft(
-        translateAnnotation(
-          gesture.source,
-          { x: point.x - gesture.start.x, y: point.y - gesture.start.y },
-          document,
-        ),
+      const next = translateAnnotation(
+        gesture.source,
+        { x: point.x - gesture.start.x, y: point.y - gesture.start.y },
+        document,
       );
+      updateDraft(next);
+      if (gestureHasHistoryEntry.current) onUpdate(next);
+      else {
+        onReplace(next);
+        gestureHasHistoryEntry.current = true;
+      }
       return;
     }
     if (gesture.type === 'resize' && draft.kind !== 'marker') {
-      setDraft(resizeRectangleAnnotation(gesture.source, gesture.handle, point, document));
+      const next = resizeRectangleAnnotation(gesture.source, gesture.handle, point, document);
+      updateDraft(next);
+      if (gestureHasHistoryEntry.current) onUpdate(next);
+      else {
+        onReplace(next);
+        gestureHasHistoryEntry.current = true;
+      }
     }
   }
 
   function pointerUp(event: React.PointerEvent<SVGSVGElement>) {
-    if (!gesture || !draft) return;
+    const finalDraft = draftRef.current;
+    if (!gesture || !finalDraft) return;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -190,19 +207,21 @@ export function AnnotationOverlay({
       setTextEditHasHistoryEntry(false);
       onSelect(gesture.source.id);
       setGesture(null);
-      setDraft(null);
+      updateDraft(null);
       return;
     }
     const isNew = gesture.type === 'draw-marker' || gesture.type === 'draw-rectangle';
     const isUseful =
-      draft.kind === 'marker'
-        ? draft.points.length > 1
-        : draft.kind === 'text'
-          ? draft.width >= draft.fontSize * 4 && draft.height >= draft.fontSize * 2.5
-          : draft.width >= draft.strokeWidth && draft.height >= draft.strokeWidth;
+      finalDraft.kind === 'marker'
+        ? finalDraft.points.length > 1
+        : finalDraft.kind === 'text'
+          ? finalDraft.width >= finalDraft.fontSize * 4 &&
+            finalDraft.height >= finalDraft.fontSize * 2.5
+          : finalDraft.width >= finalDraft.strokeWidth &&
+            finalDraft.height >= finalDraft.strokeWidth;
     if (isUseful) {
-      if (isNew) onAdd(draft);
-      else onReplace(draft);
+      if (isNew) onAdd(finalDraft);
+      else if (!gestureHasHistoryEntry.current) onReplace(finalDraft);
     } else if (isNew) {
       onSelect(null);
     }
@@ -212,12 +231,14 @@ export function AnnotationOverlay({
       }, 0);
     }
     setGesture(null);
-    setDraft(null);
+    updateDraft(null);
+    gestureHasHistoryEntry.current = false;
   }
 
   function startMove(event: React.PointerEvent<SVGElement>, annotation: Annotation) {
     if (!editing || tool !== 'select') return;
     suppressTextClick.current = false;
+    gestureHasHistoryEntry.current = false;
     event.stopPropagation();
     const svg = event.currentTarget.ownerSVGElement;
     if (!svg) return;
@@ -229,7 +250,7 @@ export function AnnotationOverlay({
     );
     svg.setPointerCapture(event.pointerId);
     setGesture({ type: 'move', start, source: annotation });
-    setDraft(annotation);
+    updateDraft(annotation);
     onSelect(annotation.id);
   }
 
@@ -239,6 +260,7 @@ export function AnnotationOverlay({
     handle: RectangleHandle,
   ) {
     if (!editing || tool !== 'select') return;
+    gestureHasHistoryEntry.current = false;
     event.stopPropagation();
     const svg = event.currentTarget.ownerSVGElement;
     if (!svg) return;
@@ -250,7 +272,7 @@ export function AnnotationOverlay({
     );
     svg.setPointerCapture(event.pointerId);
     setGesture({ type: 'resize', start, source: annotation, handle });
-    setDraft(annotation);
+    updateDraft(annotation);
   }
 
   function beginTextEdit(event: React.SyntheticEvent, annotation: TextNoteAnnotation) {
