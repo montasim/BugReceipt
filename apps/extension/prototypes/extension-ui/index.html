@@ -466,6 +466,7 @@
       .notice.error { border-color: rgb(255 111 97 / .2); background: var(--danger-soft); color: var(--danger); }
       .notice.warning { border-color: rgb(240 179 90 / .2); background: var(--warn-soft); color: #f3c675; }
       .notice.success { border-color: rgb(85 214 190 / .2); background: var(--trace-soft); color: var(--trace-text); }
+      .notice > .button.icon { align-self: start; }
       .receipt-table th, .receipt-table td { padding: 11px 10px; border-color: var(--line-soft); }
       .receipt-table th { color: #82909b; font-size: 9px; font-weight: 500; }
       .receipt-table td { color: #cfd6dc; font-size: 12px; }
@@ -619,8 +620,9 @@
         .prototype-dock:not(.open) { inset: 11px 54px auto auto; }
         .prototype-dock:not(.open) .dock-title { width: 58px; min-height: 34px; padding: 5px 7px; font-size: 10px; }
         .atlas { padding: 20px 14px; }
-        .notice { grid-template-columns: 20px 1fr; }
-        .notice > .button, .notice-actions { grid-column: 2; }
+        .notice { grid-template-columns: 20px minmax(0,1fr) 40px; }
+        .notice > .button { grid-column: 3; grid-row: 1; }
+        .notice-actions { grid-column: 2 / -1; }
       }
     </style>
   </head>
@@ -827,7 +829,8 @@
       const brand = () => `<span class="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>BugReceipt</span>`;
       const header = (context='Evidence review') => `<header class="app-header">${brand()}<div class="header-context"><div><span>ILLUSTRATIVE CAPTURE · BR-0914-A7</span><strong>Submission fails after final review · ${context}</strong></div></div><div class="local-status"><i></i><span>Local draft · report stays local</span></div></header>`;
       const button = (label, variant='quiet', ico='') => `<button class="button ${variant}" type="button">${ico ? icon(ico) : ''}${label}</button>`;
-      const notice = (type,title,copy,action='') => `<section class="notice ${type}" role="${type === 'error' ? 'alert' : 'status'}">${icon(type === 'success' ? 'check' : 'alert')}<div><strong>${title}</strong><p>${copy}</p></div>${action ? button(action,'quiet','retry') : ''}</section>`;
+      const noticeAction = (label) => `<button class="button icon quiet" type="button" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">${icon('retry')}</button>`;
+      const notice = (type,title,copy,action='') => `<section class="notice ${type}" role="${type === 'error' ? 'alert' : 'status'}">${icon(type === 'success' ? 'check' : 'alert')}<div><strong>${title}</strong><p>${copy}</p></div>${action ? noticeAction(action) : ''}</section>`;
 
       function stateMeta(id) {
         const errorMap = {
