@@ -6,6 +6,7 @@
   "description": "Capture a privacy-filtered bug reproduction bundle from the active tab.",
   "scripts": {
     "dev": "wxt",
+    "prototype:ui": "vite --host 127.0.0.1 --port 4174",
     "prepare": "wxt prepare",
     "build": "wxt build",
     "zip": "pnpm check && wxt zip && pnpm validate:package",

@@ -188,6 +188,14 @@ The signature proof component is a square paper review copy with an ink frame, r
 
 Evidence ledgers, install steps, privacy statements, and questions are structured as full-width ruled rows. Use mono numbers or short labels as anchors, Bricolage for the human-readable title, and muted body copy for explanation. Disclosure summaries use a coral plus/minus marker rather than a rounded icon button.
 
+### Extension Prototype: Midnight Evidence Console
+
+The extension prototype is a scoped replacement world called **Midnight Evidence Console**. It deliberately departs from the light, square editorial web identity above: near-black and layered navy surfaces form a compact operational workbench, controls and panels use restrained 10–16px radii, low-contrast translucent rules separate dense evidence, and neutral soft shadows lift only modal, capture, and embedded-proof surfaces. Bricolage remains the primary sans voice but shifts to a tighter, smaller hierarchy; JetBrains Mono is limited to receipt IDs, timestamps, dimensions, counts, paths, and diagnostic data. Warm amber is the single primary action and active-state color. Mint identifies completed stages, local-only safety, included evidence, and successful export; red remains reserved for destructive or failed states.
+
+The desktop review workbench is anchored by a persistent receipt rail that makes **Report → Evidence → Export check** visible as one chain of custody. The active stage owns the main canvas, while evidence counts, redactions, removals, and local-draft status remain inspectable in the rail. Evidence review keeps Screen, Console, and Network as adjacent tabs; annotation and exact-text highlighting are explicit modes, and removal visibly changes the receipt before export. On screens at or below 1000px the rail becomes a horizontal three-stage workflow. At 700px and below, the evidence tabs retain an equal three-column fit, diagnostic content wraps without hiding recovery information, and the collapsed Edge cases control moves into the header area so it cannot cover task content.
+
+The primary path is a continuous interactive journey: approve site access, choose a tab, begin capture, add reproduction steps, stop, complete the report, inspect and curate each evidence class, annotate or remove evidence, confirm the local export manifest, and reach download success. User-entered steps and report fields persist across these in-memory transitions, and the current surface/state is reflected in the URL so any demonstrated state remains shareable. The collapsed **Edge cases** selector is a secondary prototype affordance for loading, empty, failure, interruption, stress, and recovery states; it never competes with the product's next action and does not imply extension APIs or durable storage are connected.
+
 ## Do's and Don'ts
 
 ### Do:
