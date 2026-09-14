@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="light dark" />
     <title>BugReceipt · Extension UI prototype</title>
     <style>
       @font-face {
@@ -331,12 +331,12 @@
         padding: 8px;
         transform: none;
         border-radius: 10px;
-        background: var(--signal);
-        color: #16100a;
+        background: #142633;
+        color: var(--ink);
       }
-      .brand-mark i { height: 2px; width: 18px; border-radius: 999px; background: #17110a; }
-      .brand-mark i:nth-child(2) { width: 13px; background: #17110a; }
-      .brand-mark i:nth-child(3) { width: 8px; background: #17110a; }
+      .brand-mark i { width: 18px; height: 3px; transform: skewX(-10deg); border-radius: 1px; background: #f6f1e8; }
+      .brand-mark i:nth-child(2) { width: 14px; background: var(--signal); }
+      .brand-mark i:nth-child(3) { width: 10px; background: var(--trace); }
       .header-context { gap: 16px; flex: 1; }
       .header-context::before { height: 26px; background: var(--line); }
       .header-context strong { color: #e7ebef; font-size: 13px; font-weight: 600; }
