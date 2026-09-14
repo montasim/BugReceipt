@@ -283,6 +283,7 @@
 
       /* Modern workbench — derived from ISPCine Option A's quiet midnight surfaces. */
       :root {
+        color-scheme: dark;
         --ink: #f6f1e8;
         --ink-2: #fffaf2;
         --muted: #a9b3bd;
@@ -623,6 +624,118 @@
         .notice { grid-template-columns: 20px minmax(0,1fr) 40px; }
         .notice > .button { grid-column: 3; grid-row: 1; }
         .notice-actions { grid-column: 2 / -1; }
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          color-scheme: light;
+          --ink: #162a37;
+          --ink-2: #0d1f2b;
+          --muted: #5f707b;
+          --paper: #fffdfa;
+          --fog: #f2f6f7;
+          --line: #cbd7dc;
+          --line-soft: #e1e8eb;
+          --signal: #e9a13e;
+          --signal-text: #7a4700;
+          --trace: #168f80;
+          --trace-text: #076b60;
+          --trace-soft: #e5f4f1;
+          --warn: #a96305;
+          --warn-soft: #fff5e5;
+          --danger: #b53f36;
+          --danger-soft: #fff0ee;
+          --ok: #08776b;
+          --shadow: 0 22px 58px rgb(31 55 67 / .14);
+        }
+        html, body { background: var(--fog); color: var(--ink); }
+        ::selection { background: #f3c77f; color: #271805; }
+        ::placeholder { color: #788790; }
+        * { scrollbar-color: #aebdc4 #edf2f4; }
+        .app-header { background: rgb(255 253 250 / .9); }
+        .brand { color: #102431; }
+        .header-context strong { color: #263b47; }
+        .header-context span, .local-status { color: #647681; }
+        .local-status { border-color: #a9d8d1; background: #edf8f6; color: #096e63; }
+        .button { border-color: var(--line); background: #fffdfa; color: #203542; }
+        .button:hover:not(:disabled) { border-color: #aabac2; background: #f3f7f8; }
+        .button.primary, .button.signal { color: #211507; box-shadow: none; }
+        .button.quiet { background: #fffdfa; }
+        .button.danger { border-color: #edc2be; color: var(--danger); }
+        .review-shell, .state-page, .atlas { background: #f2f6f7; }
+        .receipt-spine { background: #f8faf9; }
+        .receipt-title, .workspace-heading h1, .panel-head strong, .context-sheet h2,
+        .dialog h2, .state-card h2, .success-receipt h2, .sidepanel h1,
+        .atlas-head h1, .atlas-group h2 { color: #142936; }
+        .receipt-title small, .stage-num, .stage small, .receipt-foot,
+        .field label small, .context-sheet dt, .mini-receipt .mono { color: #697b85; }
+        .stage strong, .receipt-list li, .receipt-table td, .context-sheet dd,
+        .mini-receipt div, .steps { color: #40545f; }
+        .stage.active { background: #fff2dc; }
+        .stage.done { background: #eef8f6; }
+        .stage.active strong, .receipt-list .attention { color: #865000; }
+        .receipt-list b, .mini-receipt b { color: #243946; }
+        .workspace-heading p, .panel-head p, .notice p, .state-card p,
+        .export-action p, .success-receipt p, .sidepanel p, .atlas-head p,
+        .dialog p { color: #60727c; }
+        .tabs, .panel-head, .canvas-footer, .mini-receipt,
+        .sidepanel .app-header { background: #f8faf9; }
+        .tab { color: #61727c; }
+        .tab:hover { color: #203541; background: #edf2f4; }
+        .panel, .notice, .state-card, .sidepanel, .atlas-group { background: #fffdfa; }
+        .canvas { background: #e7edef; }
+        .captured-page { box-shadow: 0 20px 50px rgb(0 0 0 / .12); }
+        .status-chip.ok { border-color: #acd8d2; color: #087266; }
+        .status-chip.warn { border-color: #edd09e; color: #845000; }
+        .notice strong { color: #263b47; }
+        .notice.error { border-color: #efc0bc; color: var(--danger); }
+        .notice.warning { border-color: #ead0a3; color: #845000; }
+        .notice.success { border-color: #abd8d1; color: #087266; }
+        .receipt-table th { color: #667983; }
+        .receipt-table td:last-child { color: #08766a; }
+        .field label { color: #263b47; }
+        .field input, .field textarea, .sidepanel textarea { background: white; color: #172d3a; }
+        .field.invalid input, .field.invalid textarea { background: #fff8f7; }
+        .console { background: #132530; color: #dce6e9; }
+        .console-row:hover { background: rgb(255 255 255 / .05); }
+        .network-row { color: #40545f; }
+        .annotation-toolbar { background: #e9eef0; color: #203541; }
+        .annotation-toolbar .button { background: #fffdfa; color: #304652; }
+        .diagnostic-focus { background: #fff4e2; color: #845000; }
+        .diagnostic-focus p { color: #60717b; }
+        .frame-strip button { background: #f8faf9; color: #435761; }
+        .frame-strip button[aria-current='true'] { background: #fff4e2; color: #7d4a00; }
+        .dialog-backdrop { background: rgb(24 40 50 / .48); }
+        .dialog { background: #fffdfa; }
+        .state-card .state-symbol { background: #fff2dc; color: #8b5500; }
+        .state-card details { color: #556872; }
+        .skeleton i { background: #dce5e8; }
+        @keyframes pulse { to { background: #cad8dd; } }
+        .export-action { border-color: #ead1a9; background: #fff8ed; color: #243844; }
+        .export-action > .mono { color: #8a5709; }
+        .success-receipt { border-color: #abd8d1; background: #edf8f6; }
+        .success-receipt code { background: white; color: #076c61; }
+        .sidepanel-stage { background: #e9eff1; }
+        .sidepanel { box-shadow: 0 24px 70px rgb(0 0 0 / .12); }
+        .sidepanel h1 em { color: #8a5505; }
+        .mini-receipt { background: #f8faf9; }
+        .timer { color: #162b38; }
+        .prototype-dock, .prototype-dock.open {
+          border-color: #c6d2d7;
+          background: rgb(255 253 250 / .94);
+          color: #40535e;
+          box-shadow: 0 14px 36px rgb(0 0 0 / .1);
+        }
+        .prototype-dock select, .prototype-dock button,
+        .prototype-dock.open select, .prototype-dock.open button {
+          border-color: #cbd7dc;
+          background: #f5f8f9;
+          color: #263b47;
+        }
+        .atlas-group button { color: #4d606b; }
+        .atlas-group button:hover { color: #7a4700; }
+        @media (max-width: 1000px) {
+          .receipt-spine { background: #f8faf9; }
+        }
       }
     </style>
   </head>
