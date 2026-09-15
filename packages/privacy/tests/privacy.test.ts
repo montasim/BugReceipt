@@ -14,9 +14,7 @@ describe('privacy filter', () => {
         'https://www.google.com/search?q=SNOWSKY+Echo+Nano+price+in+bd&sxsrf=private#results',
         true,
       ),
-    ).toBe(
-      'https://www.google.com/search?q=SNOWSKY+Echo+Nano+price+in+bd&sxsrf=%5BREDACTED%5D',
-    );
+    ).toBe('https://www.google.com/search?q=SNOWSKY+Echo+Nano+price+in+bd&sxsrf=%5BREDACTED%5D');
   });
 
   it('redacts emails and bearer tokens', () => {
