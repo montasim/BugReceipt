@@ -4,14 +4,14 @@
 
 [![CI](https://github.com/montasim/BugReceipt/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/montasim/BugReceipt/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/montasim/BugReceipt?display_name=tag&sort=semver)](https://github.com/montasim/BugReceipt/releases/latest)
-[![Chrome 120+](https://img.shields.io/badge/Chrome-120%2B-1f9fae)](apps/extension/wxt.config.ts)
+[![Chrome 125+](https://img.shields.io/badge/Chrome-125%2B-1f9fae)](apps/extension/wxt.config.ts)
 [![Support on SupportKori](https://img.shields.io/badge/Support-SupportKori-ffdd00)](https://www.supportkori.com/montasim)
 
 BugReceipt is a local-first Chrome extension for people reporting web application bugs and the developers who must reproduce them. A persistent side panel records the selected tab, collects bounded console and network evidence, keeps manual steps beside the browser context, and opens a review workbench where the reporter decides exactly what to export locally.
 
 **[Open the landing page](https://bugreceipt.netlify.app) · [Download the latest release](https://github.com/montasim/BugReceipt/releases/latest) · [Try the deterministic fixture](#deterministic-test-fixture) · [Report a non-sensitive bug](https://github.com/montasim/BugReceipt/issues/new/choose)**
 
-**Release status:** the source tree is prepared for version `0.1.6`, targeting Chrome 120 and newer. GitHub Releases distributes BugReceipt as a checksummed, unpacked extension archive; it is not currently available through the Chrome Web Store.
+**Release status:** the source tree is prepared for version `0.1.6`, targeting Chrome 125 and newer. GitHub Releases distributes BugReceipt as a checksummed, unpacked extension archive; it is not currently available through the Chrome Web Store.
 
 ## Why BugReceipt?
 
@@ -88,7 +88,7 @@ Prerequisites:
 
 - Node.js 24 or newer
 - pnpm 11.7.0
-- Chrome 120 or newer
+- Chrome 125 or newer
 
 ```bash
 git clone https://github.com/montasim/BugReceipt.git
@@ -123,13 +123,13 @@ Captured evidence and annotations stay in extension-owned browser storage until 
 - form values, keystrokes, clipboard contents, or request/response headers;
 - microphone or tab audio.
 
-Console values and supported text or JSON network bodies are bounded before storage. URL query strings, email addresses, bearer tokens, and secret-shaped fields are filtered locally. Binary and oversized response bodies are omitted. Resource requests outside fetch and XHR include metadata but not bodies.
+Console values and supported text or JSON network bodies are bounded before storage. URL query strings, email addresses, bearer tokens, and secret-shaped fields are filtered locally. Binary and oversized response bodies are omitted. Supported text responses are collected through the browser debugger, including resource requests outside fetch and XHR. Bodies unavailable from Chrome are marked explicitly.
 
 Filtering reduces risk; it cannot guarantee that every sensitive value will be recognized. Screen recordings can display personal or confidential information rendered by the page. Review every field, highlight, and visual artifact before sharing it.
 
 **Report an issue** opens the public GitHub issue form in a new tab. BugReceipt does not populate or submit that form, and it does not transmit capture data when opening the link.
 
-The manifest requests `activeTab`, `clipboardWrite`, `desktopCapture`, `downloads`, `scripting`, `sidePanel`, `storage`, and `tabs`. Site access is optional and requested for the current origin when capture begins. The extension has no report-server host permission.
+The manifest requests `activeTab`, `clipboardWrite`, `desktopCapture`, `debugger`, `downloads`, `scripting`, `sidePanel`, `storage`, and `tabs`. Site access is optional and requested for the current origin when capture begins. The extension has no report-server host permission.
 
 ## Deterministic test fixture
 
@@ -156,7 +156,7 @@ flowchart LR
     F --> H[GitHub issue link]
 ```
 
-The root workspace is named `bugreceipt-workspace`. Its background worker owns capture lifecycle and session transitions. Page instrumentation forwards bounded console and network events through an isolated bridge. Filtered session records live in extension storage; recordings, screenshots, selected frames, and annotation documents live in extension-owned IndexedDB. Review edits return through the background protocol before local export.
+The root workspace is named `bugreceipt-workspace`. Its background worker owns capture lifecycle and session transitions. A tab-scoped Chrome debugger attachment records Runtime, Log, and Network events across reloads and enables related frame and worker targets before their startup scripts resume. Filtered session records live in extension storage; recordings, screenshots, selected frames, and annotation documents live in extension-owned IndexedDB. Review edits return through the background protocol before local export.
 
 ```text
 apps/extension          WXT Manifest V3 side panel, recorder, review page, and worker
@@ -264,3 +264,11 @@ Built and maintained by [Montasim](https://github.com/montasim).
 ## License
 
 No license file currently grants permission to copy, modify, or redistribute BugReceipt. The workspace is marked `UNLICENSED`; use is limited to rights provided by applicable law and platform terms until the maintainer publishes an explicit license.
+
+### Browser evidence coverage
+
+Start capture **before** refreshing or reproducing the bug. The browser recorder captures console API events (including tables and traces), exceptions, browser log entries, HTTP requests including documents/resources and blocked requests, redirect hops, and available WebSocket/EventSource messages. Same-process frames share the tab session; out-of-process frames and worker targets exposed by Chrome are enabled recursively. Capture continues across navigation without reinjecting page scripts.
+
+This is bounded diagnostic evidence, not a complete DevTools archive: historical events before attachment, browser-internal targets, and unrelated extension/shared-worker activity may be unavailable. Object arguments use Chrome's previews rather than an interactive object inspector. Headers, cookies, binary bodies, and oversized bodies are not exported. Up to 500 console events and 500 network entries are retained. Disconnects and dropped evidence are shown in the side panel, review, and Markdown report. Chrome's debugger permission is required; cancelling its debugging banner or another debugger taking over can disconnect recording. Reload the updated extension and accept the new permission before testing.
+
+For an automated real-browser check after building, run `CHROMIUM_PATH=/path/to/chromium node apps/extension/scripts/test-browser-evidence.mjs`. This uses a temporary browser profile and a local fixture; it does not access your normal browser profile.

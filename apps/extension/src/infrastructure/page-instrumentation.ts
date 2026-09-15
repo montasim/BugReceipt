@@ -1,4 +1,7 @@
-type RecorderState = { restore: () => void };
+type RecorderState = {
+  activate: (sessionId: string) => boolean;
+  restore: () => void;
+};
 
 export function installBridge(sessionId: string): void {
   const scope = globalThis as typeof globalThis & { __reprokitBridgeCleanup?: () => void };
@@ -26,9 +29,32 @@ export function uninstallBridge(): void {
   delete scope.__reprokitBridgeCleanup;
 }
 
-export function installRecorder(sessionId: string): void {
+export function installRecorder(sessionId?: string): void {
   const scope = globalThis as typeof globalThis & { __reprokitRecorder?: RecorderState };
-  scope.__reprokitRecorder?.restore();
+  const existingRecorder = scope.__reprokitRecorder;
+  if (existingRecorder) {
+    if (!sessionId || existingRecorder.activate(sessionId)) return;
+    existingRecorder.restore();
+  }
+
+  let activeSessionId = sessionId;
+  const pendingEvidence: Array<{ type: 'diagnostic' | 'network'; event: unknown }> = [];
+  const publish = (type: 'diagnostic' | 'network', event: unknown) => {
+    if (!activeSessionId) {
+      if (pendingEvidence.length < 1_000) pendingEvidence.push({ type, event });
+      return;
+    }
+    window.postMessage(
+      { __reprokit: true, sessionId: activeSessionId, type, event },
+      '*',
+    );
+  };
+  const activate = (nextSessionId: string): boolean => {
+    if (activeSessionId && activeSessionId !== nextSessionId) return false;
+    activeSessionId = nextSessionId;
+    for (const pending of pendingEvidence.splice(0)) publish(pending.type, pending.event);
+    return true;
+  };
 
   const originalConsole = {
     debug: console.debug,
@@ -110,21 +136,13 @@ export function installRecorder(sessionId: string): void {
     message: string,
     stack?: string,
   ) => {
-    window.postMessage(
-      {
-        __reprokit: true,
-        sessionId,
-        type: 'diagnostic',
-        event: {
-          occurredAt: new Date().toISOString(),
-          kind,
-          level,
-          message: message.slice(0, 32_768),
-          ...(stack ? { stack: stack.slice(0, 32_768) } : {}),
-        },
-      },
-      '*',
-    );
+    publish('diagnostic', {
+      occurredAt: new Date().toISOString(),
+      kind,
+      level,
+      message: message.slice(0, 32_768),
+      ...(stack ? { stack: stack.slice(0, 32_768) } : {}),
+    });
   };
 
   const emitNetwork = (event: {
@@ -137,7 +155,7 @@ export function installRecorder(sessionId: string): void {
     requestBody?: string;
     responseBody?: string;
     error?: string;
-  }) => window.postMessage({ __reprokit: true, sessionId, type: 'network', event }, '*');
+  }) => publish('network', event);
 
   const readResponseBody = async (response: Response): Promise<string | undefined> => {
     const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
@@ -325,6 +343,7 @@ export function installRecorder(sessionId: string): void {
   window.addEventListener('error', onError);
   window.addEventListener('unhandledrejection', onRejection);
   scope.__reprokitRecorder = {
+    activate,
     restore: () => {
       for (const level of ['debug', 'log', 'info', 'warn', 'error'] as const) {
         if (console[level] === patchedConsole[level]) console[level] = originalConsole[level];

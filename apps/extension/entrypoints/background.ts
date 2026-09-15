@@ -1,13 +1,12 @@
 import {
-  diagnosticEventSchema,
   getSelectedFrames,
-  networkEventSchema,
   runtimeRequestSchema,
   type RuntimeRequest,
   type RuntimeResponse,
 } from '@bugreceipt/capture-model';
 import { defineBackground } from 'wxt/utils/define-background';
 import {
+  appendCaptureWarning,
   appendDiagnostic,
   appendNetworkEvent,
   addSelectedFrame,
@@ -21,21 +20,14 @@ import {
   removeNetworkEvent,
   removeRecordingReference,
   removeSelectedFrameReference,
+  setEvidenceExcluded,
   removeScreenshotReference,
   saveSession,
   setSelectedFrame,
   updateReview,
 } from '../src/application/session-store';
-import {
-  interruptCaptureAfterTabClosed,
-  restoreCaptureAfterNavigation,
-} from '../src/application/capture-lifecycle';
-import {
-  installBridge,
-  installRecorder,
-  uninstallBridge,
-  uninstallRecorder,
-} from '../src/infrastructure/page-instrumentation';
+import { interruptCaptureAfterTabClosed } from '../src/application/capture-lifecycle';
+import { DebuggerRecorder } from '../src/infrastructure/debugger-recorder';
 import { deleteScreenshot, saveScreenshot } from '../src/infrastructure/screenshot-store';
 import { deleteRecording } from '../src/infrastructure/recording-store';
 import { deleteAnnotationDocument } from '../src/infrastructure/annotation-store';
@@ -45,15 +37,58 @@ type RecordingEvidence = NonNullable<
 >;
 
 let requestQueue = Promise.resolve();
+const pendingEvidence: Array<() => Promise<unknown>> = [];
+let drainScheduled = false;
+function enqueueEvidence(write: () => Promise<unknown>): void {
+  pendingEvidence.push(write);
+  if (drainScheduled) return;
+  drainScheduled = true;
+  const task = requestQueue.then(flushEvidence);
+  requestQueue = task.catch(() => undefined);
+}
+async function flushEvidence(): Promise<void> {
+  try {
+    while (pendingEvidence.length) {
+      try {
+        await pendingEvidence.shift()?.();
+      } catch {
+        const session = await loadSession();
+        if (session?.status === 'recording')
+          await appendCaptureWarning(
+            session.id,
+            'Some browser evidence could not be saved. The report may be incomplete.',
+          ).catch(() => undefined);
+      }
+    }
+  } finally {
+    drainScheduled = false;
+  }
+}
+const recorder = new DebuggerRecorder({
+  diagnostic: (id, event) => enqueueEvidence(() => appendDiagnostic(id, event)),
+  network: (id, event) => enqueueEvidence(() => appendNetworkEvent(id, event, event.id)),
+  warning: (id, message) => enqueueEvidence(() => appendCaptureWarning(id, message)),
+});
 
 export default defineBackground(() => {
   void initializeSidePanel();
+  // Chrome 125+ keeps an active debugger worker alive. On an extension restart,
+  // persisted captures can outlive the attachment and must not look complete.
+  const recovery = requestQueue.then(async () => {
+    const session = await loadSession();
+    if (session?.status === 'recording')
+      await appendCaptureWarning(
+        session.id,
+        'The extension restarted during capture. Browser evidence recording is no longer connected. Start a new capture to reconnect.',
+      );
+  });
+  requestQueue = recovery.catch(() => undefined);
   chrome.runtime.onMessage.addListener(
-    (raw: unknown, sender, sendResponse: (response: RuntimeResponse) => void) => {
+    (raw: unknown, _sender, sendResponse: (response: RuntimeResponse) => void) => {
       const parsed = runtimeRequestSchema.safeParse(raw);
       if (!parsed.success) return false;
       const request = parsed.data;
-      const task = requestQueue.then(() => handleRequest(request, sender));
+      const task = requestQueue.then(() => handleRequest(request));
       requestQueue = task.then(
         () => undefined,
         () => undefined,
@@ -69,20 +104,16 @@ export default defineBackground(() => {
       return true;
     },
   );
-  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    const task = requestQueue.then(async () => {
-      await restoreCaptureAfterNavigation(tabId, changeInfo, tab, {
-        loadSession,
-        inject: injectCapture,
-        interrupt: (reason) => finishInterruptedCapture(reason),
+  chrome.debugger.onEvent.addListener((source, method, params) => {
+    void recorder.event(source, method, params).catch(() => {
+      enqueueEvidence(async () => {
+        const session = await loadSession();
+        if (session?.status === 'recording')
+          await appendCaptureWarning(session.id, 'Some browser evidence could not be processed.');
       });
     });
-    requestQueue = task.then(
-      () => undefined,
-      () => undefined,
-    );
-    void task.catch(() => undefined);
   });
+  chrome.debugger.onDetach.addListener((source, reason) => recorder.detached(source, reason));
   chrome.tabs.onRemoved.addListener((tabId) => {
     const task = requestQueue.then(() =>
       interruptCaptureAfterTabClosed(tabId, {
@@ -103,10 +134,7 @@ async function initializeSidePanel(): Promise<void> {
   await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 }
 
-async function handleRequest(
-  request: RuntimeRequest,
-  sender: chrome.runtime.MessageSender,
-): Promise<RuntimeResponse> {
+async function handleRequest(request: RuntimeRequest): Promise<RuntimeResponse> {
   switch (request.type) {
     case 'session:get':
       return { ok: true, session: await loadSession() };
@@ -134,8 +162,10 @@ async function handleRequest(
       }
       session = await saveSession(session);
       try {
-        await injectCapture(session.tabId, session.id);
+        await recorder.start(session.tabId, session.id);
       } catch (error) {
+        await recorder.stop();
+        await flushEvidence();
         await finishScreenRecording(session);
         await deleteRecording(session.id).catch(() => undefined);
         await clearSession();
@@ -162,6 +192,11 @@ async function handleRequest(
       return { ok: true, session: await removeDiagnostic(request.id) };
     case 'session:remove-network':
       return { ok: true, session: await removeNetworkEvent(request.id) };
+    case 'session:set-evidence-excluded':
+      return {
+        ok: true,
+        session: await setEvidenceExcluded(request.kind, request.excluded, request.id),
+      };
     case 'session:add-selected-frame':
       return { ok: true, session: await addSelectedFrame(request.frame) };
     case 'session:set-selected-frame': {
@@ -205,29 +240,9 @@ async function handleRequest(
       }
       return { ok: true, session: await removeScreenshotReference() };
     }
-    case 'diagnostic:append': {
-      if (sender.tab?.id === undefined) throw new Error('Diagnostics must come from a tab.');
-      const session = await loadSession();
-      if (!session || sender.tab.id !== session.tabId) throw new Error('Diagnostic tab mismatch.');
-      const event = diagnosticEventSchema.omit({ id: true }).parse(request.event);
-      return {
-        ok: true,
-        session: await appendDiagnostic(request.sessionId, {
-          ...event,
-          id: crypto.randomUUID(),
-        }),
-      };
-    }
-    case 'network:append': {
-      if (sender.tab?.id === undefined) throw new Error('Network evidence must come from a tab.');
-      const session = await loadSession();
-      if (!session || sender.tab.id !== session.tabId) throw new Error('Network tab mismatch.');
-      const event = networkEventSchema.omit({ id: true }).parse(request.event);
-      return {
-        ok: true,
-        session: await appendNetworkEvent(request.sessionId, event),
-      };
-    }
+    case 'diagnostic:append':
+    case 'network:append':
+      throw new Error('Page messages cannot submit browser evidence.');
     case 'session:stop': {
       const session = await loadSession();
       if (!session || session.status !== 'recording') throw new Error('No recording is active.');
@@ -237,7 +252,8 @@ async function handleRequest(
       const { screenshotBlobId, screenshotError } = recording
         ? {}
         : await captureScreenshotFallback(session.windowId);
-      await removeCapture(session.tabId);
+      await recorder.stop();
+      await flushEvidence();
       const finalized = await finalizeSession(
         tab,
         recording,
@@ -255,8 +271,9 @@ async function handleRequest(
     case 'session:discard': {
       const session = await loadSession();
       if (session?.status === 'recording') {
-        await Promise.allSettled([removeCapture(session.tabId), finishScreenRecording(session)]);
+        await Promise.allSettled([recorder.stop(), finishScreenRecording(session)]);
       }
+      await flushEvidence();
       if (session?.page?.screenshotBlobId) await deleteScreenshot(session.page.screenshotBlobId);
       await deleteSelectedFrameArtifacts(getSelectedFrames(session?.page));
       if (session?.page?.recording?.blobId) await deleteRecording(session.page.recording.blobId);
@@ -284,6 +301,8 @@ async function finishInterruptedCapture(
 ): Promise<Awaited<ReturnType<typeof interruptSession>>> {
   const session = await loadSession();
   if (!session || session.status !== 'recording') throw new Error('No recording is active.');
+  await recorder.stop();
+  await flushEvidence();
   const { recording, recordingError } = await finishScreenRecording(session);
   return interruptSession(reason, recording, recordingError);
 }
@@ -351,26 +370,4 @@ function getRecordingResponseError(value: unknown): string {
     return (value as { message: string }).message;
   }
   return 'Chrome could not finish the tab recording.';
-}
-
-async function injectCapture(tabId: number, sessionId: string): Promise<void> {
-  await chrome.scripting.executeScript({
-    target: { tabId },
-    world: 'ISOLATED',
-    func: installBridge,
-    args: [sessionId],
-  });
-  await chrome.scripting.executeScript({
-    target: { tabId },
-    world: 'MAIN',
-    func: installRecorder,
-    args: [sessionId],
-  });
-}
-
-async function removeCapture(tabId: number): Promise<void> {
-  await Promise.allSettled([
-    chrome.scripting.executeScript({ target: { tabId }, world: 'MAIN', func: uninstallRecorder }),
-    chrome.scripting.executeScript({ target: { tabId }, world: 'ISOLATED', func: uninstallBridge }),
-  ]);
 }

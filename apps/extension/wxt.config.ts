@@ -11,11 +11,12 @@ export default defineConfig({
     name: 'BugReceipt',
     short_name: 'BugReceipt',
     description: 'Capture a clear, privacy-filtered bug reproduction bundle.',
-    minimum_chrome_version: '120',
+    minimum_chrome_version: '125',
     permissions: [
       'activeTab',
       'clipboardWrite',
       'desktopCapture',
+      'debugger',
       'downloads',
       'scripting',
       'sidePanel',

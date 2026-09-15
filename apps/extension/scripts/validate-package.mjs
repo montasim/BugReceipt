@@ -9,7 +9,17 @@ const packageMetadata = JSON.parse(
 );
 const expectedTitle = 'Capture a bug with BugReceipt';
 const iconSizes = ['16', '32', '48', '128'];
-const requiredPermissions = ['clipboardWrite', 'desktopCapture', 'downloads', 'sidePanel', 'tabs'];
+const requiredPermissions = [
+  'activeTab',
+  'clipboardWrite',
+  'desktopCapture',
+  'debugger',
+  'downloads',
+  'scripting',
+  'sidePanel',
+  'storage',
+  'tabs',
+];
 const requiredOptionalOrigins = ['http://*/*', 'https://*/*'];
 
 if (manifest.version !== packageMetadata.version) {

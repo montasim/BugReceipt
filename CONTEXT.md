@@ -4,7 +4,7 @@
 
 ### Capture session
 
-A user-initiated, tab-scoped period during which BugReceipt collects diagnostic events and manual reproduction steps. A persisted capture session is either `recording` or `ready-for-review`. Navigation within the selected tab, including navigation to a different origin, does not end its user-approved video recording. Console and network instrumentation resumes after navigation only when the extension can access the loaded page. A reviewed session records whether capture completed normally or ended because the tab was closed. Discarding removes the session instead of persisting a separate status.
+A user-initiated, tab-scoped period during which BugReceipt collects diagnostic events and manual reproduction steps. A persisted capture session is either `recording` or `ready-for-review`. Navigation within the selected tab, including navigation to a different origin, does not end its user-approved video recording. A tab-scoped browser debugger attachment retains console and network capture across navigation and enables related frame and worker targets. A debugger disconnect is recorded as an explicit coverage warning; recording does not silently fall back to page instrumentation. A reviewed session records whether capture completed normally or ended because the tab was closed. Discarding removes the session instead of persisting a separate status.
 
 ### Diagnostic event
 

@@ -23,7 +23,23 @@ const session = {
 } satisfies CaptureSession;
 
 describe('capture navigation lifecycle', () => {
-  it('reinjects capture after a same-origin document finishes loading', async () => {
+  it('reinjects capture as soon as a same-origin document starts loading', async () => {
+    const inject = vi.fn().mockResolvedValue(undefined);
+    const interrupt = vi.fn().mockResolvedValue(undefined);
+
+    const restored = await restoreCaptureAfterNavigation(
+      7,
+      { status: 'loading' },
+      { url: 'https://example.com/checkout/confirmation' },
+      { loadSession: () => Promise.resolve(session), inject, interrupt },
+    );
+
+    expect(restored).toBe('restored');
+    expect(inject).toHaveBeenCalledWith(7, session.id);
+    expect(interrupt).not.toHaveBeenCalled();
+  });
+
+  it('activates the document-start recorder after the document finishes loading', async () => {
     const inject = vi.fn().mockResolvedValue(undefined);
     const interrupt = vi.fn().mockResolvedValue(undefined);
 
@@ -54,7 +70,7 @@ describe('capture navigation lifecycle', () => {
 
     const outcome = await restoreCaptureAfterNavigation(
       7,
-      { status: 'complete' },
+      { status: 'loading' },
       { url: 'https://payments.example.net' },
       { loadSession: () => Promise.resolve(session), inject, interrupt },
     );
@@ -65,7 +81,7 @@ describe('capture navigation lifecycle', () => {
     expect(persisted.session.status).toBe('recording');
   });
 
-  it('waits for a cross-origin document to load without ending the recording', async () => {
+  it('ignores a URL-only update until the document starts loading', async () => {
     const inject = vi.fn().mockResolvedValue(undefined);
     const interrupt = vi.fn().mockResolvedValue(undefined);
 
@@ -87,7 +103,7 @@ describe('capture navigation lifecycle', () => {
 
     const outcome = await restoreCaptureAfterNavigation(
       7,
-      { status: 'complete' },
+      { status: 'loading' },
       { url: 'https://payments.example.net' },
       { loadSession: () => Promise.resolve(session), inject, interrupt },
     );

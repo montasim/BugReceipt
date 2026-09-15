@@ -7,6 +7,46 @@ afterEach(() => {
 });
 
 describe('page evidence recorder', () => {
+  it('buffers startup evidence until a document-start recorder receives its session', async () => {
+    const postMessage = vi.spyOn(window, 'postMessage').mockImplementation(() => undefined);
+    window.fetch = vi.fn().mockResolvedValue(
+      new Response('{"ready":true}', {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    installRecorder(undefined);
+    console.error('startup failed');
+    await window.fetch('https://example.com/api/startup');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(
+      postMessage.mock.calls.some(
+        ([message]) => (message as { type?: string }).type === 'diagnostic',
+      ),
+    ).toBe(false);
+
+    installRecorder('00000000-0000-4000-8000-000000000000');
+
+    const diagnostics = postMessage.mock.calls
+      .map(
+        ([message]) => message as { type?: string; event?: { level?: string; message?: string } },
+      )
+      .filter((message) => message.type === 'diagnostic');
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]?.event).toMatchObject({ level: 'error', message: 'startup failed' });
+    const network = postMessage.mock.calls
+      .map(([message]) => message as { type?: string; event?: Record<string, unknown> })
+      .find((message) => message.type === 'network');
+    expect(network?.event).toMatchObject({
+      method: 'GET',
+      resourceType: 'fetch',
+      status: 200,
+      url: 'https://example.com/api/startup',
+    });
+  });
+
   it('captures every console level and redacts sensitive object keys before bridging', () => {
     const postMessage = vi.spyOn(window, 'postMessage').mockImplementation(() => undefined);
 

@@ -15,11 +15,11 @@ export async function restoreCaptureAfterNavigation(
   tab: Pick<chrome.tabs.Tab, 'url'>,
   dependencies: NavigationDependencies,
 ): Promise<NavigationOutcome> {
-  const navigationUrl = changeInfo.url ?? (changeInfo.status === 'complete' ? tab.url : undefined);
+  if (changeInfo.status !== 'loading' && changeInfo.status !== 'complete') return 'ignored';
+  const navigationUrl = changeInfo.url ?? tab.url;
   if (!navigationUrl) return 'ignored';
   const session = await dependencies.loadSession();
   if (!session || session.status !== 'recording' || session.tabId !== tabId) return 'ignored';
-  if (changeInfo.status !== 'complete') return 'ignored';
 
   try {
     await dependencies.inject(tabId, session.id);
