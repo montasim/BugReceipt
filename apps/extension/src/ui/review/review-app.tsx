@@ -1,12 +1,72 @@
 import {
   describeCaptureEnvironment,
+  getIncludedSession,
   getSelectedFrameFilename,
   getSelectedFrames,
   MAX_SELECTED_FRAMES,
   type CaptureSession,
+  type EvidenceExclusionKind,
 } from '@bugreceipt/capture-model';
 import { getIssueValidationErrors, renderGitHubIssue } from '@bugreceipt/issue-export';
+import {
+  ArrowDown01Icon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  BrowserIcon,
+  Clock01Icon,
+  ComputerIcon,
+  CpuIcon,
+  Delete02Icon,
+  Download01Icon,
+  Edit02Icon,
+  FileZipIcon,
+  FolderDownloadIcon,
+  Globe02Icon,
+  PackageIcon,
+  SourceCodeIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '../../components/ui/alert-dialog';
+import { Button } from '../../components/ui/button';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '../../components/ui/collapsible';
+import { FieldLabel } from '../../components/ui/field';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../../components/ui/dropdown-menu';
+import { Input } from '../../components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import { Badge } from '../../components/ui/badge';
+import { Toaster } from '../../components/ui/sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Table, TableBody, TableCell, TableRow } from '../../components/ui/table';
+import { Textarea } from '../../components/ui/textarea';
+import { TooltipProvider } from '../../components/ui/tooltip';
 import {
   commitAnnotation,
   createAnnotationDocument,
@@ -28,7 +88,6 @@ import {
   createTextAnnotationDocument,
   createTextAnnotationHistory,
   isTextAnnotationDocument,
-  removeTextAnnotationsForEvent,
   type TextAnnotationHistory,
 } from '../../application/text-annotation-model';
 import {
@@ -52,23 +111,22 @@ import { captureVideoFrame } from '../../infrastructure/video-frame';
 import {
   deleteTextAnnotationDocument,
   getTextAnnotationDocument,
-  saveTextAnnotationDocument,
 } from '../../infrastructure/text-annotation-store';
 import { Brand } from '../brand';
-import { IssueLink } from '../issue-link';
 import { SupportLink } from '../support-link';
 import { useOffensiveLanguageValidation } from '../use-offensive-language-validation';
 import { AnnotatedEvidenceText } from './annotated-evidence-text';
-import { AnnotateIcon } from './annotation-icons';
 import { AnnotationOverlay } from './annotation-overlay';
 import { AnnotationToolbar } from './annotation-toolbar';
 
 type ArtifactState = 'loading' | 'ready' | 'missing' | 'failed';
 type EvidenceView = 'visual' | 'console' | 'network';
 type DiagnosticSource = Exclude<EvidenceView, 'visual'>;
+type ReviewStage = 'report' | 'evidence' | 'export';
 
 const EVIDENCE_ANNOTATION_WIDTH = 1_600;
 const EVIDENCE_ANNOTATION_HEIGHT = 720;
+const REPORT_TEXTAREA_CLASS = 'max-h-[calc(6lh+1rem+2px)] overflow-y-auto';
 
 function createEvidenceAnnotationHistories(): Record<DiagnosticSource, AnnotationHistory> {
   return {
@@ -82,9 +140,16 @@ function createEvidenceAnnotationHistories(): Record<DiagnosticSource, Annotatio
 }
 
 export function ReviewApp() {
+  return (
+    <TooltipProvider>
+      <ReviewAppContent />
+      <Toaster />
+    </TooltipProvider>
+  );
+}
+
+function ReviewAppContent() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const downloadMenuRef = useRef<HTMLDivElement>(null);
-  const downloadTriggerRef = useRef<HTMLButtonElement>(null);
   const annotationBaseline = useRef<AnnotationHistory | null>(null);
   const evidenceAnnotationBaseline = useRef<{
     source: DiagnosticSource;
@@ -132,6 +197,7 @@ export function ReviewApp() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [reviewStage, setReviewStage] = useState<ReviewStage>('report');
   const [evidenceView, setEvidenceView] = useState<EvidenceView>('visual');
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
   const selectedFrames = useMemo(() => getSelectedFrames(session?.page), [session?.page]);
@@ -192,8 +258,9 @@ export function ReviewApp() {
           return;
         }
         if (!('session' in response) || response.session?.status !== 'ready-for-review') return;
-        setSession(response.session);
-        setStepsText(response.session.steps.map((step) => step.text).join('\n'));
+        const includedSession = getIncludedSession(response.session);
+        setSession(includedSession);
+        setStepsText(includedSession.steps.map((step) => step.text).join('\n'));
         const storedTextAnnotations = await getTextAnnotationDocument(response.session.id).catch(
           () => null,
         );
@@ -217,7 +284,7 @@ export function ReviewApp() {
           console: createAnnotationHistory(evidenceDocument(storedConsoleAnnotations)),
           network: createAnnotationHistory(evidenceDocument(storedNetworkAnnotations)),
         });
-        const recordingId = response.session.page?.recording?.blobId;
+        const recordingId = includedSession.page?.recording?.blobId;
         if (recordingId) {
           const recording = await readRecording(recordingId);
           if (recording) {
@@ -229,11 +296,11 @@ export function ReviewApp() {
             setRecordingState('failed');
           }
         } else {
-          setRecordingState(response.session.page?.recordingError ? 'failed' : 'missing');
+          setRecordingState(includedSession.page?.recordingError ? 'failed' : 'missing');
         }
-        const blobId = response.session.page?.screenshotBlobId;
+        const blobId = includedSession.page?.screenshotBlobId;
         if (!blobId) {
-          setScreenshotState(response.session.page?.screenshotError ? 'failed' : 'missing');
+          setScreenshotState(includedSession.page?.screenshotError ? 'failed' : 'missing');
           return;
         }
         const blob = await readScreenshot(blobId);
@@ -338,50 +405,21 @@ export function ReviewApp() {
     return () => window.removeEventListener('keydown', handleKeyboard);
   }, [isAnnotating, selectedAnnotationId]);
 
-  useEffect(() => {
-    if (!downloadMenuOpen) return;
-    const menuItems = Array.from(
-      downloadMenuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [],
-    );
-    menuItems[0]?.focus();
-    function handlePointerDown(event: PointerEvent) {
-      if (!downloadMenuRef.current?.contains(event.target as Node)) setDownloadMenuOpen(false);
-    }
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setDownloadMenuOpen(false);
-        downloadTriggerRef.current?.focus();
-        return;
-      }
-      if (event.key === 'Tab') {
-        setDownloadMenuOpen(false);
-        return;
-      }
-      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
-      event.preventDefault();
-      const currentIndex = menuItems.indexOf(document.activeElement as HTMLButtonElement);
-      const nextIndex =
-        event.key === 'Home'
-          ? 0
-          : event.key === 'End'
-            ? menuItems.length - 1
-            : event.key === 'ArrowDown'
-              ? (currentIndex + 1) % menuItems.length
-              : (currentIndex - 1 + menuItems.length) % menuItems.length;
-      menuItems[nextIndex]?.focus();
-    }
-    document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [downloadMenuOpen]);
-
   function updateSession(update: (current: CaptureSession) => CaptureSession) {
     setSession((current) => (current ? update(current) : current));
     setDirty(true);
-    setNotice('Changes will be applied automatically before export');
+    setNotice('Your edits will be saved when you change sections or download the report');
+  }
+
+  async function changeReviewStage(nextStage: ReviewStage) {
+    if (busy || nextStage === reviewStage) return;
+    if (dirty && session) {
+      setBusy(true);
+      const saved = await persistReview(session);
+      setBusy(false);
+      if (!saved) return;
+    }
+    setReviewStage(nextStage);
   }
 
   async function persistReview(draft: CaptureSession): Promise<CaptureSession | null> {
@@ -398,9 +436,47 @@ export function ReviewApp() {
       return null;
     }
     if (!('session' in response) || !response.session) return null;
-    setSession(response.session);
+    const includedSession = getIncludedSession(response.session);
+    setSession(includedSession);
     setDirty(false);
-    return response.session;
+    return includedSession;
+  }
+
+  async function setEvidenceExcluded(
+    kind: EvidenceExclusionKind,
+    excluded: boolean,
+    id?: string,
+  ): Promise<CaptureSession | null> {
+    const response = await sendRuntimeMessage({
+      type: 'session:set-evidence-excluded',
+      kind,
+      id,
+      excluded,
+    });
+    if (!response.ok) {
+      setError(response.message);
+      return null;
+    }
+    if (!('session' in response) || !response.session) return null;
+    const includedSession = getIncludedSession(response.session);
+    setSession(includedSession);
+    return includedSession;
+  }
+
+  function offerUndo(kind: EvidenceExclusionKind, label: string, id?: string) {
+    toast(label, {
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          void setEvidenceExcluded(kind, false, id).then((restored) => {
+            if (!restored) return;
+            if (kind === 'recording' && recordingUrl) setRecordingState('ready');
+            if (kind === 'screenshot' && screenshotUrl) setScreenshotState('ready');
+            toast.success('Evidence restored');
+          });
+        },
+      },
+    });
   }
 
   function revealFirstInvalidField() {
@@ -464,24 +540,11 @@ export function ReviewApp() {
       setBusy(false);
       return;
     }
-    const response = await sendRuntimeMessage({ type: 'session:remove-diagnostic', id });
+    const response = await setEvidenceExcluded('diagnostic', true, id);
     setBusy(false);
-    if (!response.ok) {
-      setError(response.message);
-      return;
-    }
-    if ('session' in response && response.session) setSession(response.session);
-    await removeStoredTextAnnotationsForEvent(id).catch(() =>
-      setError(
-        'The console entry was removed, but its saved text annotations could not be cleaned up.',
-      ),
-    );
-    const clearedAnnotations = await clearEvidenceAnnotations('console');
-    setNotice(
-      clearedAnnotations
-        ? 'Console entry removed; visual annotations cleared because the evidence layout changed'
-        : 'Console entry removed',
-    );
+    if (!response) return;
+    setNotice('Console entry excluded from export');
+    offerUndo('diagnostic', 'Console entry excluded', id);
   }
 
   async function removeNetworkEvent(id: string) {
@@ -492,24 +555,11 @@ export function ReviewApp() {
       setBusy(false);
       return;
     }
-    const response = await sendRuntimeMessage({ type: 'session:remove-network', id });
+    const response = await setEvidenceExcluded('network', true, id);
     setBusy(false);
-    if (!response.ok) {
-      setError(response.message);
-      return;
-    }
-    if ('session' in response && response.session) setSession(response.session);
-    await removeStoredTextAnnotationsForEvent(id).catch(() =>
-      setError(
-        'The network entry was removed, but its saved text annotations could not be cleaned up.',
-      ),
-    );
-    const clearedAnnotations = await clearEvidenceAnnotations('network');
-    setNotice(
-      clearedAnnotations
-        ? 'Network entry removed; visual annotations cleared because the evidence layout changed'
-        : 'Network entry removed',
-    );
+    if (!response) return;
+    setNotice('Network entry excluded from export');
+    offerUndo('network', 'Network entry excluded', id);
   }
 
   async function removeScreenshot() {
@@ -520,17 +570,12 @@ export function ReviewApp() {
       setBusy(false);
       return;
     }
-    const response = await sendRuntimeMessage({ type: 'session:remove-screenshot' });
+    const response = await setEvidenceExcluded('screenshot', true);
     setBusy(false);
-    if (!response.ok) {
-      setError(response.message);
-      return;
-    }
-    if ('session' in response && response.session) setSession(response.session);
-    if (screenshotUrl) URL.revokeObjectURL(screenshotUrl);
-    setScreenshotUrl('');
+    if (!response) return;
     setScreenshotState('missing');
-    setNotice('Screenshot removed');
+    setNotice('Screenshot excluded from export');
+    offerUndo('screenshot', 'Screenshot excluded');
   }
 
   async function saveCurrentFrame() {
@@ -565,8 +610,9 @@ export function ReviewApp() {
         return;
       }
       if ('session' in response && response.session) {
-        setSession(response.session);
-        setSelectedFrameIndex(getSelectedFrames(response.session.page).length - 1);
+        const includedSession = getIncludedSession(response.session);
+        setSession(includedSession);
+        setSelectedFrameIndex(getSelectedFrames(includedSession.page).length - 1);
       }
       setVideoTime(captured.videoTimeMs / 1_000);
       setNotice(
@@ -589,26 +635,20 @@ export function ReviewApp() {
     if (busy || !session || !activeSelectedFrame) return;
     setBusy(true);
     setError('');
-    const response = await sendRuntimeMessage({
-      type: 'session:remove-selected-frame',
-      blobId: activeSelectedFrame.blobId,
-    });
+    const removedBlobId = activeSelectedFrame.blobId;
+    const response = await setEvidenceExcluded('selected-frame', true, removedBlobId);
     setBusy(false);
-    if (!response.ok) {
-      setError(response.message);
-      return;
-    }
-    if ('session' in response && response.session) {
-      const remainingFrames = getSelectedFrames(response.session.page);
-      setSession(response.session);
+    if (response) {
+      const remainingFrames = getSelectedFrames(response.page);
       setSelectedFrameIndex(
         Math.min(activeSelectedFrameIndex, Math.max(0, remainingFrames.length - 1)),
       );
       setNotice(
         remainingFrames.length > 0
           ? `Frame removed; ${remainingFrames.length} ${remainingFrames.length === 1 ? 'frame remains' : 'frames remain'}`
-          : 'Selected video frame removed',
+          : 'Selected video frame excluded',
       );
+      offerUndo('selected-frame', 'Selected frame excluded', removedBlobId);
     }
   }
 
@@ -814,14 +854,6 @@ export function ReviewApp() {
     setSelectedEvidenceAnnotationId(null);
   }
 
-  async function removeStoredTextAnnotationsForEvent(eventId: string) {
-    if (!session) return;
-    const nextDocument = removeTextAnnotationsForEvent(textAnnotationDocument, eventId);
-    if (nextDocument === textAnnotationDocument) return;
-    setTextAnnotations(createTextAnnotationHistory(nextDocument));
-    await saveTextAnnotationDocument(session.id, nextDocument);
-  }
-
   function renderEvidenceAnnotationToolbar(source: DiagnosticSource) {
     const history = evidenceAnnotations[source];
     return (
@@ -855,23 +887,6 @@ export function ReviewApp() {
         onDone={() => void finishEvidenceAnnotating()}
       />
     );
-  }
-
-  async function clearEvidenceAnnotations(source: DiagnosticSource): Promise<boolean> {
-    if (!session || evidenceAnnotations[source].present.items.length === 0) return false;
-    const empty = createAnnotationDocument(EVIDENCE_ANNOTATION_WIDTH, EVIDENCE_ANNOTATION_HEIGHT);
-    setEvidenceAnnotations((current) => ({
-      ...current,
-      [source]: createAnnotationHistory(empty),
-    }));
-    try {
-      await saveAnnotationDocument(getEvidenceAnnotationTargetId(session.id, source), empty);
-    } catch {
-      setError(
-        `${capitalize(source)} evidence changed, but its visual annotations could not be cleared.`,
-      );
-    }
-    return true;
   }
 
   async function prepareSelectedFramePng(): Promise<Blob | null> {
@@ -944,21 +959,15 @@ export function ReviewApp() {
       setBusy(false);
       return;
     }
-    const response = await sendRuntimeMessage({ type: 'session:remove-recording' });
+    const response = await setEvidenceExcluded('recording', true);
     setBusy(false);
-    if (!response.ok) {
-      setError(response.message);
-      return;
-    }
-    if ('session' in response && response.session) setSession(response.session);
-    if (recordingUrl) URL.revokeObjectURL(recordingUrl);
-    setRecordingUrl('');
+    if (!response) return;
     setRecordingState('missing');
-    setNotice('Screen recording removed');
+    setNotice('Screen recording excluded from export');
+    offerUndo('recording', 'Screen recording excluded');
   }
 
   async function downloadReport(format: 'folder' | 'zip') {
-    setDownloadMenuOpen(false);
     await withPreparedExport(async (saved) => {
       try {
         const savedMarkdown = renderGitHubIssue(saved, textAnnotationDocument.items);
@@ -992,7 +1001,7 @@ export function ReviewApp() {
     await withPreparedExport(async (saved) => {
       try {
         await navigator.clipboard.writeText(renderGitHubIssue(saved, textAnnotationDocument.items));
-        setNotice('Issue Markdown copied');
+        setNotice('Report Markdown copied to the clipboard');
       } catch {
         setError('Clipboard access failed. Download the Markdown report instead.');
       }
@@ -1016,10 +1025,20 @@ export function ReviewApp() {
 
   if (!session) {
     return (
-      <main className="review-empty">
-        <Brand />
-        <p className="eyebrow">No reviewable capture</p>
-        <h1>{error || 'Start a capture from the BugReceipt toolbar button.'}</h1>
+      <main className="grid min-h-svh place-content-center gap-3 bg-background px-6 text-center">
+        <div className="mx-auto">
+          <Brand showVersion={false} />
+        </div>
+        <p className="mt-4 font-mono text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+          {error ? 'Review unavailable' : 'Nothing to review yet'}
+        </p>
+        <h1 className="max-w-lg text-2xl font-semibold tracking-tight">
+          {error || 'Record a problem before opening the review.'}
+        </h1>
+        <p className="max-w-lg text-sm leading-6 text-muted-foreground">
+          Open the BugReceipt side panel, choose the affected tab, and finish recording. Then open
+          the review from the side panel.
+        </p>
       </main>
     );
   }
@@ -1027,912 +1046,1084 @@ export function ReviewApp() {
   const environment = describeCaptureEnvironment(session.environment);
 
   return (
-    <main className={`review-shell${isAnnotating || annotatingEvidence ? ' is-annotating' : ''}`}>
-      <header className="review-header">
-        <div className="review-header-inner">
-          <Brand />
-          <div className="review-header-context" aria-label="Review workspace">
-            <span>Evidence review</span>
-            <strong>{session.page?.title || 'Captured page'}</strong>
-          </div>
-          <div className="review-header-meta">
-            <div className="review-status">
-              <span /> Report stays local
-            </div>
-            <div className="review-header-controls">
-              <IssueLink />
-              <SupportLink />
-            </div>
-          </div>
+    <main className="min-h-svh bg-background pb-16">
+      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-[1575px] items-center gap-6 px-6">
+          <Brand showVersion={false} />
+          <SupportLink />
         </div>
       </header>
 
-      <section className="review-commandbar" aria-labelledby="review-title">
-        <div className="review-command-copy">
-          <div className="review-command-title">
-            <h1 id="review-title">Review capture</h1>
-          </div>
-          <p>
-            Verify the report, preserve the clearest visual evidence, then export only what you
-            intend to share.
+      <section
+        className="relative mx-auto grid max-w-[1575px] gap-5 px-6 py-6 after:absolute after:inset-x-6 after:bottom-0 after:h-px after:bg-border lg:grid-cols-[1fr_auto] lg:items-center"
+        aria-labelledby="review-title"
+      >
+        <div className="max-w-2xl space-y-1">
+          <h1 id="review-title" className="text-2xl font-semibold tracking-[-0.035em]">
+            Evidence review
+          </h1>
+          <p className="text-sm leading-6 text-muted-foreground">
+            {session.page?.title || 'Captured page'}
           </p>
         </div>
-        <div className="review-actions">
-          {confirmDelete ? (
-            <div className="delete-confirmation" role="group" aria-label="Confirm capture deletion">
-              <span>Delete this capture permanently?</span>
-              <button
-                className="button danger"
-                type="button"
-                onClick={() => void discard()}
-                disabled={busy}
-              >
-                Delete now
-              </button>
-              <button
-                className="button quiet"
-                type="button"
-                onClick={() => setConfirmDelete(false)}
-                disabled={busy}
-              >
-                Keep capture
-              </button>
-            </div>
-          ) : (
-            <button
-              className="button danger"
-              type="button"
-              onClick={() => setConfirmDelete(true)}
-              disabled={busy}
-            >
-              Delete local capture
-            </button>
-          )}
-          <button
-            className="button quiet"
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" type="button" disabled={busy}>
+                Delete local capture
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-card">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this capture permanently?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This removes the recording, report, frames, events, and annotations stored on this
+                  device. It cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep capture</AlertDialogCancel>
+                <AlertDialogAction variant="destructive" onClick={() => void discard()}>
+                  Delete now
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Button
+            variant="outline"
             type="button"
             onClick={() => void copyMarkdown()}
             disabled={reviewActionsDisabled}
             aria-describedby={!exportReady ? 'report-check-heading' : undefined}
           >
             Copy Markdown
-          </button>
-          <div className="review-download-control" ref={downloadMenuRef}>
-            <button
-              ref={downloadTriggerRef}
-              className="button primary review-download-trigger"
-              type="button"
-              onClick={() => setDownloadMenuOpen((open) => !open)}
-              onKeyDown={(event) => {
-                if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-                event.preventDefault();
-                setDownloadMenuOpen(true);
-              }}
-              disabled={reviewActionsDisabled}
-              aria-haspopup="menu"
-              aria-expanded={downloadMenuOpen}
-              aria-controls="report-download-menu"
-              aria-describedby={!exportReady ? 'report-check-heading' : undefined}
-            >
-              <span>{busy ? 'Preparing…' : 'Download report'}</span>
-              <svg
-                className="review-download-chevron"
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                aria-hidden="true"
+          </Button>
+          <DropdownMenu open={downloadMenuOpen} onOpenChange={setDownloadMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                onClick={() => setDownloadMenuOpen(true)}
+                disabled={reviewActionsDisabled}
+                aria-describedby={!exportReady ? 'report-check-heading' : undefined}
               >
-                <path d="m4 6 4 4 4-4" />
-              </svg>
-            </button>
-            {downloadMenuOpen && (
-              <div className="review-download-menu" id="report-download-menu" role="menu">
-                <button type="button" role="menuitem" onClick={() => void downloadReport('folder')}>
-                  <svg viewBox="0 0 20 20" aria-hidden="true">
-                    <path d="M2.5 5.5h5l1.5 2h8.5v8.5h-15z" />
-                    <path d="M2.5 7.5v-3h5l1.5 2" />
-                  </svg>
-                  <span>
-                    <strong>Download folder</strong>
-                    <small>Save every file in one report folder under Downloads</small>
-                  </span>
-                </button>
-                <button type="button" role="menuitem" onClick={() => void downloadReport('zip')}>
-                  <svg viewBox="0 0 20 20" aria-hidden="true">
-                    <path d="M5 2.5h7l3 3v12H5z" />
-                    <path d="M12 2.5v3h3M8 6h2M8 9h2M8 12h2M8 15h2" />
-                  </svg>
-                  <span>
-                    <strong>Download ZIP</strong>
-                    <small>One archive containing the same report files</small>
-                  </span>
-                </button>
-              </div>
-            )}
-          </div>
+                <span>{busy ? 'Preparing…' : 'Download report'}</span>
+                <HugeiconsIcon icon={ArrowDown01Icon} aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-80" align="end">
+              <DropdownMenuItem onSelect={() => void downloadReport('folder')}>
+                <HugeiconsIcon
+                  icon={FolderDownloadIcon}
+                  className="size-4 shrink-0 text-foreground"
+                  aria-hidden="true"
+                />
+                <span className="grid gap-0.5 whitespace-normal">
+                  <strong>Download folder</strong>
+                  <small className="font-normal text-muted-foreground">
+                    Save every file in one report folder under Downloads
+                  </small>
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void downloadReport('zip')}>
+                <HugeiconsIcon
+                  icon={FileZipIcon}
+                  className="size-4 shrink-0 text-foreground"
+                  aria-hidden="true"
+                />
+                <span className="grid gap-0.5 whitespace-normal">
+                  <strong>Download ZIP</strong>
+                  <small className="font-normal text-muted-foreground">
+                    One archive containing the same report files
+                  </small>
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </section>
 
+      {session.captureWarnings?.length || session.filtering.droppedEventCount > 0 ? (
+        <div className="mx-auto max-w-[1575px] px-6 pt-5">
+          <Alert role="status">
+            <AlertTitle>Some evidence is incomplete</AlertTitle>
+            <AlertDescription>
+              {session.captureWarnings?.map((warning) => (
+                <p key={warning}>{warning}</p>
+              ))}
+              {session.filtering.droppedEventCount > 0 && (
+                <p>
+                  Evidence limits were reached. {session.filtering.droppedEventCount} additional
+                  events or updates were omitted.
+                </p>
+              )}
+            </AlertDescription>
+          </Alert>
+        </div>
+      ) : null}
+
       {(session.endReason && session.endReason !== 'completed') || !exportReady ? (
-        <div className="review-alerts">
+        <div className="mx-auto grid max-w-[1575px] gap-3 px-6 pt-5">
           {session.endReason && session.endReason !== 'completed' && (
-            <section className="interruption-panel" role="status">
-              <strong>Capture ended early.</strong>{' '}
-              {session.endReason === 'origin-changed'
-                ? 'The tab left the recorded site.'
-                : 'The recorded tab was closed.'}{' '}
-              Evidence collected before that point is still available.
-            </section>
+            <Alert className="border-warning/40 bg-warning" role="status">
+              <AlertTitle className="text-warning-foreground">Capture ended early</AlertTitle>
+              <AlertDescription>
+                {session.endReason === 'origin-changed'
+                  ? 'The tab left the recorded site.'
+                  : 'The recorded tab was closed.'}{' '}
+                Evidence collected before that point is still available.
+              </AlertDescription>
+            </Alert>
           )}
           {!exportReady && (
-            <section className="validation-panel" aria-labelledby="report-check-heading">
-              <strong id="report-check-heading">Before export</strong>
-              <ul>
-                {validationErrors.map((message) => (
-                  <li key={message}>{message}</li>
-                ))}
-              </ul>
-            </section>
+            <Alert variant="destructive" aria-labelledby="report-check-heading">
+              <AlertTitle id="report-check-heading">
+                Complete the report before downloading
+              </AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc pl-4">
+                  {validationErrors.map((message) => (
+                    <li key={message}>{message}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
           )}
         </div>
       ) : null}
 
-      <section className="review-workspace">
-        <aside className="report-inspector" aria-labelledby="issue-report-title">
-          <div className="workspace-section-heading">
-            <div>
-              <h2 id="issue-report-title">Issue report</h2>
-            </div>
-            <span className="section-count">{session.steps.length}/50 steps</span>
+      <section className="mx-auto grid max-w-[1575px] gap-6 px-6 py-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <aside
+          className="h-fit rounded-xl border bg-card p-3 lg:sticky lg:top-22"
+          aria-label="Review stages"
+        >
+          <div className="mb-3 px-2 py-2">
+            <p className="text-sm font-semibold">Review progress</p>
+            <p className="font-mono text-[10px] text-muted-foreground">
+              {session.id.slice(0, 8).toUpperCase()}
+            </p>
           </div>
-          <div className="review-field title-field">
-            <label htmlFor="issue-summary">Issue title</label>
-            <input
-              id="issue-summary"
-              value={session.summary}
-              aria-invalid={!session.summary.trim() || Boolean(summaryModeration.error)}
-              aria-busy={summaryModeration.checking}
-              aria-describedby={
-                summaryModeration.error ? 'issue-summary-moderation-error' : undefined
-              }
-              maxLength={200}
-              onChange={(event) =>
-                updateSession((current) => ({ ...current, summary: event.target.value }))
-              }
-            />
-            {summaryModeration.error ? (
-              <p
-                className="field-validation-error"
-                id="issue-summary-moderation-error"
-                role="status"
+          <nav className="grid gap-1">
+            {(
+              [
+                ['report', '01', 'Report details', `${session.steps.length} recorded steps`],
+                [
+                  'evidence',
+                  '02',
+                  'Review evidence',
+                  `${session.diagnostics.length + session.network.length} technical items`,
+                ],
+                [
+                  'export',
+                  '03',
+                  'Choose files',
+                  exportReady ? 'Ready to download' : 'Complete report',
+                ],
+              ] as const
+            ).map(([stage, index, label, detail]) => (
+              <Button
+                key={stage}
+                className="h-auto justify-start gap-3 px-3 py-3 text-left"
+                variant={reviewStage === stage ? 'secondary' : 'ghost'}
+                type="button"
+                aria-current={reviewStage === stage ? 'step' : undefined}
+                onClick={() => void changeReviewStage(stage)}
               >
-                {summaryModeration.error}
-              </p>
-            ) : null}
-          </div>
-          <div className="behavior-grid">
-            <div className="review-field">
-              <label htmlFor="issue-description">Description (optional)</label>
-              <textarea
-                id="issue-description"
-                value={session.description ?? ''}
-                aria-invalid={Boolean(descriptionModeration.error)}
-                aria-busy={descriptionModeration.checking}
-                aria-describedby={
-                  descriptionModeration.error ? 'issue-description-moderation-error' : undefined
-                }
-                maxLength={4_000}
-                rows={4}
-                placeholder="Describe the problem and add any useful context."
-                onChange={(event) =>
-                  updateSession((current) => ({
-                    ...current,
-                    description: event.target.value,
-                  }))
-                }
-              />
-              {descriptionModeration.error ? (
-                <p
-                  className="field-validation-error"
-                  id="issue-description-moderation-error"
-                  role="status"
-                >
-                  {descriptionModeration.error}
-                </p>
-              ) : null}
-            </div>
-            <div className="review-field">
-              <label htmlFor="expected-behavior">Expected behavior (optional)</label>
-              <textarea
-                id="expected-behavior"
-                value={session.expectedBehavior}
-                aria-invalid={Boolean(expectedBehaviorModeration.error)}
-                aria-busy={expectedBehaviorModeration.checking}
-                aria-describedby={
-                  expectedBehaviorModeration.error
-                    ? 'expected-behavior-moderation-error'
-                    : undefined
-                }
-                maxLength={4_000}
-                rows={4}
-                placeholder="What should have happened?"
-                onChange={(event) =>
-                  updateSession((current) => ({
-                    ...current,
-                    expectedBehavior: event.target.value,
-                  }))
-                }
-              />
-              {expectedBehaviorModeration.error ? (
-                <p
-                  className="field-validation-error"
-                  id="expected-behavior-moderation-error"
-                  role="status"
-                >
-                  {expectedBehaviorModeration.error}
-                </p>
-              ) : null}
-            </div>
-            <div className="review-field">
-              <label htmlFor="actual-behavior">Actual behavior (optional)</label>
-              <textarea
-                id="actual-behavior"
-                value={session.actualBehavior}
-                aria-invalid={Boolean(actualBehaviorModeration.error)}
-                aria-busy={actualBehaviorModeration.checking}
-                aria-describedby={
-                  actualBehaviorModeration.error ? 'actual-behavior-moderation-error' : undefined
-                }
-                maxLength={4_000}
-                rows={4}
-                placeholder="What happened instead?"
-                onChange={(event) =>
-                  updateSession((current) => ({
-                    ...current,
-                    actualBehavior: event.target.value,
-                  }))
-                }
-              />
-              {actualBehaviorModeration.error ? (
-                <p
-                  className="field-validation-error"
-                  id="actual-behavior-moderation-error"
-                  role="status"
-                >
-                  {actualBehaviorModeration.error}
-                </p>
-              ) : null}
-            </div>
-            <div className="review-field steps-textarea-field">
-              <label htmlFor="steps-to-reproduce">Steps to reproduce (optional)</label>
-              <textarea
-                id="steps-to-reproduce"
-                value={stepsText}
-                aria-invalid={
-                  session.steps.some((step) => !step.text.trim()) || Boolean(stepsModeration.error)
-                }
-                aria-busy={stepsModeration.checking}
-                aria-describedby={
-                  stepsModeration.error ? 'steps-to-reproduce-moderation-error' : undefined
-                }
-                rows={5}
-                placeholder={'One step per line\nOpened checkout\nClicked Pay'}
-                onChange={(event) => {
-                  const nextText = event.target.value
-                    .split(/\r?\n/)
-                    .slice(0, 50)
-                    .map((line) => line.slice(0, 1_000))
-                    .join('\n');
-                  setStepsText(nextText);
-                  updateSession((current) => {
-                    let position = 0;
-                    const steps = nextText.split('\n').flatMap((line) => {
-                      const text = line.trim();
-                      if (!text) return [];
-                      const existing = current.steps[position];
-                      const step = {
-                        id: existing?.id ?? crypto.randomUUID(),
-                        position,
-                        text,
-                      };
-                      position += 1;
-                      return [step];
-                    });
-                    return { ...current, steps };
-                  });
-                }}
-              />
-              {stepsModeration.error ? (
-                <p
-                  className="field-validation-error"
-                  id="steps-to-reproduce-moderation-error"
-                  role="status"
-                >
-                  {stepsModeration.error}
-                </p>
-              ) : null}
-            </div>
-          </div>
-          <dl className="environment-list">
-            <div>
-              <dt>Page</dt>
-              <dd>{session.page?.url || session.origin}</dd>
-            </div>
-            <div>
-              <dt>Started</dt>
-              <dd>{new Date(session.startedAt).toLocaleString()}</dd>
-            </div>
-            <div>
-              <dt>OS</dt>
-              <dd>{environment.operatingSystem}</dd>
-            </div>
-            <div>
-              <dt>Browser</dt>
-              <dd>{environment.browser}</dd>
-            </div>
-            <div>
-              <dt>Platform</dt>
-              <dd>{environment.platform}</dd>
-            </div>
-            <div className="environment-user-agent">
-              <dt>User agent</dt>
-              <dd>
-                <code>{environment.userAgent}</code>
-              </dd>
-            </div>
-            <div>
-              <dt>BugReceipt</dt>
-              <dd>{session.environment?.reproKitVersion || 'Unknown'}</dd>
-            </div>
-          </dl>
+                <span className="font-mono text-[10px] text-muted-foreground">{index}</span>
+                <span className="grid min-w-0 gap-0.5">
+                  <strong>{label}</strong>
+                  <small className="truncate font-normal text-muted-foreground">{detail}</small>
+                </span>
+              </Button>
+            ))}
+          </nav>
         </aside>
 
-        <section className="evidence-workbench" aria-label="Captured evidence">
-          <a className="mobile-report-entry" href="#issue-report-title">
-            <span>
-              <strong>Issue report</strong>
-              <small>{session.summary || 'Add an issue title before export'}</small>
-            </span>
-            <span>Edit details</span>
-          </a>
-          <div
-            className="evidence-tabs"
-            role="tablist"
-            aria-label="Captured evidence views"
-            onKeyDown={(event) => {
-              if (isAnnotating || annotatingEvidence) return;
-              if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-              event.preventDefault();
-              const tabs = Array.from(
-                event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
-              );
-              const currentIndex = tabs.indexOf(document.activeElement as HTMLButtonElement);
-              const nextIndex =
-                event.key === 'Home'
-                  ? 0
-                  : event.key === 'End'
-                    ? tabs.length - 1
-                    : event.key === 'ArrowRight'
-                      ? (currentIndex + 1) % tabs.length
-                      : (currentIndex - 1 + tabs.length) % tabs.length;
-              tabs[nextIndex]?.click();
-              tabs[nextIndex]?.focus();
-            }}
+        <div className="min-w-0">
+          <section
+            className={`rounded-xl border bg-card p-6 ${reviewStage === 'report' ? '' : 'hidden'}`}
+            aria-labelledby="issue-report-title"
           >
-            <button
-              id="visual-evidence-tab"
-              type="button"
-              role="tab"
-              aria-selected={evidenceView === 'visual'}
-              aria-controls="visual-evidence-panel"
-              tabIndex={evidenceView === 'visual' ? 0 : -1}
-              disabled={annotatingEvidence !== null}
-              onClick={() => setEvidenceView('visual')}
-            >
-              Visual evidence
-            </button>
-            <button
-              id="console-evidence-tab"
-              type="button"
-              role="tab"
-              aria-selected={evidenceView === 'console'}
-              aria-controls="console-evidence-panel"
-              tabIndex={evidenceView === 'console' ? 0 : -1}
-              disabled={
-                isAnnotating || (annotatingEvidence !== null && annotatingEvidence !== 'console')
-              }
-              onClick={() => setEvidenceView('console')}
-            >
-              Console <span>{session.diagnostics.length}</span>
-            </button>
-            <button
-              id="network-evidence-tab"
-              type="button"
-              role="tab"
-              aria-selected={evidenceView === 'network'}
-              aria-controls="network-evidence-panel"
-              tabIndex={evidenceView === 'network' ? 0 : -1}
-              disabled={
-                isAnnotating || (annotatingEvidence !== null && annotatingEvidence !== 'network')
-              }
-              onClick={() => setEvidenceView('network')}
-            >
-              Network <span>{session.network.length}</span>
-            </button>
-          </div>
-          <article
-            id="visual-evidence-panel"
-            className="visual-studio screenshot-card recording-card evidence-tab-panel"
-            role="tabpanel"
-            aria-labelledby="visual-evidence-tab"
-            hidden={evidenceView !== 'visual'}
-          >
-            <div className="workspace-section-heading studio-heading">
+            <div className="mb-6 flex items-center justify-between gap-4 border-b pb-4">
               <div>
-                <h2>Visual evidence</h2>
+                <h2 id="issue-report-title" className="text-xl font-semibold tracking-tight">
+                  Complete the report
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Give the developer the shortest clear account of what failed.
+                </p>
               </div>
-              <div className="studio-heading-meta">
-                <div className="visual-evidence-summary" aria-label="Visual evidence status">
-                  {recordingState === 'ready' ? 'Recording ready' : 'Recording unavailable'}
-                  {selectedFrames.length > 0
-                    ? ` · ${selectedFrames.length} ${selectedFrames.length === 1 ? 'frame' : 'frames'} selected`
-                    : ''}
-                </div>
-                {recordingState === 'ready' && recordingUrl && !isAnnotating && (
-                  <div
-                    className="recording-header-actions"
-                    role="group"
-                    aria-label="Recording actions"
+              <span className="font-mono text-xs text-muted-foreground">
+                {session.steps.length}/50 steps
+              </span>
+            </div>
+            <div className="space-y-2">
+              <FieldLabel htmlFor="issue-summary">Issue title</FieldLabel>
+              <Input
+                id="issue-summary"
+                value={session.summary}
+                placeholder="Summarize the problem in one sentence."
+                aria-invalid={!session.summary.trim() || Boolean(summaryModeration.error)}
+                aria-busy={summaryModeration.checking}
+                aria-describedby={
+                  summaryModeration.error ? 'issue-summary-moderation-error' : undefined
+                }
+                maxLength={200}
+                onChange={(event) =>
+                  updateSession((current) => ({ ...current, summary: event.target.value }))
+                }
+              />
+              {summaryModeration.error ? (
+                <p
+                  className="text-sm font-medium text-destructive"
+                  id="issue-summary-moderation-error"
+                  role="status"
+                >
+                  {summaryModeration.error}
+                </p>
+              ) : null}
+            </div>
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <div className="space-y-2">
+                <FieldLabel htmlFor="issue-description">Description (optional)</FieldLabel>
+                <Textarea
+                  className={REPORT_TEXTAREA_CLASS}
+                  id="issue-description"
+                  value={session.description ?? ''}
+                  aria-invalid={Boolean(descriptionModeration.error)}
+                  aria-busy={descriptionModeration.checking}
+                  aria-describedby={
+                    descriptionModeration.error ? 'issue-description-moderation-error' : undefined
+                  }
+                  maxLength={4_000}
+                  rows={4}
+                  placeholder="Describe the problem and add any useful context."
+                  onChange={(event) =>
+                    updateSession((current) => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
+                />
+                {descriptionModeration.error ? (
+                  <p
+                    className="text-sm font-medium text-destructive"
+                    id="issue-description-moderation-error"
+                    role="status"
                   >
-                    <button
-                      className="text-action"
-                      type="button"
-                      onClick={() => downloadBlobFromUrl(recordingUrl, `${exportBase}.webm`)}
-                    >
-                      Download video
-                    </button>
-                    <button
-                      className="remove-action"
-                      type="button"
-                      onClick={() => void removeRecording()}
-                      disabled={busy}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
+                    {descriptionModeration.error}
+                  </p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <FieldLabel htmlFor="expected-behavior">Expected behavior (optional)</FieldLabel>
+                <Textarea
+                  className={REPORT_TEXTAREA_CLASS}
+                  id="expected-behavior"
+                  value={session.expectedBehavior}
+                  aria-invalid={Boolean(expectedBehaviorModeration.error)}
+                  aria-busy={expectedBehaviorModeration.checking}
+                  aria-describedby={
+                    expectedBehaviorModeration.error
+                      ? 'expected-behavior-moderation-error'
+                      : undefined
+                  }
+                  maxLength={4_000}
+                  rows={4}
+                  placeholder="What should have happened?"
+                  onChange={(event) =>
+                    updateSession((current) => ({
+                      ...current,
+                      expectedBehavior: event.target.value,
+                    }))
+                  }
+                />
+                {expectedBehaviorModeration.error ? (
+                  <p
+                    className="text-sm font-medium text-destructive"
+                    id="expected-behavior-moderation-error"
+                    role="status"
+                  >
+                    {expectedBehaviorModeration.error}
+                  </p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <FieldLabel htmlFor="actual-behavior">Actual behavior (optional)</FieldLabel>
+                <Textarea
+                  className={REPORT_TEXTAREA_CLASS}
+                  id="actual-behavior"
+                  value={session.actualBehavior}
+                  aria-invalid={Boolean(actualBehaviorModeration.error)}
+                  aria-busy={actualBehaviorModeration.checking}
+                  aria-describedby={
+                    actualBehaviorModeration.error ? 'actual-behavior-moderation-error' : undefined
+                  }
+                  maxLength={4_000}
+                  rows={4}
+                  placeholder="What happened instead?"
+                  onChange={(event) =>
+                    updateSession((current) => ({
+                      ...current,
+                      actualBehavior: event.target.value,
+                    }))
+                  }
+                />
+                {actualBehaviorModeration.error ? (
+                  <p
+                    className="text-sm font-medium text-destructive"
+                    id="actual-behavior-moderation-error"
+                    role="status"
+                  >
+                    {actualBehaviorModeration.error}
+                  </p>
+                ) : null}
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <FieldLabel htmlFor="steps-to-reproduce">Steps to reproduce (optional)</FieldLabel>
+                <Textarea
+                  className={REPORT_TEXTAREA_CLASS}
+                  id="steps-to-reproduce"
+                  value={stepsText}
+                  aria-invalid={
+                    session.steps.some((step) => !step.text.trim()) ||
+                    Boolean(stepsModeration.error)
+                  }
+                  aria-busy={stepsModeration.checking}
+                  aria-describedby={
+                    stepsModeration.error ? 'steps-to-reproduce-moderation-error' : undefined
+                  }
+                  rows={5}
+                  placeholder={'One step per line\nOpened checkout\nClicked Pay'}
+                  onChange={(event) => {
+                    const nextText = event.target.value
+                      .split(/\r?\n/)
+                      .slice(0, 50)
+                      .map((line) => line.slice(0, 1_000))
+                      .join('\n');
+                    setStepsText(nextText);
+                    updateSession((current) => {
+                      let position = 0;
+                      const steps = nextText.split('\n').flatMap((line) => {
+                        const text = line.trim();
+                        if (!text) return [];
+                        const existing = current.steps[position];
+                        const step = {
+                          id: existing?.id ?? crypto.randomUUID(),
+                          position,
+                          text,
+                        };
+                        position += 1;
+                        return [step];
+                      });
+                      return { ...current, steps };
+                    });
+                  }}
+                />
+                {stepsModeration.error ? (
+                  <p
+                    className="text-sm font-medium text-destructive"
+                    id="steps-to-reproduce-moderation-error"
+                    role="status"
+                  >
+                    {stepsModeration.error}
+                  </p>
+                ) : null}
               </div>
             </div>
-            {recordingState === 'loading' && (
-              <p className="empty-copy">Loading screen recording…</p>
-            )}
-            {recordingState === 'ready' && recordingUrl && !isAnnotating && (
-              <section className="recording-stage" aria-label="Recording preview">
-                <div className="recording-player">
-                  <video
-                    ref={videoRef}
-                    src={recordingUrl}
-                    controls
-                    preload="metadata"
-                    onDurationChange={(event) => syncVideoState(event.currentTarget)}
-                    onLoadedData={(event) => syncVideoState(event.currentTarget)}
-                    onLoadedMetadata={(event) => syncVideoState(event.currentTarget)}
-                    onTimeUpdate={(event) => syncVideoState(event.currentTarget)}
-                    onSeeked={(event) => syncVideoState(event.currentTarget)}
-                    aria-label={`Screen recording of ${session.page?.title || 'the captured page'}`}
-                  >
-                    Your browser cannot preview this screen recording.
-                  </video>
-                  <button
-                    className="button primary video-frame-capture-action"
-                    type="button"
-                    aria-label={
-                      selectedFrames.length >= MAX_SELECTED_FRAMES
-                        ? `Maximum of ${MAX_SELECTED_FRAMES} frames reached`
-                        : `Capture current frame at ${formatVideoTime(videoTime * 1_000)}`
-                    }
-                    onClick={() => void saveCurrentFrame()}
-                    disabled={
-                      busy || videoDuration <= 0 || selectedFrames.length >= MAX_SELECTED_FRAMES
-                    }
-                    title={
-                      selectedFrames.length >= MAX_SELECTED_FRAMES
-                        ? `Remove a frame before capturing another. Maximum ${MAX_SELECTED_FRAMES}.`
-                        : undefined
-                    }
-                  >
-                    {capturingFrame
-                      ? 'Capturing…'
-                      : selectedFrames.length >= MAX_SELECTED_FRAMES
-                        ? `${MAX_SELECTED_FRAMES} frame limit`
-                        : 'Capture frame'}
-                  </button>
-                </div>
-              </section>
-            )}
-            {(recordingState === 'ready' || selectedFrames.length > 0) && (
-              <section
-                className={`frame-workspace frame-workspace-selected-only${isAnnotating ? ' frame-workspace-editing' : ''}`}
-                aria-label="Video frame evidence"
+            <dl className="mt-6 grid gap-x-8 gap-y-5 rounded-lg bg-muted/40 p-4 md:grid-cols-2 [&>div]:grid [&>div]:gap-1 [&_dt]:flex [&_dt]:items-center [&_dt]:gap-1.5 [&_dt]:font-mono [&_dt]:text-[10px] [&_dt]:font-semibold [&_dt]:uppercase [&_dt]:text-muted-foreground [&_dt_svg]:size-3 [&_dd]:min-w-0 [&_dd]:break-words [&_dd]:text-sm">
+              <div className="md:col-span-2">
+                <dt>
+                  <HugeiconsIcon icon={Globe02Icon} aria-hidden="true" /> Page
+                </dt>
+                <dd>{session.page?.url || session.origin}</dd>
+              </div>
+              <div>
+                <dt>
+                  <HugeiconsIcon icon={Clock01Icon} aria-hidden="true" /> Started
+                </dt>
+                <dd>{new Date(session.startedAt).toLocaleString()}</dd>
+              </div>
+              <div>
+                <dt>
+                  <HugeiconsIcon icon={ComputerIcon} aria-hidden="true" /> OS
+                </dt>
+                <dd>{environment.operatingSystem}</dd>
+              </div>
+              <div>
+                <dt>
+                  <HugeiconsIcon icon={BrowserIcon} aria-hidden="true" /> Browser
+                </dt>
+                <dd>{environment.browser}</dd>
+              </div>
+              <div>
+                <dt>
+                  <HugeiconsIcon icon={CpuIcon} aria-hidden="true" /> Platform
+                </dt>
+                <dd>{environment.platform}</dd>
+              </div>
+              <div className="md:col-span-2">
+                <dt>
+                  <HugeiconsIcon icon={SourceCodeIcon} aria-hidden="true" /> User agent
+                </dt>
+                <dd>
+                  <code>{environment.userAgent}</code>
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  <HugeiconsIcon icon={PackageIcon} aria-hidden="true" /> BugReceipt
+                </dt>
+                <dd>{session.environment?.reproKitVersion || 'Unknown'}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section
+            className={`rounded-xl border bg-card p-6 ${reviewStage === 'evidence' ? '' : 'hidden'}`}
+            aria-label="Captured evidence"
+          >
+            <Tabs
+              value={evidenceView}
+              onValueChange={(value) => setEvidenceView(value as EvidenceView)}
+            >
+              <TabsList
+                className="mb-5"
+                aria-label="Captured evidence views"
+                onKeyDown={(event) => {
+                  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                  event.preventDefault();
+                  const views: EvidenceView[] = ['visual', 'console', 'network'];
+                  const currentIndex = views.indexOf(evidenceView);
+                  const nextIndex =
+                    event.key === 'Home'
+                      ? 0
+                      : event.key === 'End'
+                        ? views.length - 1
+                        : (currentIndex + (event.key === 'ArrowLeft' ? -1 : 1) + views.length) %
+                          views.length;
+                  setEvidenceView(views[nextIndex] ?? 'visual');
+                }}
               >
-                <section
-                  className={`selected-frame${isAnnotating ? ' is-annotating' : ''}`}
-                  aria-labelledby="selected-frame-title"
+                <TabsTrigger
+                  value="visual"
+                  id="visual-evidence-tab"
+                  aria-controls="visual-evidence-panel"
+                  disabled={annotatingEvidence !== null}
+                  onClick={() => setEvidenceView('visual')}
                 >
-                  <div className="selected-frame-heading">
-                    <div>
-                      <strong id="selected-frame-title">
-                        {isAnnotating
-                          ? `Annotate frame ${activeSelectedFrameIndex + 1}`
-                          : selectedFrames.length === 1
-                            ? 'Selected frame'
-                            : 'Selected frames'}
-                      </strong>
-                      <p>
-                        {isAnnotating
-                          ? 'Mark the exact problem, then save the annotated frame locally.'
-                          : selectedFrameState === 'ready'
-                            ? annotationCount > 0
-                              ? `${annotationCount} ${annotationCount === 1 ? 'annotation is' : 'annotations are'} included in every PNG export.`
-                              : 'Annotate the important area or export the frame as captured.'
-                            : 'Your saved still frame will appear here.'}
-                      </p>
+                  Visual evidence
+                </TabsTrigger>
+                <TabsTrigger
+                  value="console"
+                  id="console-evidence-tab"
+                  aria-controls="console-evidence-panel"
+                  disabled={
+                    isAnnotating ||
+                    (annotatingEvidence !== null && annotatingEvidence !== 'console')
+                  }
+                  onClick={() => setEvidenceView('console')}
+                >
+                  Console <span>{session.diagnostics.length}</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="network"
+                  id="network-evidence-tab"
+                  aria-controls="network-evidence-panel"
+                  disabled={
+                    isAnnotating ||
+                    (annotatingEvidence !== null && annotatingEvidence !== 'network')
+                  }
+                  onClick={() => setEvidenceView('network')}
+                >
+                  Network <span>{session.network.length}</span>
+                </TabsTrigger>
+              </TabsList>
+              <article
+                id="visual-evidence-panel"
+                className="min-w-0"
+                role="tabpanel"
+                aria-labelledby="visual-evidence-tab"
+                hidden={evidenceView !== 'visual'}
+              >
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-4 border-b pb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold tracking-tight">Visual evidence</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Play the recording, save useful frames, and annotate the exact problem.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <div
+                      className="font-mono text-[10px] text-muted-foreground"
+                      aria-label="Visual evidence status"
+                    >
+                      {recordingState === 'ready' ? 'Video available' : 'Video unavailable'}
+                      {selectedFrames.length > 0
+                        ? ` · ${selectedFrames.length} ${selectedFrames.length === 1 ? 'frame' : 'frames'} selected`
+                        : ''}
                     </div>
-                    {activeSelectedFrame && (
-                      <div className="selected-frame-heading-actions">
-                        {selectedFrames.length > 1 && (
-                          <div
-                            className="selected-frame-navigation"
-                            role="group"
-                            aria-label="Selected frame navigation"
-                          >
-                            <button
-                              className="selected-frame-navigation-button"
-                              type="button"
-                              aria-label="View previous selected frame"
-                              onClick={() =>
-                                setSelectedFrameIndex((index) => Math.max(0, index - 1))
-                              }
-                              disabled={busy || isAnnotating || activeSelectedFrameIndex === 0}
-                            >
-                              <svg viewBox="0 0 20 20" aria-hidden="true">
-                                <path d="m12.5 4.5-5 5.5 5 5.5" />
-                              </svg>
-                            </button>
-                            <span
-                              className="selected-frame-position"
-                              aria-live="polite"
-                              aria-atomic="true"
-                            >
-                              {activeSelectedFrameIndex + 1} / {selectedFrames.length}
-                            </span>
-                            <button
-                              className="selected-frame-navigation-button"
-                              type="button"
-                              aria-label="View next selected frame"
-                              onClick={() =>
-                                setSelectedFrameIndex((index) =>
-                                  Math.min(selectedFrames.length - 1, index + 1),
-                                )
-                              }
-                              disabled={
-                                busy ||
-                                isAnnotating ||
-                                activeSelectedFrameIndex === selectedFrames.length - 1
-                              }
-                            >
-                              <svg viewBox="0 0 20 20" aria-hidden="true">
-                                <path d="m7.5 4.5 5 5.5-5 5.5" />
-                              </svg>
-                            </button>
-                          </div>
-                        )}
-                        <span>{formatVideoTime(activeSelectedFrame.videoTimeMs)}</span>
-                        {!isAnnotating && selectedFrameState === 'ready' && (
-                          <>
-                            <button
-                              className="text-action annotate-frame-action"
-                              type="button"
-                              aria-label="Annotate selected frame"
-                              onClick={beginAnnotating}
-                              disabled={busy}
-                            >
-                              <AnnotateIcon />
-                              {annotationCount > 0 ? 'Edit annotations' : 'Annotate'}
-                            </button>
-                            <button
-                              className="text-action"
-                              type="button"
-                              onClick={() => void downloadSelectedFrame()}
-                              disabled={busy}
-                            >
-                              Download frame
-                            </button>
-                            <button
-                              className="remove-action"
-                              type="button"
-                              aria-label="Remove selected frame"
-                              onClick={() => void removeSelectedFrame()}
-                              disabled={busy}
-                            >
-                              Remove
-                            </button>
-                          </>
-                        )}
+                    {recordingState === 'ready' && recordingUrl && !isAnnotating && (
+                      <div
+                        className="flex items-center gap-2"
+                        role="group"
+                        aria-label="Recording actions"
+                      >
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          onClick={() => downloadBlobFromUrl(recordingUrl, `${exportBase}.webm`)}
+                        >
+                          <HugeiconsIcon icon={Download01Icon} aria-hidden="true" />
+                          Download video
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          type="button"
+                          onClick={() => void removeRecording()}
+                          disabled={busy}
+                        >
+                          <HugeiconsIcon icon={Delete02Icon} aria-hidden="true" />
+                          Remove video
+                        </Button>
                       </div>
                     )}
                   </div>
-
-                  {selectedFrameState === 'loading' && activeSelectedFrame && (
-                    <p className="selected-frame-status" role="status">
-                      Loading selected video frame…
-                    </p>
-                  )}
-                  {selectedFrameState === 'failed' && activeSelectedFrame && (
-                    <p className="capture-warning" role="status">
-                      The selected frame could not be loaded. Capture it again from the recording.
-                    </p>
-                  )}
-                  {selectedFrameState === 'ready' && selectedFrameUrl && activeSelectedFrame && (
-                    <>
-                      {isAnnotating && (
-                        <AnnotationToolbar
-                          tool={annotationTool}
-                          color={annotationColor}
-                          strokeWidth={annotationWidth}
-                          count={annotationCount}
-                          canUndo={annotations.past.length > 0}
-                          canRedo={annotations.future.length > 0}
-                          saving={savingAnnotations}
-                          onToolChange={chooseAnnotationTool}
-                          onColorChange={setAnnotationColor}
-                          onStrokeWidthChange={setAnnotationWidth}
-                          onUndo={() => {
-                            setAnnotations((history) => undoAnnotation(history));
-                            setSelectedAnnotationId(null);
-                          }}
-                          onRedo={() => {
-                            setAnnotations((history) => redoAnnotation(history));
-                            setSelectedAnnotationId(null);
-                          }}
-                          onClear={() => {
-                            setAnnotations((history) =>
-                              commitAnnotation(history, { type: 'clear' }),
-                            );
-                            setSelectedAnnotationId(null);
-                          }}
-                          onCancel={cancelAnnotating}
-                          onDone={() => void finishAnnotating()}
-                        />
-                      )}
-                      <div className={`selected-frame-canvas${isAnnotating ? ' is-editing' : ''}`}>
-                        <img
-                          src={selectedFrameUrl}
-                          alt={`Selected frame ${activeSelectedFrameIndex + 1} of ${selectedFrames.length} from the screen recording at ${formatVideoTime(activeSelectedFrame.videoTimeMs)}`}
-                        />
-                        <AnnotationOverlay
-                          document={annotationDocument}
-                          editing={isAnnotating}
-                          tool={annotationTool}
-                          color={annotationColor}
-                          displayStrokeWidth={annotationWidth}
-                          selectedId={selectedAnnotationId}
-                          onSelect={setSelectedAnnotationId}
-                          onAdd={addAnnotation}
-                          onReplace={replaceAnnotation}
-                          onUpdate={updateAnnotation}
-                          onRemove={removeAnnotation}
-                          onTextPlaced={() => setAnnotationTool('select')}
-                        />
-                      </div>
-                    </>
-                  )}
-                  {selectedFrameState === 'missing' && selectedFrames.length === 0 && (
-                    <div className="selected-frame-empty">
-                      <strong>No frame saved yet</strong>
-                      <p>Pause anywhere, then use Capture frame. The PNG stays local.</p>
-                    </div>
-                  )}
-                </section>
-              </section>
-            )}
-            {recordingState !== 'ready' && screenshotState === 'ready' && screenshotUrl && (
-              <>
-                <p className="artifact-fallback-label">Fallback screenshot</p>
-                <img
-                  src={screenshotUrl}
-                  alt={`Captured page: ${session.page?.title || 'untitled page'}`}
-                />
-                <div className="artifact-actions">
-                  <button
-                    className="text-action"
-                    type="button"
-                    onClick={() => downloadBlobFromUrl(screenshotUrl, `${exportBase}.png`)}
-                  >
-                    Download screenshot.png
-                  </button>
-                  <button
-                    className="remove-action"
-                    type="button"
-                    onClick={() => void removeScreenshot()}
-                    disabled={busy}
-                  >
-                    Remove
-                  </button>
                 </div>
-              </>
-            )}
-            {recordingState !== 'ready' &&
-              selectedFrameState !== 'ready' &&
-              screenshotState !== 'ready' && (
-                <p className="empty-copy">
-                  {session.page?.recordingError ||
-                    session.page?.screenshotError ||
-                    'No visual recording is included in this report.'}{' '}
-                  The Markdown report is still available.
-                </p>
-              )}
-          </article>
+                {recordingState === 'loading' && (
+                  <p className="rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
+                    Loading screen recording…
+                  </p>
+                )}
+                {recordingState === 'ready' && recordingUrl && !isAnnotating && (
+                  <section className="space-y-4" aria-label="Recording preview">
+                    <div className="rounded-xl border bg-black p-3 [&_video]:max-h-[60vh] [&_video]:w-full">
+                      <video
+                        ref={videoRef}
+                        src={recordingUrl}
+                        controls
+                        preload="metadata"
+                        onDurationChange={(event) => syncVideoState(event.currentTarget)}
+                        onLoadedData={(event) => syncVideoState(event.currentTarget)}
+                        onLoadedMetadata={(event) => syncVideoState(event.currentTarget)}
+                        onTimeUpdate={(event) => syncVideoState(event.currentTarget)}
+                        onSeeked={(event) => syncVideoState(event.currentTarget)}
+                        aria-label={`Screen recording of ${session.page?.title || 'the captured page'}`}
+                      >
+                        Your browser cannot preview this screen recording.
+                      </video>
+                      <Button
+                        className="mt-3"
+                        type="button"
+                        aria-label={
+                          selectedFrames.length >= MAX_SELECTED_FRAMES
+                            ? `Maximum of ${MAX_SELECTED_FRAMES} frames reached`
+                            : `Capture current frame at ${formatVideoTime(videoTime * 1_000)}`
+                        }
+                        onClick={() => void saveCurrentFrame()}
+                        disabled={
+                          busy || videoDuration <= 0 || selectedFrames.length >= MAX_SELECTED_FRAMES
+                        }
+                        title={
+                          selectedFrames.length >= MAX_SELECTED_FRAMES
+                            ? `Remove a frame before capturing another. Maximum ${MAX_SELECTED_FRAMES}.`
+                            : undefined
+                        }
+                      >
+                        {capturingFrame
+                          ? 'Capturing…'
+                          : selectedFrames.length >= MAX_SELECTED_FRAMES
+                            ? `${MAX_SELECTED_FRAMES} frame limit`
+                            : 'Save current frame'}
+                      </Button>
+                    </div>
+                  </section>
+                )}
+                {(recordingState === 'ready' || selectedFrames.length > 0) && (
+                  <section className="mt-5" aria-label="Video frame evidence">
+                    <section
+                      className="rounded-xl border bg-muted/30 p-4"
+                      aria-labelledby="selected-frame-title"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                          <strong id="selected-frame-title">
+                            {isAnnotating
+                              ? `Annotate frame ${activeSelectedFrameIndex + 1}`
+                              : selectedFrames.length === 1
+                                ? 'Selected frame'
+                                : 'Selected frames'}
+                          </strong>
+                          <p>
+                            {isAnnotating
+                              ? 'Mark the exact problem, then save the annotated frame locally.'
+                              : selectedFrameState === 'ready'
+                                ? annotationCount > 0
+                                  ? `${annotationCount} ${annotationCount === 1 ? 'annotation is' : 'annotations are'} included in every PNG export.`
+                                  : 'Annotate the important area or export the frame as captured.'
+                                : 'Your saved still frame will appear here.'}
+                          </p>
+                        </div>
+                        {activeSelectedFrame && (
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            {selectedFrames.length > 1 && (
+                              <div
+                                className="flex items-center gap-1"
+                                role="group"
+                                aria-label="Selected frame navigation"
+                              >
+                                <Button
+                                  variant="outline"
+                                  size="icon-sm"
+                                  type="button"
+                                  aria-label="View previous selected frame"
+                                  onClick={() =>
+                                    setSelectedFrameIndex((index) => Math.max(0, index - 1))
+                                  }
+                                  disabled={busy || isAnnotating || activeSelectedFrameIndex === 0}
+                                >
+                                  <HugeiconsIcon icon={ArrowLeft01Icon} aria-hidden="true" />
+                                </Button>
+                                <span
+                                  className="px-2 font-mono text-xs text-muted-foreground"
+                                  aria-live="polite"
+                                  aria-atomic="true"
+                                >
+                                  {activeSelectedFrameIndex + 1} / {selectedFrames.length}
+                                </span>
+                                <Button
+                                  variant="outline"
+                                  size="icon-sm"
+                                  type="button"
+                                  aria-label="View next selected frame"
+                                  onClick={() =>
+                                    setSelectedFrameIndex((index) =>
+                                      Math.min(selectedFrames.length - 1, index + 1),
+                                    )
+                                  }
+                                  disabled={
+                                    busy ||
+                                    isAnnotating ||
+                                    activeSelectedFrameIndex === selectedFrames.length - 1
+                                  }
+                                >
+                                  <HugeiconsIcon icon={ArrowRight01Icon} aria-hidden="true" />
+                                </Button>
+                              </div>
+                            )}
+                            <span>{formatVideoTime(activeSelectedFrame.videoTimeMs)}</span>
+                            {!isAnnotating && selectedFrameState === 'ready' && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  type="button"
+                                  aria-label="Annotate selected frame"
+                                  onClick={beginAnnotating}
+                                  disabled={busy}
+                                >
+                                  <HugeiconsIcon icon={Edit02Icon} />
+                                  {annotationCount > 0 ? 'Edit annotations' : 'Annotate'}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  type="button"
+                                  onClick={() => void downloadSelectedFrame()}
+                                  disabled={busy}
+                                >
+                                  Download frame
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                  type="button"
+                                  aria-label="Remove selected frame"
+                                  onClick={() => void removeSelectedFrame()}
+                                  disabled={busy}
+                                >
+                                  Remove frame
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
-          <section
-            id="console-evidence-panel"
-            className="diagnostics-panel evidence-tab-panel"
-            role="tabpanel"
-            aria-labelledby="console-evidence-tab"
-            hidden={evidenceView !== 'console'}
-          >
-            <div className="workspace-section-heading diagnostics-heading">
-              <div>
-                <h2>Console evidence</h2>
-                {consoleAnnotationCount > 0 && (
-                  <span className="diagnostics-annotation-summary">
-                    {consoleAnnotationCount} visual{' '}
-                    {consoleAnnotationCount === 1 ? 'annotation' : 'annotations'}
-                  </span>
+                      {selectedFrameState === 'loading' && activeSelectedFrame && (
+                        <p className="py-8 text-center text-sm text-muted-foreground" role="status">
+                          Loading selected video frame…
+                        </p>
+                      )}
+                      {selectedFrameState === 'failed' && activeSelectedFrame && (
+                        <p
+                          className="rounded-lg border border-warning/40 bg-warning p-4 text-sm text-warning-foreground"
+                          role="status"
+                        >
+                          The selected frame could not be loaded. Capture it again from the
+                          recording.
+                        </p>
+                      )}
+                      {selectedFrameState === 'ready' &&
+                        selectedFrameUrl &&
+                        activeSelectedFrame && (
+                          <>
+                            {isAnnotating && (
+                              <AnnotationToolbar
+                                tool={annotationTool}
+                                color={annotationColor}
+                                strokeWidth={annotationWidth}
+                                count={annotationCount}
+                                canUndo={annotations.past.length > 0}
+                                canRedo={annotations.future.length > 0}
+                                saving={savingAnnotations}
+                                onToolChange={chooseAnnotationTool}
+                                onColorChange={setAnnotationColor}
+                                onStrokeWidthChange={setAnnotationWidth}
+                                onUndo={() => {
+                                  setAnnotations((history) => undoAnnotation(history));
+                                  setSelectedAnnotationId(null);
+                                }}
+                                onRedo={() => {
+                                  setAnnotations((history) => redoAnnotation(history));
+                                  setSelectedAnnotationId(null);
+                                }}
+                                onClear={() => {
+                                  setAnnotations((history) =>
+                                    commitAnnotation(history, { type: 'clear' }),
+                                  );
+                                  setSelectedAnnotationId(null);
+                                }}
+                                onCancel={cancelAnnotating}
+                                onDone={() => void finishAnnotating()}
+                              />
+                            )}
+                            <div
+                              className={`relative my-4 w-full overflow-hidden rounded-lg border bg-[#08121b] leading-none ${isAnnotating ? 'ring-2 ring-ring ring-offset-2 ring-offset-card' : ''}`}
+                            >
+                              <img
+                                className="block h-auto w-full object-contain"
+                                src={selectedFrameUrl}
+                                alt={`Selected frame ${activeSelectedFrameIndex + 1} of ${selectedFrames.length} from the screen recording at ${formatVideoTime(activeSelectedFrame.videoTimeMs)}`}
+                              />
+                              <AnnotationOverlay
+                                document={annotationDocument}
+                                editing={isAnnotating}
+                                tool={annotationTool}
+                                color={annotationColor}
+                                displayStrokeWidth={annotationWidth}
+                                selectedId={selectedAnnotationId}
+                                onSelect={setSelectedAnnotationId}
+                                onAdd={addAnnotation}
+                                onReplace={replaceAnnotation}
+                                onUpdate={updateAnnotation}
+                                onRemove={removeAnnotation}
+                                onTextPlaced={() => setAnnotationTool('select')}
+                              />
+                            </div>
+                          </>
+                        )}
+                      {selectedFrameState === 'missing' && selectedFrames.length === 0 && (
+                        <div className="mt-4 grid min-h-40 place-content-center rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+                          <strong>No frame saved yet</strong>
+                          <p>Pause the video at the problem, then use Save current frame.</p>
+                        </div>
+                      )}
+                    </section>
+                  </section>
                 )}
-              </div>
-              <div className="diagnostics-heading-actions">
-                <p>
-                  {session.filtering.redactionCount} sensitive value
-                  {session.filtering.redactionCount === 1 ? '' : 's'} redacted locally
-                </p>
-                <button
-                  className="button quiet diagnostics-download-action"
-                  type="button"
-                  onClick={downloadConsoleEvidence}
-                  disabled={session.diagnostics.length === 0 || reviewActionsDisabled}
-                >
-                  <EvidenceDownloadIcon />
-                  Download console
-                </button>
-                {!annotatingEvidence && (
-                  <button
-                    className="button quiet annotate-diagnostics-action"
-                    type="button"
-                    aria-label="Annotate console evidence"
-                    onClick={() => beginEvidenceAnnotating('console')}
-                    disabled={
-                      session.diagnostics.length === 0 ||
-                      busy ||
-                      isAnnotating ||
-                      savingAnnotations ||
-                      savingEvidenceAnnotations
-                    }
-                  >
-                    <AnnotateIcon />
-                    {consoleAnnotationCount > 0 ? 'Edit annotations' : 'Annotate'}
-                  </button>
+                {recordingState !== 'ready' && screenshotState === 'ready' && screenshotUrl && (
+                  <>
+                    <p className="mb-2 font-mono text-xs font-semibold text-muted-foreground uppercase">
+                      Screenshot captured instead
+                    </p>
+                    <img
+                      src={screenshotUrl}
+                      alt={`Captured page: ${session.page?.title || 'untitled page'}`}
+                    />
+                    <div className="mt-3 flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        type="button"
+                        onClick={() => downloadBlobFromUrl(screenshotUrl, `${exportBase}.png`)}
+                      >
+                        Download screenshot.png
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        type="button"
+                        onClick={() => void removeScreenshot()}
+                        disabled={busy}
+                      >
+                        Remove screenshot
+                      </Button>
+                    </div>
+                  </>
                 )}
-              </div>
-            </div>
-            {annotatingEvidence === 'console' && renderEvidenceAnnotationToolbar('console')}
-            {evidenceView === 'console' && (
-              <ConsoleEvidenceWindow
-                events={session.diagnostics}
-                busy={busy || annotatingEvidence === 'console'}
-                textAnnotations={textAnnotationDocument.items}
-                annotationDocument={evidenceAnnotations.console.present}
-                annotationEditing={annotatingEvidence === 'console'}
-                annotationTool={evidenceAnnotationTool}
-                annotationColor={evidenceAnnotationColor}
-                annotationWidth={evidenceAnnotationWidth}
-                selectedAnnotationId={selectedEvidenceAnnotationId}
-                onSelectAnnotation={setSelectedEvidenceAnnotationId}
-                onAddAnnotation={addEvidenceAnnotation}
-                onReplaceAnnotation={replaceEvidenceAnnotation}
-                onUpdateAnnotation={updateEvidenceAnnotation}
-                onRemoveAnnotation={removeEvidenceAnnotation}
-                onTextPlaced={() => setEvidenceAnnotationTool('select')}
-                onRemove={removeDiagnostic}
-              />
-            )}
-          </section>
+                {recordingState !== 'ready' &&
+                  selectedFrameState !== 'ready' &&
+                  screenshotState !== 'ready' && (
+                    <p className="rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
+                      {session.page?.recordingError ||
+                        session.page?.screenshotError ||
+                        'No visual recording is included in this report.'}{' '}
+                      The Markdown report is still available.
+                    </p>
+                  )}
+              </article>
 
-          <section
-            id="network-evidence-panel"
-            className="diagnostics-panel evidence-tab-panel"
-            role="tabpanel"
-            aria-labelledby="network-evidence-tab"
-            hidden={evidenceView !== 'network'}
-          >
-            <div className="workspace-section-heading diagnostics-heading">
-              <div>
-                <h2>Network evidence</h2>
-                {networkAnnotationCount > 0 && (
-                  <span className="diagnostics-annotation-summary">
-                    {networkAnnotationCount} visual{' '}
-                    {networkAnnotationCount === 1 ? 'annotation' : 'annotations'}
-                  </span>
+              <section
+                id="console-evidence-panel"
+                className="min-w-0"
+                role="tabpanel"
+                aria-labelledby="console-evidence-tab"
+                hidden={evidenceView !== 'console'}
+              >
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-4 border-b pb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold tracking-tight">Console evidence</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Review messages recorded from the page. Remove anything you do not want to
+                      include.
+                    </p>
+                    {consoleAnnotationCount > 0 && (
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {consoleAnnotationCount} visual{' '}
+                        {consoleAnnotationCount === 1 ? 'annotation' : 'annotations'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-muted-foreground">
+                    <p>
+                      {session.filtering.redactionCount} sensitive value
+                      {session.filtering.redactionCount === 1 ? '' : 's'} redacted locally
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      onClick={downloadConsoleEvidence}
+                      disabled={session.diagnostics.length === 0 || reviewActionsDisabled}
+                    >
+                      <HugeiconsIcon icon={Download01Icon} aria-hidden="true" />
+                      Download console
+                    </Button>
+                    {!annotatingEvidence && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        aria-label="Annotate console evidence"
+                        onClick={() => beginEvidenceAnnotating('console')}
+                        disabled={
+                          session.diagnostics.length === 0 ||
+                          busy ||
+                          isAnnotating ||
+                          savingAnnotations ||
+                          savingEvidenceAnnotations
+                        }
+                      >
+                        <HugeiconsIcon icon={Edit02Icon} />
+                        {consoleAnnotationCount > 0 ? 'Edit annotations' : 'Annotate'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {annotatingEvidence === 'console' && renderEvidenceAnnotationToolbar('console')}
+                {evidenceView === 'console' && (
+                  <ConsoleEvidenceWindow
+                    events={session.diagnostics}
+                    busy={busy || annotatingEvidence === 'console'}
+                    textAnnotations={textAnnotationDocument.items}
+                    annotationDocument={evidenceAnnotations.console.present}
+                    annotationEditing={annotatingEvidence === 'console'}
+                    annotationTool={evidenceAnnotationTool}
+                    annotationColor={evidenceAnnotationColor}
+                    annotationWidth={evidenceAnnotationWidth}
+                    selectedAnnotationId={selectedEvidenceAnnotationId}
+                    onSelectAnnotation={setSelectedEvidenceAnnotationId}
+                    onAddAnnotation={addEvidenceAnnotation}
+                    onReplaceAnnotation={replaceEvidenceAnnotation}
+                    onUpdateAnnotation={updateEvidenceAnnotation}
+                    onRemoveAnnotation={removeEvidenceAnnotation}
+                    onTextPlaced={() => setEvidenceAnnotationTool('select')}
+                    onRemove={removeDiagnostic}
+                  />
                 )}
-              </div>
-              <div className="diagnostics-heading-actions">
-                <p>
-                  {session.filtering.redactionCount} sensitive value
-                  {session.filtering.redactionCount === 1 ? '' : 's'} redacted locally
-                </p>
-                <button
-                  className="button quiet diagnostics-download-action"
-                  type="button"
-                  onClick={downloadNetworkEvidence}
-                  disabled={session.network.length === 0 || reviewActionsDisabled}
-                >
-                  <EvidenceDownloadIcon />
-                  Download network
-                </button>
-                {!annotatingEvidence && (
-                  <button
-                    className="button quiet annotate-diagnostics-action"
-                    type="button"
-                    aria-label="Annotate network evidence"
-                    onClick={() => beginEvidenceAnnotating('network')}
-                    disabled={
-                      session.network.length === 0 ||
-                      busy ||
-                      isAnnotating ||
-                      savingAnnotations ||
-                      savingEvidenceAnnotations
-                    }
-                  >
-                    <AnnotateIcon />
-                    {networkAnnotationCount > 0 ? 'Edit annotations' : 'Annotate'}
-                  </button>
+              </section>
+
+              <section
+                id="network-evidence-panel"
+                className="min-w-0"
+                role="tabpanel"
+                aria-labelledby="network-evidence-tab"
+                hidden={evidenceView !== 'network'}
+              >
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-4 border-b pb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold tracking-tight">Network evidence</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Review requests recorded from the page. Remove anything you do not want to
+                      include.
+                    </p>
+                    {networkAnnotationCount > 0 && (
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {networkAnnotationCount} visual{' '}
+                        {networkAnnotationCount === 1 ? 'annotation' : 'annotations'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-muted-foreground">
+                    <p>
+                      {session.filtering.redactionCount} sensitive value
+                      {session.filtering.redactionCount === 1 ? '' : 's'} redacted locally
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      onClick={downloadNetworkEvidence}
+                      disabled={session.network.length === 0 || reviewActionsDisabled}
+                    >
+                      <HugeiconsIcon icon={Download01Icon} aria-hidden="true" />
+                      Download network
+                    </Button>
+                    {!annotatingEvidence && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        aria-label="Annotate network evidence"
+                        onClick={() => beginEvidenceAnnotating('network')}
+                        disabled={
+                          session.network.length === 0 ||
+                          busy ||
+                          isAnnotating ||
+                          savingAnnotations ||
+                          savingEvidenceAnnotations
+                        }
+                      >
+                        <HugeiconsIcon icon={Edit02Icon} />
+                        {networkAnnotationCount > 0 ? 'Edit annotations' : 'Annotate'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {annotatingEvidence === 'network' && renderEvidenceAnnotationToolbar('network')}
+                {evidenceView === 'network' && (
+                  <NetworkEvidenceWindow
+                    events={session.network}
+                    busy={busy || annotatingEvidence === 'network'}
+                    textAnnotations={textAnnotationDocument.items}
+                    annotationDocument={evidenceAnnotations.network.present}
+                    annotationEditing={annotatingEvidence === 'network'}
+                    annotationTool={evidenceAnnotationTool}
+                    annotationColor={evidenceAnnotationColor}
+                    annotationWidth={evidenceAnnotationWidth}
+                    selectedAnnotationId={selectedEvidenceAnnotationId}
+                    onSelectAnnotation={setSelectedEvidenceAnnotationId}
+                    onAddAnnotation={addEvidenceAnnotation}
+                    onReplaceAnnotation={replaceEvidenceAnnotation}
+                    onUpdateAnnotation={updateEvidenceAnnotation}
+                    onRemoveAnnotation={removeEvidenceAnnotation}
+                    onTextPlaced={() => setEvidenceAnnotationTool('select')}
+                    onRemove={removeNetworkEvent}
+                  />
                 )}
-              </div>
-            </div>
-            {annotatingEvidence === 'network' && renderEvidenceAnnotationToolbar('network')}
-            {evidenceView === 'network' && (
-              <NetworkEvidenceWindow
-                events={session.network}
-                busy={busy || annotatingEvidence === 'network'}
-                textAnnotations={textAnnotationDocument.items}
-                annotationDocument={evidenceAnnotations.network.present}
-                annotationEditing={annotatingEvidence === 'network'}
-                annotationTool={evidenceAnnotationTool}
-                annotationColor={evidenceAnnotationColor}
-                annotationWidth={evidenceAnnotationWidth}
-                selectedAnnotationId={selectedEvidenceAnnotationId}
-                onSelectAnnotation={setSelectedEvidenceAnnotationId}
-                onAddAnnotation={addEvidenceAnnotation}
-                onReplaceAnnotation={replaceEvidenceAnnotation}
-                onUpdateAnnotation={updateEvidenceAnnotation}
-                onRemoveAnnotation={removeEvidenceAnnotation}
-                onTextPlaced={() => setEvidenceAnnotationTool('select')}
-                onRemove={removeNetworkEvent}
-              />
-            )}
+              </section>
+            </Tabs>
           </section>
-        </section>
+          <section
+            className={`rounded-xl border bg-card p-6 ${reviewStage === 'export' ? '' : 'hidden'}`}
+            aria-labelledby="export-check-title"
+          >
+            <div className="mb-6 border-b pb-4">
+              <h2 id="export-check-title" className="text-xl font-semibold tracking-tight">
+                Choose files to download
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Check what will be included, then use Download report above to save a folder or ZIP.
+              </p>
+            </div>
+            <div className="overflow-hidden rounded-xl border">
+              <Table aria-label="Export manifest">
+                <TableBody>
+                  {[
+                    ['Issue report', 'issue.md', true],
+                    ['Screen recording', 'recording.webm', recordingState === 'ready'],
+                    [
+                      'Selected frames',
+                      selectedFrames.length
+                        ? `${selectedFrames.length} PNG ${selectedFrames.length === 1 ? 'file' : 'files'}`
+                        : 'No selected frames',
+                      selectedFrames.length > 0,
+                    ],
+                    ['Console evidence', 'console.json', session.diagnostics.length > 0],
+                    ['Network evidence', 'network.har', session.network.length > 0],
+                  ].map(([label, detail, included]) => (
+                    <TableRow key={String(label)}>
+                      <TableCell className="grid gap-0.5 font-medium">
+                        {label}
+                        <span className="font-mono text-[10px] font-normal text-muted-foreground">
+                          {detail}
+                        </span>
+                      </TableCell>
+                      <TableCell className="w-px text-right">
+                        <Badge
+                          variant={included ? 'default' : 'secondary'}
+                          className={
+                            included ? 'bg-success text-success-foreground hover:bg-success' : ''
+                          }
+                        >
+                          {included ? 'Included' : 'Not included'}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <p className="mt-5 text-sm leading-6 text-muted-foreground">
+              Files marked Not included were not captured or were removed during review.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => chrome.downloads.showDefaultFolder()}
+              >
+                Open downloads
+              </Button>
+            </div>
+          </section>
+        </div>
       </section>
 
-      <footer className="review-footer">
-        <p aria-live="polite">
-          {notice || 'Export creates local files only. You choose whether to publish them.'}
-        </p>
+      <footer className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 py-3 text-sm text-muted-foreground backdrop-blur">
+        <div className="mx-auto flex max-w-[1575px] flex-wrap items-center justify-between gap-x-6 gap-y-1 px-6">
+          <p aria-live="polite">
+            {notice || 'Export creates local files only. You choose whether to publish them.'}
+          </p>
+          <p className="flex shrink-0 items-center gap-2 font-mono text-[10px] font-semibold tracking-wide uppercase">
+            <span className="size-2 rounded-full bg-success-foreground" aria-hidden="true" />
+            Report stays local
+          </p>
+        </div>
       </footer>
       {error && (
-        <p className="error-banner fixed" role="alert">
-          {error}
-        </p>
+        <Alert
+          variant="destructive"
+          className="fixed right-6 bottom-16 z-50 max-w-md bg-card shadow-xl"
+        >
+          <AlertTitle>Couldn’t complete that action</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
     </main>
   );
@@ -1978,19 +2169,85 @@ function ConsoleEvidenceWindow({
   onTextPlaced,
   onRemove,
 }: ConsoleEvidenceWindowProps) {
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all-types');
+  const types = [
+    ...new Set([
+      'log',
+      'info',
+      'warn',
+      'error',
+      'debug',
+      'table',
+      'trace',
+      ...events.map((event) => event.consoleType ?? event.level),
+      ...(typeFilter === 'all-types' ? [] : [typeFilter]),
+    ]),
+  ];
+  const query = search.trim().toLowerCase();
+  const visibleEvents = events.filter(
+    (event) =>
+      (typeFilter === 'all-types' || (event.consoleType ?? event.level) === typeFilter) &&
+      event.message.toLowerCase().includes(query),
+  );
   return (
-    <div className="console-window">
-      <div className={`diagnostic-annotation-surface${annotationEditing ? ' is-editing' : ''}`}>
-        <div className="diagnostic-evidence-content">
-          <div className="console-top">
+    <div className="overflow-hidden rounded-xl border bg-[#08121b] text-[#f6f1e8]">
+      <div className="flex flex-wrap items-center gap-3 border-b border-white/10 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <FieldLabel htmlFor="console-type-filter">Type</FieldLabel>
+          <Select value={typeFilter} onValueChange={setTypeFilter} disabled={annotationEditing}>
+            <SelectTrigger id="console-type-filter" className="min-w-36" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all-types">All types</SelectItem>
+              {types.map((type) => (
+                <SelectItem key={type} value={type}>
+                  console.{type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Input
+          type="search"
+          aria-label="Search console messages"
+          placeholder="Search console messages…"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          disabled={annotationEditing}
+          className="h-9 min-w-0 flex-1 basis-56"
+        />
+        {search && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSearch('')}
+            disabled={annotationEditing}
+          >
+            Clear console search
+          </Button>
+        )}
+        <span className="text-xs text-muted-foreground" role="status">
+          Showing {visibleEvents.length} of {events.length} messages
+        </span>
+      </div>
+      <div
+        className={`relative min-h-80 ${annotationEditing ? 'ring-2 ring-inset ring-ring' : ''}`}
+      >
+        <div className="min-h-80">
+          <div className="flex items-center gap-1.5 border-b border-white/10 px-4 py-3 [&>span]:size-2.5 [&>span]:rounded-full [&>span]:bg-white/20 [&>b]:ml-auto [&>b]:font-mono [&>b]:text-[10px] [&>b]:text-white/60">
             <span />
             <span />
             <span />
             <b>{events.length} captured</b>
           </div>
-          {events.length ? (
-            events.map((event) => (
-              <div className="console-entry" key={event.id}>
+          {visibleEvents.length ? (
+            visibleEvents.map((event) => (
+              <div
+                className="grid grid-cols-[6rem_1fr_auto] gap-3 border-b border-white/10 px-4 py-3 text-xs [&_time]:font-mono [&_time]:text-white/50 [&_code]:whitespace-pre-wrap [&_code]:break-words"
+                key={event.id}
+              >
                 <time>{new Date(event.occurredAt).toLocaleTimeString()}</time>
                 <code>
                   <AnnotatedEvidenceText
@@ -2001,20 +2258,41 @@ function ConsoleEvidenceWindow({
                     annotations={textAnnotations}
                   />
                 </code>
-                <button
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  className="text-destructive hover:text-destructive"
                   type="button"
                   aria-label="Remove console entry"
                   onClick={() => void onRemove(event.id)}
                   disabled={busy}
                 >
                   Remove
-                </button>
+                </Button>
               </div>
             ))
           ) : (
-            <p className="console-empty">
-              No console messages were captured after recording started.
-            </p>
+            <div className="space-y-3 p-10 text-center text-sm text-muted-foreground">
+              <p>
+                {typeFilter !== 'all-types'
+                  ? 'No console messages match your type and search filters.'
+                  : query
+                    ? 'No console messages match your search.'
+                    : 'No console messages were recorded. Continue with the visual or network evidence.'}
+              </p>
+              {(query || typeFilter !== 'all-types') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setTypeFilter('all-types');
+                    setSearch('');
+                  }}
+                >
+                  Clear console filters
+                </Button>
+              )}
+            </div>
           )}
         </div>
         <AnnotationOverlay
@@ -2059,126 +2337,241 @@ function NetworkEvidenceWindow({
   onTextPlaced,
   onRemove,
 }: NetworkEvidenceWindowProps) {
+  const [methodFilter, setMethodFilter] = useState('all-methods');
+  const [search, setSearch] = useState('');
+  const query = search.trim().toLowerCase();
+  const methods = [
+    ...new Set([
+      ...events.map((event) => event.method),
+      ...(methodFilter === 'all-methods' ? [] : [methodFilter]),
+    ]),
+  ].sort();
+  const visibleEvents = events.filter(
+    (event) =>
+      (methodFilter === 'all-methods' || event.method === methodFilter) &&
+      event.url.toLowerCase().includes(query),
+  );
+  const apiEvents = visibleEvents.filter((event) =>
+    ['fetch', 'xmlhttprequest'].includes(event.resourceType),
+  );
+  const pageResources = visibleEvents.filter(
+    (event) => !['fetch', 'xmlhttprequest'].includes(event.resourceType),
+  );
+  const orderedEvents = [...apiEvents, ...pageResources];
+
   return (
-    <div className="network-window">
-      <div className={`diagnostic-annotation-surface${annotationEditing ? ' is-editing' : ''}`}>
-        <div className="diagnostic-evidence-content">
-          <div className="network-top">
-            <strong>{events.length} requests captured</strong>
-            <span>Fetch, XHR, and page resources</span>
+    <div className="overflow-hidden rounded-xl border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+        <div className="flex items-center gap-3">
+          <FieldLabel htmlFor="network-method-filter">Method</FieldLabel>
+          <Select value={methodFilter} onValueChange={setMethodFilter} disabled={annotationEditing}>
+            <SelectTrigger id="network-method-filter" className="min-w-36" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all-methods">All methods</SelectItem>
+              {methods.map((method) => (
+                <SelectItem key={method} value={method}>
+                  {method}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Input
+          type="search"
+          aria-label="Search network requests"
+          placeholder="Search API name or URL…"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          disabled={annotationEditing}
+          className="h-9 min-w-0 flex-1 basis-56"
+        />
+        {search && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSearch('')}
+            disabled={annotationEditing}
+          >
+            Clear network search
+          </Button>
+        )}
+        <span className="text-xs text-muted-foreground" role="status">
+          Showing {visibleEvents.length} of {events.length} requests
+        </span>
+      </div>
+      <div
+        className={`relative min-h-80 ${annotationEditing ? 'ring-2 ring-inset ring-ring' : ''}`}
+      >
+        <div className="min-h-80">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b px-4 py-3 text-sm [&>span]:text-xs [&>span]:text-muted-foreground">
+            <strong>
+              {apiEvents.length} API {apiEvents.length === 1 ? 'call' : 'calls'} ·{' '}
+              {pageResources.length} page {pageResources.length === 1 ? 'resource' : 'resources'}
+            </strong>
+            <span>API calls appear first</span>
           </div>
-          {events.length ? (
-            events.map((event) => {
+          {visibleEvents.length ? (
+            orderedEvents.map((event) => {
               const status = String(event.status ?? 'FAILED');
               const duration = `${Math.round(event.durationMs)} ms`;
               return (
-                <article className="network-entry" key={event.id}>
-                  <div className="network-entry-heading">
-                    <span className="network-method">
-                      <AnnotatedEvidenceText
-                        value={event.method}
-                        source="network"
-                        eventId={event.id}
-                        field="method"
-                        annotations={textAnnotations}
-                      />
-                    </span>
-                    <span
-                      className={
-                        event.error || (event.status ?? 0) >= 400
-                          ? 'network-status failed'
-                          : 'network-status'
-                      }
-                    >
-                      <AnnotatedEvidenceText
-                        value={status}
-                        source="network"
-                        eventId={event.id}
-                        field="status"
-                        annotations={textAnnotations}
-                      />
-                    </span>
-                    <time>
-                      <AnnotatedEvidenceText
-                        value={duration}
-                        source="network"
-                        eventId={event.id}
-                        field="duration"
-                        annotations={textAnnotations}
-                      />
-                    </time>
-                    <button
-                      type="button"
-                      aria-label="Remove network entry"
-                      onClick={() => void onRemove(event.id)}
-                      disabled={busy}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <code className="network-url">
-                    <AnnotatedEvidenceText
-                      value={event.url}
-                      source="network"
-                      eventId={event.id}
-                      field="url"
-                      annotations={textAnnotations}
-                    />
-                  </code>
-                  {(event.requestBody || event.responseBody || event.error) && (
-                    <details>
-                      <summary>Request and response</summary>
-                      {event.requestBody && (
-                        <div className="network-payload">
-                          <strong>Request body</strong>
-                          <pre>
-                            <AnnotatedEvidenceText
-                              value={event.requestBody}
-                              source="network"
-                              eventId={event.id}
-                              field="requestBody"
-                              annotations={textAnnotations}
-                            />
-                          </pre>
-                        </div>
-                      )}
-                      {event.responseBody && (
-                        <div className="network-payload">
-                          <strong>Response body</strong>
-                          <pre>
-                            <AnnotatedEvidenceText
-                              value={event.responseBody}
-                              source="network"
-                              eventId={event.id}
-                              field="responseBody"
-                              annotations={textAnnotations}
-                            />
-                          </pre>
-                        </div>
-                      )}
-                      {event.error && (
-                        <div className="network-payload failed">
-                          <strong>Error</strong>
-                          <pre>
-                            <AnnotatedEvidenceText
-                              value={event.error}
-                              source="network"
-                              eventId={event.id}
-                              field="error"
-                              annotations={textAnnotations}
-                            />
-                          </pre>
-                        </div>
-                      )}
-                    </details>
-                  )}
-                </article>
+                <Collapsible asChild key={event.id}>
+                  <article className="m-3 rounded-lg border bg-background/30">
+                    <div className="flex items-start gap-2 p-2">
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="group h-auto min-w-0 flex-1 justify-start gap-3 p-2 text-left hover:bg-muted/60"
+                          type="button"
+                          aria-label={`Request and response for ${event.method} ${event.url}`}
+                          disabled={busy}
+                        >
+                          <HugeiconsIcon
+                            icon={ArrowDown01Icon}
+                            className="size-4 shrink-0 -rotate-90 transition-transform group-data-[state=open]:rotate-0"
+                            aria-hidden="true"
+                          />
+                          <span className="grid min-w-0 flex-1 grid-cols-[auto_auto_1fr] items-center gap-x-3 gap-y-2">
+                            <span className="w-fit rounded bg-secondary px-2 py-1 font-mono text-xs font-semibold">
+                              <AnnotatedEvidenceText
+                                value={event.method}
+                                source="network"
+                                eventId={event.id}
+                                field="method"
+                                annotations={textAnnotations}
+                              />
+                            </span>
+                            <span
+                              className={`w-fit rounded-full px-2 py-1 font-mono text-[10px] font-semibold ${event.error || (event.status ?? 0) >= 400 ? 'bg-destructive/10 text-destructive' : 'bg-success text-success-foreground'}`}
+                            >
+                              <AnnotatedEvidenceText
+                                value={status}
+                                source="network"
+                                eventId={event.id}
+                                field="status"
+                                annotations={textAnnotations}
+                              />
+                            </span>
+                            <time className="text-xs text-muted-foreground">
+                              <AnnotatedEvidenceText
+                                value={duration}
+                                source="network"
+                                eventId={event.id}
+                                field="duration"
+                                annotations={textAnnotations}
+                              />
+                            </time>
+                            <code className="col-span-3 block min-w-0 break-all font-mono text-xs text-muted-foreground">
+                              <AnnotatedEvidenceText
+                                value={event.url}
+                                source="network"
+                                eventId={event.id}
+                                field="url"
+                                annotations={textAnnotations}
+                              />
+                            </code>
+                          </span>
+                        </Button>
+                      </CollapsibleTrigger>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        className="mt-1 text-destructive hover:text-destructive"
+                        type="button"
+                        aria-label="Remove network entry"
+                        onClick={() => void onRemove(event.id)}
+                        disabled={busy}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <CollapsibleContent className="border-t px-4 pb-4">
+                      <Tabs defaultValue="request" className="mt-3 gap-3">
+                        <TabsList
+                          variant="line"
+                          aria-label={`Request and response details for ${event.method} ${event.url}`}
+                        >
+                          <TabsTrigger value="request">Request</TabsTrigger>
+                          <TabsTrigger value="response">Response</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="request">
+                          {event.requestBody ? (
+                            <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-3 font-mono text-xs leading-5">
+                              <AnnotatedEvidenceText
+                                value={event.requestBody}
+                                source="network"
+                                eventId={event.id}
+                                field="requestBody"
+                                annotations={textAnnotations}
+                              />
+                            </pre>
+                          ) : (
+                            <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
+                              No request payload was recorded.
+                            </p>
+                          )}
+                        </TabsContent>
+                        <TabsContent value="response" className="space-y-3">
+                          {event.responseBody ? (
+                            <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-3 font-mono text-xs leading-5">
+                              <AnnotatedEvidenceText
+                                value={event.responseBody}
+                                source="network"
+                                eventId={event.id}
+                                field="responseBody"
+                                annotations={textAnnotations}
+                              />
+                            </pre>
+                          ) : (
+                            <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
+                              No response body was recorded.
+                            </p>
+                          )}
+                          {event.error && (
+                            <div className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">
+                              <strong>Request error</strong>
+                              <pre className="mt-2 overflow-auto whitespace-pre-wrap break-words font-mono leading-5">
+                                <AnnotatedEvidenceText
+                                  value={event.error}
+                                  source="network"
+                                  eventId={event.id}
+                                  field="error"
+                                  annotations={textAnnotations}
+                                />
+                              </pre>
+                            </div>
+                          )}
+                        </TabsContent>
+                      </Tabs>
+                    </CollapsibleContent>
+                  </article>
+                </Collapsible>
               );
             })
           ) : (
-            <p className="console-empty">
-              No network activity was captured after recording started.
-            </p>
+            <div className="space-y-3 p-10 text-center text-sm text-muted-foreground">
+              <p>
+                {query
+                  ? 'No requests match your search and method filter.'
+                  : methodFilter === 'all-methods'
+                    ? 'No network requests were recorded. Continue with the visual or console evidence.'
+                    : `No ${methodFilter} requests to show.`}
+              </p>
+              {(query || methodFilter !== 'all-methods') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setMethodFilter('all-methods');
+                    setSearch('');
+                  }}
+                >
+                  {query ? 'Clear filters' : 'Show all methods'}
+                </Button>
+              )}
+            </div>
           )}
         </div>
         <AnnotationOverlay
@@ -2226,21 +2619,13 @@ function downloadBlobFromUrl(url: string, filename: string) {
   link.click();
 }
 
-function EvidenceDownloadIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M10 3v9m0 0 3.5-3.5M10 12 6.5 8.5M4 16h12" />
-    </svg>
-  );
-}
-
 async function readExportVisuals(
   session: CaptureSession,
   recordingUrl: string,
   screenshotUrl: string,
 ): Promise<ReportBundleVisual[]> {
   const visuals: ReportBundleVisual[] = [];
-  if (recordingUrl) {
+  if (recordingUrl && session.page?.recording) {
     visuals.push({
       blob: await readArtifactUrl(recordingUrl),
       filename: 'recording.webm',
@@ -2259,7 +2644,7 @@ async function readExportVisuals(
       filename: getSelectedFrameFilename(index, selectedFrames.length),
     });
   }
-  if (!recordingUrl && screenshotUrl) {
+  if (!session.page?.recording && screenshotUrl && session.page?.screenshotBlobId) {
     visuals.push({
       blob: await readArtifactUrl(screenshotUrl),
       filename: 'screenshot.png',

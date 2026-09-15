@@ -1,4 +1,5 @@
 import { useRef, useState, type CSSProperties } from 'react';
+import { Textarea } from '../../components/ui/textarea';
 import type {
   Annotation,
   AnnotationColor,
@@ -135,7 +136,7 @@ export function AnnotationOverlay({
       !editing ||
       tool !== 'text' ||
       !(event.target instanceof Element) ||
-      !event.target.classList.contains('frame-annotation-interaction-surface')
+      !event.target.matches('[data-annotation-surface]')
     ) {
       return;
     }
@@ -313,7 +314,7 @@ export function AnnotationOverlay({
 
   return (
     <svg
-      className={`frame-annotation-overlay${editing ? ' is-editing' : ''}${tool !== 'select' ? ' is-drawing' : ''}`}
+      className={`absolute inset-0 z-10 block size-full ${editing ? 'pointer-events-auto' : 'pointer-events-none'} ${editing && tool !== 'select' ? 'cursor-crosshair touch-none' : 'cursor-default touch-pan-y'}`}
       viewBox={`0 0 ${document.imageWidth} ${document.imageHeight}`}
       preserveAspectRatio="none"
       role={editing ? 'application' : undefined}
@@ -326,7 +327,8 @@ export function AnnotationOverlay({
       onClick={click}
     >
       <rect
-        className="frame-annotation-interaction-surface"
+        data-annotation-surface
+        className={editing ? 'pointer-events-auto' : 'pointer-events-none'}
         x="0"
         y="0"
         width={document.imageWidth}
@@ -394,7 +396,7 @@ function AnnotationShape({
   const bounds = getAnnotationBounds(annotation);
   return (
     <g
-      className={`frame-annotation-shape${selected ? ' is-selected' : ''}${textEditing ? ' is-text-editing' : ''}`}
+      className={`${editing && tool === 'select' ? 'pointer-events-auto cursor-move' : 'pointer-events-none'} ${textEditing ? 'pointer-events-auto cursor-text' : ''}`}
       data-annotation-id={annotation.id}
       role={editing && !textEditing ? 'button' : undefined}
       aria-label={editing ? `${annotation.kind} annotation` : undefined}
@@ -448,7 +450,8 @@ function AnnotationShape({
       )}
       {selected && !textEditing ? (
         <rect
-          className={`frame-annotation-hit-area${annotation.kind === 'text' ? ' frame-annotation-note-move-surface' : ''}`}
+          data-annotation-move-surface
+          className={`pointer-events-auto touch-none select-none [fill:transparent] [stroke-width:12px] [stroke:transparent] [vector-effect:non-scaling-stroke] ${annotation.kind === 'text' ? 'cursor-grab' : ''}`}
           x={bounds.x}
           y={bounds.y}
           width={bounds.width}
@@ -479,17 +482,21 @@ function TextNoteShape({
   } as CSSProperties;
   return (
     <foreignObject
-      className="frame-annotation-note"
+      className="overflow-visible"
       x={annotation.x}
       y={annotation.y}
       width={annotation.width}
       height={annotation.height}
       style={{ pointerEvents: 'all' }}
     >
-      <div className={`frame-annotation-note-card${editing ? ' is-editing' : ''}`} style={style}>
+      <div
+        className={`relative box-border size-full overflow-hidden border-[calc(var(--annotation-note-font-size)*.07)] border-t-[calc(var(--annotation-note-font-size)*.24)] border-[var(--annotation-note-color)] bg-[#fffdf7]/95 p-[calc(var(--annotation-note-font-size)*.58)] pt-[calc(var(--annotation-note-font-size)*.82)] text-left font-semibold leading-[1.34] text-[#162a37] shadow-lg ${editing ? 'pointer-events-auto outline-[calc(var(--annotation-note-font-size)*.06)] outline-offset-[calc(var(--annotation-note-font-size)*-.06)] outline-ring' : ''}`}
+        style={style}
+      >
         {editing ? (
           <>
-            <textarea
+            <Textarea
+              className="field-sizing-content h-auto min-h-0 w-auto resize-none border-0 bg-transparent p-0 text-[length:var(--annotation-note-font-size)] leading-[inherit] text-inherit shadow-none outline-0 focus-visible:ring-0 md:text-[length:var(--annotation-note-font-size)]"
               autoFocus
               aria-label="Note text"
               aria-busy={moderation.checking}
@@ -512,13 +519,19 @@ function TextNoteShape({
               }}
             />
             {moderation.error ? (
-              <span id={errorId} className="frame-annotation-note-error" role="alert">
+              <span
+                id={errorId}
+                className="absolute inset-x-[calc(var(--annotation-note-font-size)*.42)] bottom-[calc(var(--annotation-note-font-size)*.34)] bg-[#fff0eb] px-[calc(var(--annotation-note-font-size)*.28)] py-[calc(var(--annotation-note-font-size)*.18)] text-[length:calc(var(--annotation-note-font-size)*.54)] leading-tight font-semibold text-[#812b19]"
+                role="alert"
+              >
                 {moderation.error}
               </span>
             ) : null}
           </>
         ) : (
-          <p>{annotation.text || 'Type a note…'}</p>
+          <p className="m-0 whitespace-pre-wrap text-[length:var(--annotation-note-font-size)] leading-[inherit] break-words text-inherit">
+            {annotation.text || 'Type a note…'}
+          </p>
         )}
       </div>
     </foreignObject>
@@ -581,15 +594,22 @@ function SelectionHandles({
     },
   ];
   return (
-    <g className="frame-annotation-selection">
-      <rect x={annotation.x} y={annotation.y} width={annotation.width} height={annotation.height} />
+    <g>
+      <rect
+        className="[fill:none] [stroke-dasharray:6_4] [stroke-width:1.5px] [stroke:var(--ring)] [vector-effect:non-scaling-stroke]"
+        x={annotation.x}
+        y={annotation.y}
+        width={annotation.width}
+        height={annotation.height}
+      />
       {handles.map((handle) => {
         const cursor =
           handle.name === 'top-left' || handle.name === 'bottom-right' ? 'nwse' : 'nesw';
         return (
-          <g key={handle.name} className={`frame-annotation-resize-control is-${cursor}`}>
+          <g key={handle.name}>
             <rect
-              className="frame-annotation-handle-hit-area"
+              data-annotation-resize-handle={handle.name}
+              className={`pointer-events-auto touch-none [fill:transparent] ${cursor === 'nwse' ? 'cursor-nwse-resize' : 'cursor-nesw-resize'}`}
               x={handle.x - hitHalf}
               y={handle.y - hitHalf}
               width={hitSize}
@@ -597,7 +617,7 @@ function SelectionHandles({
               onPointerDown={(event) => onPointerDown(event, annotation, handle.name)}
             />
             <rect
-              className="frame-annotation-handle"
+              className="pointer-events-none [fill:var(--card)] [stroke-width:1.5px] [stroke:var(--ring)] [vector-effect:non-scaling-stroke]"
               x={handle.x - half}
               y={handle.y - half}
               width={handleSize}

@@ -21,5 +21,20 @@ export default tseslint.config(
       '@typescript-eslint/no-misused-promises': 'error',
     },
   },
+  {
+    files: ['src/ui/**/*.tsx'],
+    ignores: ['src/components/ui/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...['button', 'input', 'textarea', 'select', 'dialog', 'details', 'summary'].map(
+          (element) => ({
+            selector: `JSXOpeningElement[name.name='${element}']`,
+            message: `Use the matching shared UI component instead of <${element}>.`,
+          }),
+        ),
+      ],
+    },
+  },
   { ...tseslint.configs.disableTypeChecked, files: ['**/*.{js,mjs,cjs}'] },
 );

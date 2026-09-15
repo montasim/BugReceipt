@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import '../../src/ui/globals.css';
+import '../../src/ui/tailwind.css';
 import { ReviewApp } from '../../src/ui/review/review-app';
 
 const root = document.getElementById('root');

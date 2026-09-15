@@ -1,5 +1,5 @@
 import type { CaptureSession, RuntimeRequest, RuntimeResponse } from '@bugreceipt/capture-model';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import JSZip from 'jszip';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAnnotationDocument } from '../src/application/annotation-model';
@@ -146,19 +146,39 @@ afterEach(() => {
 });
 
 describe('review editor', () => {
-  it('keeps the report local and puts support in the review navbar', async () => {
+  it('navigates the real review stages and saves report edits first', async () => {
+    render(<ReviewApp />);
+
+    const title = await screen.findByLabelText<HTMLInputElement>('Issue title');
+    fireEvent.change(title, { target: { value: 'Updated checkout failure' } });
+    const evidenceStage = screen.getByRole('button', { name: /^02 Review evidence/ });
+    fireEvent.click(evidenceStage);
+
+    await waitFor(() => expect(evidenceStage.getAttribute('aria-current')).toBe('step'));
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'session:update-review',
+        summary: 'Updated checkout failure',
+      }),
+    );
+
+    const exportStage = screen.getByRole('button', { name: /^03 Choose files/ });
+    fireEvent.click(exportStage);
+    await waitFor(() => expect(exportStage.getAttribute('aria-current')).toBe('step'));
+    expect(screen.getByRole('table', { name: 'Export manifest' })).toBeDefined();
+  });
+
+  it('keeps the report local and the review navbar focused', async () => {
     render(<ReviewApp />);
 
     expect(await screen.findByText('Report stays local')).toBeDefined();
+    const support = screen.getByRole<HTMLAnchorElement>('link', {
+      name: 'Support BugReceipt on SupportKori',
+    });
+    expect(support.href).toBe('https://www.supportkori.com/montasim');
+    expect(support.textContent).toContain('Support');
     expect(screen.queryByRole('button', { name: 'Share by email' })).toBeNull();
-    const reportIssue = screen.getByRole('link', { name: 'Report an issue on GitHub' });
-    const support = screen.getByRole('link', { name: 'Support BugReceipt on SupportKori' });
-    expect(reportIssue.getAttribute('href')).toBe(
-      'https://github.com/montasim/BugReceipt/issues/new/choose',
-    );
-    expect(reportIssue.getAttribute('target')).toBe('_blank');
-    expect(support.getAttribute('href')).toBe('https://www.supportkori.com/montasim');
-    expect(reportIssue.nextElementSibling).toBe(support);
+    expect(screen.getByLabelText('BugReceipt')).toBeDefined();
   });
 
   it('shows readable and raw capture environment metadata', async () => {
@@ -182,21 +202,29 @@ describe('review editor', () => {
 
     fireEvent.click(consoleTab);
     expect(consoleTab.getAttribute('aria-selected')).toBe('true');
+    const downloadConsole = screen.getByRole<HTMLButtonElement>('button', {
+      name: 'Download console',
+    });
+    expect(downloadConsole.disabled).toBe(true);
+    expect(downloadConsole.querySelector('svg [stroke="currentColor"]')).not.toBeNull();
     expect(
-      screen.getByRole<HTMLButtonElement>('button', { name: 'Download console' }).disabled,
-    ).toBe(true);
-    expect(
-      screen.getByText('No console messages were captured after recording started.'),
+      screen.getByText(
+        'No console messages were recorded. Continue with the visual or network evidence.',
+      ),
     ).toBeDefined();
 
     consoleTab.focus();
     fireEvent.keyDown(consoleTab, { key: 'ArrowRight' });
     expect(networkTab.getAttribute('aria-selected')).toBe('true');
+    const downloadNetwork = screen.getByRole<HTMLButtonElement>('button', {
+      name: 'Download network',
+    });
+    expect(downloadNetwork.disabled).toBe(true);
+    expect(downloadNetwork.querySelector('svg [stroke="currentColor"]')).not.toBeNull();
     expect(
-      screen.getByRole<HTMLButtonElement>('button', { name: 'Download network' }).disabled,
-    ).toBe(true);
-    expect(
-      screen.getByText('No network activity was captured after recording started.'),
+      screen.getByText(
+        'No network requests were recorded. Continue with the visual or console evidence.',
+      ),
     ).toBeDefined();
 
     networkTab.focus();
@@ -248,10 +276,22 @@ describe('review editor', () => {
     render(<ReviewApp />);
 
     fireEvent.click(await screen.findByRole('tab', { name: /^Console 1$/ }));
+    const consoleSearch = screen.getByRole('searchbox', { name: 'Search console messages' });
+    fireEvent.change(consoleSearch, { target: { value: '  PAYMENT  ' } });
+    expect(screen.getByText('Showing 1 of 1 messages')).toBeDefined();
+    fireEvent.change(consoleSearch, { target: { value: 'missing message' } });
+    expect(screen.getByText('No console messages match your search.')).toBeDefined();
+    expect(screen.queryByText('Payment request failed')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Download console' }));
     expect(await screen.findByText(/Downloaded .*console\.json/)).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear console search' }));
+    expect(screen.getByText('Payment request failed')).toBeDefined();
 
     fireEvent.click(screen.getByRole('tab', { name: /^Network 1$/ }));
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search network requests' }), {
+      target: { value: 'missing-api' },
+    });
+    expect(screen.getByText('Showing 0 of 1 requests')).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Download network' }));
     expect(await screen.findByText(/Downloaded .*network\.har/)).toBeDefined();
 
@@ -271,6 +311,128 @@ describe('review editor', () => {
     };
     expect(consoleOutput.events).toEqual(diagnosticSession.diagnostics);
     expect(networkOutput.log.entries).toHaveLength(1);
+  });
+
+  it('filters console API types independently of severity and combines them with search', async () => {
+    const baseEvent = {
+      occurredAt: '2026-08-27T12:00:15.000Z',
+      kind: 'console' as const,
+      level: 'log' as const,
+    };
+    const typedSession: CaptureSession = {
+      ...session,
+      diagnostics: [
+        { ...baseEvent, id: crypto.randomUUID(), message: 'Orders table', consoleType: 'table' },
+        { ...baseEvent, id: crypto.randomUUID(), message: 'Orders log', consoleType: 'log' },
+        { ...baseEvent, id: crypto.randomUUID(), message: 'Legacy warning', level: 'warn' },
+      ],
+    };
+    send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> =>
+      Promise.resolve(
+        request.type === 'session:get' ? { ok: true, session: typedSession } : { ok: true },
+      ),
+    );
+    render(<ReviewApp />);
+    fireEvent.click(await screen.findByRole('tab', { name: 'Console 3' }));
+    const chooseType = async (name: string) => {
+      fireEvent.keyDown(screen.getByRole('combobox', { name: 'Type' }), { key: 'ArrowDown' });
+      fireEvent.click(await screen.findByRole('option', { name }));
+    };
+    await chooseType('console.table');
+    expect(screen.getByText('Orders table')).toBeDefined();
+    expect(screen.queryByText('Orders log')).toBeNull();
+    expect(screen.getByText('Showing 1 of 3 messages')).toBeDefined();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search console messages' }), {
+      target: { value: 'missing' },
+    });
+    expect(
+      screen.getByText('No console messages match your type and search filters.'),
+    ).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear console filters' }));
+    expect(screen.getByText('Showing 3 of 3 messages')).toBeDefined();
+    await chooseType('console.warn');
+    expect(screen.getByText('Legacy warning')).toBeDefined();
+    expect(screen.queryByText('Orders table')).toBeNull();
+  });
+
+  it('makes every network item expandable with request and response tabs', async () => {
+    const networkSession: CaptureSession = {
+      ...session,
+      network: [
+        {
+          id: '00000000-0000-4000-8000-000000000010',
+          occurredAt: '2026-08-27T12:00:15.000Z',
+          method: 'GET',
+          url: 'https://example.com/app.js',
+          resourceType: 'script',
+          status: 200,
+          durationMs: 20,
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000011',
+          occurredAt: '2026-08-27T12:00:16.000Z',
+          method: 'POST',
+          url: 'https://example.com/api/orders',
+          resourceType: 'fetch',
+          status: 201,
+          durationMs: 80,
+          requestBody: '{"amount":42}',
+          responseBody: '{"ok":true}',
+        },
+      ],
+    };
+    send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> =>
+      Promise.resolve(
+        request.type === 'session:get' ? { ok: true, session: networkSession } : { ok: true },
+      ),
+    );
+    render(<ReviewApp />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /^02 Review evidence/ }));
+    fireEvent.click(screen.getByRole('tab', { name: /^Network 2$/ }));
+
+    expect(screen.getByText('1 API call · 1 page resource')).toBeDefined();
+    const entries = screen.getAllByRole('article');
+    expect(within(entries[0]!).getByText('https://example.com/api/orders')).toBeDefined();
+    fireEvent.click(
+      within(entries[0]!).getByRole('button', {
+        name: 'Request and response for POST https://example.com/api/orders',
+      }),
+    );
+    expect(within(entries[0]!).getByRole('tab', { name: 'Request' })).toBeDefined();
+    expect(within(entries[0]!).getByRole('tab', { name: 'Response' })).toBeDefined();
+    expect(within(entries[0]!).getByText('{"amount":42}')).toBeDefined();
+    const responseTab = within(entries[0]!).getByRole('tab', { name: 'Response' });
+    fireEvent.mouseDown(responseTab, { button: 0, ctrlKey: false });
+    await waitFor(() => expect(responseTab.getAttribute('aria-selected')).toBe('true'));
+    expect(await within(entries[0]!).findByText('{"ok":true}')).toBeDefined();
+
+    fireEvent.click(
+      within(entries[1]!).getByRole('button', {
+        name: 'Request and response for GET https://example.com/app.js',
+      }),
+    );
+    expect(within(entries[1]!).getByText('No request payload was recorded.')).toBeDefined();
+
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Method' }), { key: 'ArrowDown' });
+    fireEvent.click(await screen.findByRole('option', { name: 'POST' }));
+    expect(screen.getAllByRole('article')).toHaveLength(1);
+    expect(screen.queryByText('https://example.com/app.js')).toBeNull();
+    expect(screen.getByText('Showing 1 of 2 requests')).toBeDefined();
+    expect(screen.getByRole('tab', { name: 'Network 2' })).toBeDefined();
+    const networkSearch = screen.getByRole('searchbox', { name: 'Search network requests' });
+    fireEvent.change(networkSearch, { target: { value: 'app.js' } });
+    expect(screen.getByText('No requests match your search and method filter.')).toBeDefined();
+    fireEvent.change(networkSearch, { target: { value: '  ORDERS  ' } });
+    expect(screen.getByText('Showing 1 of 2 requests')).toBeDefined();
+    expect(screen.getByText('https://example.com/api/orders')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear network search' }));
+    expect(screen.getAllByRole('article')).toHaveLength(1);
+
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Method' }), { key: 'ArrowDown' });
+    fireEvent.click(await screen.findByRole('option', { name: 'All methods' }));
+    expect(screen.getAllByRole('article')).toHaveLength(2);
+    expect(screen.getByText('Showing 2 of 2 requests')).toBeDefined();
   });
 
   it('reuses the visual annotation workspace for console and network evidence', async () => {
@@ -355,6 +517,13 @@ describe('review editor', () => {
     render(<ReviewApp />);
 
     fireEvent.click(await screen.findByRole('tab', { name: /^Console 1$/ }));
+    const inactiveConsoleSurface = document.querySelector(
+      '#console-evidence-panel [data-annotation-surface]',
+    );
+    expect(inactiveConsoleSurface?.getAttribute('class')).toContain('pointer-events-none');
+    expect(
+      screen.getByRole<HTMLButtonElement>('button', { name: 'Remove console entry' }).disabled,
+    ).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: 'Annotate console evidence' }));
     const consoleAnnotationCanvas = screen.getByRole('application', {
       name: 'Console evidence annotation canvas',
@@ -363,29 +532,29 @@ describe('review editor', () => {
       '[data-annotation-id="console-marker-1"] path[stroke]',
     );
     expect(consoleMarker?.getAttribute('vector-effect')).toBe('non-scaling-stroke');
-    expect(screen.getByRole('button', { name: 'Select' })).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Marker' })).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Highlight' })).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Border' })).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Add text' })).toBeDefined();
+    expect(screen.getByRole('radio', { name: 'Select' })).toBeDefined();
+    expect(screen.getByRole('radio', { name: 'Marker' })).toBeDefined();
+    expect(screen.getByRole('radio', { name: 'Highlight' })).toBeDefined();
+    expect(screen.getByRole('radio', { name: 'Border' })).toBeDefined();
+    expect(screen.getByRole('radio', { name: 'Add text' })).toBeDefined();
     expect(screen.getByRole<HTMLButtonElement>('tab', { name: /^Network 1$/ }).disabled).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Clear all' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Add text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear annotations' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Add text' }));
     const consoleInteractionSurface = consoleAnnotationCanvas.querySelector(
-      '.frame-annotation-interaction-surface',
+      '[data-annotation-surface]',
     );
     expect(consoleInteractionSurface).not.toBeNull();
     fireEvent.click(consoleInteractionSurface as SVGRectElement, { clientX: 100, clientY: 80 });
     const consoleNote = screen.getByLabelText<HTMLTextAreaElement>('Note text');
     fireEvent.change(consoleNote, { target: { value: 'This fucking request failed' } });
     await waitFor(() => expect(consoleNote.getAttribute('aria-invalid')).toBe('true'));
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save annotations' }));
     expect(await screen.findByText(`Text note: ${OFFENSIVE_LANGUAGE_ERROR}`)).toBeDefined();
     expect(saveAnnotations).not.toHaveBeenCalled();
 
     fireEvent.change(consoleNote, { target: { value: 'Check the failed request.' } });
     await waitFor(() => expect(consoleNote.getAttribute('aria-invalid')).toBe('false'));
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save annotations' }));
     await waitFor(() =>
       expect(saveAnnotations).toHaveBeenCalledWith(
         `${diagnosticSession.id}:evidence:console`,
@@ -404,7 +573,7 @@ describe('review editor', () => {
       '[data-annotation-id="network-border-1"] rect[stroke]',
     );
     expect(networkBorder?.getAttribute('vector-effect')).toBe('non-scaling-stroke');
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save annotations' }));
     await waitFor(() =>
       expect(saveAnnotations).toHaveBeenCalledWith(
         `${diagnosticSession.id}:evidence:network`,
@@ -480,6 +649,8 @@ describe('review editor', () => {
     render(<ReviewApp />);
 
     await screen.findByDisplayValue('Checkout fails');
+    expect(screen.getByRole('heading', { name: 'Evidence review' })).toBeDefined();
+    expect(screen.getByText('Captured page')).toBeDefined();
     const download = screen.getByRole('button', { name: 'Download report' });
     expect((download as HTMLButtonElement).disabled).toBe(false);
     expect(screen.queryByRole('button', { name: 'Save locally' })).toBeNull();
@@ -540,6 +711,22 @@ describe('review editor', () => {
 
       fireEvent.change(field, { target: { value: 'The form remains disabled' } });
       await waitFor(() => expect(field.getAttribute('aria-invalid')).toBe('false'));
+    }
+  });
+
+  it('caps every multiline report field at six lines with vertical scrolling', async () => {
+    render(<ReviewApp />);
+
+    await screen.findByDisplayValue('Checkout fails');
+    for (const label of [
+      'Description (optional)',
+      'Expected behavior (optional)',
+      'Actual behavior (optional)',
+      'Steps to reproduce (optional)',
+    ]) {
+      const field = screen.getByLabelText<HTMLTextAreaElement>(label);
+      expect(field.className).toContain('max-h-[calc(6lh+1rem+2px)]');
+      expect(field.className).toContain('overflow-y-auto');
     }
   });
 
@@ -643,8 +830,13 @@ describe('review editor', () => {
 
     render(<ReviewApp />);
     const recordingActions = await screen.findByRole('group', { name: 'Recording actions' });
-    expect(recordingActions.closest('.studio-heading')).not.toBeNull();
-    expect(screen.getByRole('button', { name: 'Download video' })).toBeDefined();
+    expect(recordingActions).toBeDefined();
+    const downloadVideo = screen.getByRole('button', { name: 'Download video' });
+    const removeVideo = screen.getByRole('button', { name: 'Remove video' });
+    expect(downloadVideo.getAttribute('data-variant')).toBe('outline');
+    expect(removeVideo.getAttribute('data-variant')).toBe('outline');
+    expect(downloadVideo.querySelector('svg')).not.toBeNull();
+    expect(removeVideo.querySelector('svg')).not.toBeNull();
     fireEvent.click(await screen.findByRole('button', { name: 'Download report' }));
     fireEvent.click(screen.getByRole('menuitem', { name: /Download ZIP/ }));
 
@@ -825,13 +1017,21 @@ describe('review editor', () => {
       if (request.type === 'session:get') {
         return Promise.resolve({ ok: true, session: multiFrameSession });
       }
-      if (request.type === 'session:remove-selected-frame') {
+      if (request.type === 'session:set-evidence-excluded') {
         return Promise.resolve({
           ok: true,
-          session: {
-            ...multiFrameSession,
-            page: { ...multiFrameSession.page!, selectedFrames: [selectedFrames[0]!] },
-          },
+          session: request.excluded
+            ? {
+                ...multiFrameSession,
+                exclusions: {
+                  diagnosticIds: [],
+                  networkIds: [],
+                  selectedFrameBlobIds: [secondBlobId],
+                  recording: false,
+                  screenshot: false,
+                },
+              }
+            : multiFrameSession,
         });
       }
       return Promise.resolve({ ok: true });
@@ -861,8 +1061,10 @@ describe('review editor', () => {
 
     await waitFor(() =>
       expect(send).toHaveBeenCalledWith({
-        type: 'session:remove-selected-frame',
-        blobId: secondBlobId,
+        type: 'session:set-evidence-excluded',
+        kind: 'selected-frame',
+        id: secondBlobId,
+        excluded: true,
       }),
     );
     expect(
@@ -871,6 +1073,17 @@ describe('review editor', () => {
       }),
     ).toBeDefined();
     expect(screen.queryByRole('button', { name: 'View next selected frame' })).toBeNull();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
+    await waitFor(() =>
+      expect(send).toHaveBeenCalledWith({
+        type: 'session:set-evidence-excluded',
+        kind: 'selected-frame',
+        id: secondBlobId,
+        excluded: false,
+      }),
+    );
+    expect(await screen.findByText('1 / 2')).toBeDefined();
   });
 
   it('disables capture after the twentieth selected frame', async () => {
@@ -963,50 +1176,36 @@ describe('review editor', () => {
       name: 'Annotate selected frame',
     });
 
-    expect(annotateAction.closest('.selected-frame-heading-actions')).not.toBeNull();
-    expect(annotateAction.classList.contains('text-action')).toBe(true);
-    expect(
-      screen
-        .getByRole('button', { name: 'Download frame' })
-        .closest('.selected-frame-heading-actions'),
-    ).not.toBeNull();
-    expect(
-      screen
-        .getByRole('button', { name: 'Remove selected frame' })
-        .closest('.selected-frame-heading-actions'),
-    ).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Download frame' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Remove selected frame' })).toBeDefined();
 
     fireEvent.click(annotateAction);
 
     expect(
       screen.getByRole('application', { name: 'Selected frame annotation canvas' }),
     ).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Border' }).getAttribute('aria-pressed')).toBe(
-      'true',
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Clear all' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Add text' }));
-    expect(screen.getByRole('button', { name: 'Add text' }).getAttribute('aria-pressed')).toBe(
+    expect(screen.getByRole('radio', { name: 'Border' }).getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Clear annotations' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Add text' }));
+    expect(screen.getByRole('radio', { name: 'Add text' }).getAttribute('aria-checked')).toBe(
       'true',
     );
     const annotationCanvas = screen.getByRole('application', {
       name: 'Selected frame annotation canvas',
     });
-    const interactionSurface = annotationCanvas.querySelector(
-      '.frame-annotation-interaction-surface',
-    );
+    const interactionSurface = annotationCanvas.querySelector('[data-annotation-surface]');
     expect(interactionSurface).not.toBeNull();
     fireEvent.click(interactionSurface as SVGRectElement, { clientX: 120, clientY: 90 });
     const note = screen.getByLabelText<HTMLTextAreaElement>('Note text');
     expect(note.getAttribute('placeholder')).toBe('Type a note…');
-    expect(screen.getByRole('button', { name: 'Select' }).getAttribute('aria-pressed')).toBe(
-      'true',
-    );
+    expect(note.className).toContain('md:text-[length:var(--annotation-note-font-size)]');
+    expect(note.className).not.toContain('md:text-sm');
+    expect(screen.getByRole('radio', { name: 'Select' }).getAttribute('aria-checked')).toBe('true');
     fireEvent.change(note, { target: { value: 'This fucking total is wrong' } });
     await waitFor(() => expect(note.getAttribute('aria-invalid')).toBe('true'));
     expect(screen.getByText(OFFENSIVE_LANGUAGE_ERROR)).toBeDefined();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save annotations' }));
     expect(await screen.findByText(`Text note: ${OFFENSIVE_LANGUAGE_ERROR}`)).toBeDefined();
     expect(saveAnnotations).not.toHaveBeenCalled();
 
@@ -1033,7 +1232,7 @@ describe('review editor', () => {
 
     const textAnnotation = screen.getByRole('button', { name: 'text annotation' });
     const noteFrame = textAnnotation.querySelector('foreignObject');
-    const moveSurface = textAnnotation.querySelector('.frame-annotation-note-move-surface');
+    const moveSurface = textAnnotation.querySelector('[data-annotation-move-surface]');
     expect(noteFrame).not.toBeNull();
     expect(moveSurface).not.toBeNull();
     const initialX = Number(noteFrame?.getAttribute('x'));
@@ -1054,7 +1253,7 @@ describe('review editor', () => {
       expect(Number(noteFrame?.getAttribute('y'))).toBeGreaterThan(initialY);
     });
 
-    const resizeHandles = annotationCanvas.querySelectorAll('.frame-annotation-handle-hit-area');
+    const resizeHandles = annotationCanvas.querySelectorAll('[data-annotation-resize-handle]');
     const bottomRightHandle = resizeHandles.item(resizeHandles.length - 1);
     const initialWidth = Number(noteFrame?.getAttribute('width'));
     const initialHeight = Number(noteFrame?.getAttribute('height'));
@@ -1095,7 +1294,7 @@ describe('review editor', () => {
       expect(Number(noteFrame?.getAttribute('height'))).toBeGreaterThan(singleLineHeight);
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save annotations' }));
 
     await waitFor(() =>
       expect(saveAnnotations).toHaveBeenCalledWith(
@@ -1297,16 +1496,12 @@ describe('review editor', () => {
 
     await screen.findByDisplayValue('Checkout fails');
     const deleteCapture = screen.getByRole('button', { name: 'Delete local capture' });
-    const copyMarkdown = screen.getByRole('button', { name: 'Copy Markdown' });
-    expect(deleteCapture.nextElementSibling).toBe(copyMarkdown);
-    expect(deleteCapture.closest('.review-actions')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Copy Markdown' })).toBeDefined();
 
     fireEvent.click(deleteCapture);
 
+    expect(screen.getByRole('alertdialog')).toBeDefined();
     expect(screen.getByText('Delete this capture permanently?')).toBeDefined();
-    expect(
-      screen.getByRole('group', { name: 'Confirm capture deletion' }).closest('.review-actions'),
-    ).not.toBeNull();
     expect(send.mock.calls.some(([request]) => request.type === 'session:discard')).toBe(false);
 
     fireEvent.click(screen.getByRole('button', { name: 'Keep capture' }));

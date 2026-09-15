@@ -1,10 +1,10 @@
 import type { CaptureSession, RuntimeRequest, RuntimeResponse } from '@bugreceipt/capture-model';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendRuntimeMessage } from '../src/application/protocol';
 import { OFFENSIVE_LANGUAGE_ERROR } from '../src/application/content-moderation';
 import { startDesktopRecording } from '../src/infrastructure/desktop-recorder';
-import { PopupApp } from '../src/ui/popup/popup-app';
+import { SidePanelApp as PopupApp } from '../src/ui/sidepanel/sidepanel-app';
 
 vi.mock('../src/application/protocol', () => ({ sendRuntimeMessage: vi.fn() }));
 vi.mock('../src/infrastructure/desktop-recorder', () => ({
@@ -89,21 +89,42 @@ function getSentStartRequest(): Extract<RuntimeRequest, { type: 'session:start' 
 }
 
 describe('capture popup', () => {
-  it('shows the white product header with a SupportKori action', async () => {
+  it('shows the product header with the SupportKori action', async () => {
     render(<PopupApp />);
 
-    const support = await screen.findByRole('link', { name: 'Support BugReceipt on SupportKori' });
-    expect(support.getAttribute('href')).toBe('https://www.supportkori.com/montasim');
-    expect(support.getAttribute('target')).toBe('_blank');
-    expect(screen.getByLabelText('BugReceipt version 0.1.6')).toBeDefined();
-    expect(screen.getByText('v0.1.6')).toBeDefined();
+    expect(await screen.findByLabelText('BugReceipt')).toBeDefined();
+    expect(
+      screen.getByRole('link', { name: 'Support BugReceipt on SupportKori' }),
+    ).toBeDefined();
+    expect(screen.queryByText('v0.1.6')).toBeNull();
+  });
+
+  it('guides a new user through the capture workflow', async () => {
+    send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> =>
+      Promise.resolve(request.type === 'session:get' ? { ok: true, session: null } : { ok: true }),
+    );
+    render(<PopupApp />);
+
+    expect(
+      await screen.findByRole('heading', { name: 'Ready to record the problem?' }),
+    ).toBeDefined();
+    expect(
+      screen.getByText('Open the page where the problem happens, then choose that tab to begin.'),
+    ).toBeDefined();
+    const guide = screen.getByLabelText('How capture works');
+    expect(within(guide).getByText('Choose the affected tab')).toBeDefined();
+    expect(within(guide).getByText('Reproduce the problem')).toBeDefined();
+    expect(within(guide).getByText('Stop and review')).toBeDefined();
+    expect(within(guide).queryByText('Console')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Choose tab to record' })).toBeDefined();
   });
 
   it('accepts a multiline manual step in a textarea', async () => {
     queryTabs.mockResolvedValueOnce([{ id: session.tabId, url: session.origin }]);
     render(<PopupApp />);
 
-    const step = await screen.findByLabelText<HTMLTextAreaElement>('What did you do?');
+    const step = await screen.findByLabelText<HTMLTextAreaElement>('Add a step you performed');
+    expect(step.className).toContain('max-h-[calc(6lh+1rem+2px)]');
     expect(step.tagName).toBe('TEXTAREA');
     expect(step.getAttribute('rows')).toBe('3');
 
@@ -123,7 +144,7 @@ describe('capture popup', () => {
     queryTabs.mockResolvedValueOnce([{ id: session.tabId, url: session.origin }]);
     render(<PopupApp />);
 
-    const step = await screen.findByLabelText<HTMLTextAreaElement>('What did you do?');
+    const step = await screen.findByLabelText<HTMLTextAreaElement>('Add a step you performed');
     fireEvent.change(step, { target: { value: 'This fucking form is broken' } });
     fireEvent.keyDown(step, { key: 'Enter', ctrlKey: true });
 
@@ -191,7 +212,18 @@ describe('capture popup', () => {
     );
     render(<PopupApp />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Open review' }));
+    expect(await screen.findByText('Existing capture')).toBeDefined();
+    expect(
+      screen.getByRole('heading', { name: 'A capture is already waiting for review.' }),
+    ).toBeDefined();
+    expect(
+      screen.getByText(
+        'Open it to review or download the report. To record something new, discard this capture first.',
+      ),
+    ).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Discard to start new' })).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Review existing capture' }));
 
     await waitFor(() =>
       expect(createTab).toHaveBeenCalledWith({
@@ -208,7 +240,7 @@ describe('capture popup', () => {
     });
     render(<PopupApp />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Choose tab & start' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Choose tab to record' }));
 
     await waitFor(() => expect(getSentStartRequest()).toMatchObject({ tabId: 9 }));
     const startRequest = getSentStartRequest();
@@ -220,6 +252,39 @@ describe('capture popup', () => {
     expect(chooseDesktopMedia).toHaveBeenCalledWith(['tab'], expect.any(Function));
     expect(containsPermission).toHaveBeenCalledWith({ origins: ['https://example.com/*'] });
     expect(requestPermission).not.toHaveBeenCalled();
+  });
+
+  it('blocks the Chrome Web Store before opening the tab chooser', async () => {
+    queryTabs.mockResolvedValueOnce([
+      {
+        id: 9,
+        url: 'https://chromewebstore.google.com/detail/bugreceipt/example-extension-id',
+      },
+    ]);
+    send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> => {
+      if (request.type === 'session:get') return Promise.resolve({ ok: true, session: null });
+      return Promise.resolve({
+        ok: false,
+        code: 'capture-unavailable',
+        message: 'The extensions gallery cannot be scripted.',
+      });
+    });
+    render(<PopupApp />);
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: /Allow access to this page|Choose tab to record/,
+      }),
+    );
+
+    expect(
+      await screen.findByText(
+        'This page cannot be recorded. Open a regular HTTP or HTTPS page, then return to BugReceipt.',
+      ),
+    ).toBeDefined();
+    expect(screen.queryByText('The extensions gallery cannot be scripted.')).toBeNull();
+    expect(chooseDesktopMedia).not.toHaveBeenCalled();
+    expect(send.mock.calls.some(([request]) => request.type === 'session:start')).toBe(false);
   });
 
   it('keeps the capture action visible with progress feedback while starting', async () => {
@@ -236,14 +301,14 @@ describe('capture popup', () => {
     });
     render(<PopupApp />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Choose tab & start' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Choose tab to record' }));
 
     const starting = await screen.findByRole<HTMLButtonElement>('button', {
       name: 'Starting capture',
     });
     expect(starting.disabled).toBe(true);
     expect(starting.getAttribute('aria-busy')).toBe('true');
-    expect(screen.queryByText('Reading capture state…')).toBeNull();
+    expect(screen.queryByText('Checking for an active capture…')).toBeNull();
 
     act(() => finishStarting?.());
     await waitFor(() => expect(getSentStartRequest()).toBeDefined());
@@ -257,13 +322,13 @@ describe('capture popup', () => {
     });
     render(<PopupApp />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Allow site access' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Allow access to this page' }));
 
     await waitFor(() =>
       expect(requestPermission).toHaveBeenCalledWith({ origins: ['https://example.com/*'] }),
     );
     expect(send.mock.calls.some(([request]) => request.type === 'session:start')).toBe(false);
-    fireEvent.click(await screen.findByRole('button', { name: 'Choose tab & start' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Choose tab to record' }));
     await waitFor(() => expect(getSentStartRequest()).toMatchObject({ tabId: 9 }));
   });
 
@@ -280,7 +345,7 @@ describe('capture popup', () => {
     });
     render(<PopupApp />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Choose tab & start' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Choose tab to record' }));
 
     expect(
       await screen.findByText('No tab was selected. Select a tab to start recording.'),
@@ -296,7 +361,7 @@ describe('capture popup', () => {
     });
     render(<PopupApp />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Choose tab & start' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Choose tab to record' }));
 
     await waitFor(() =>
       expect(send).toHaveBeenCalledWith(
@@ -318,17 +383,38 @@ describe('capture popup', () => {
     });
     render(<PopupApp />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Allow site access' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Allow access to this page' }));
 
-    expect(await screen.findByText('Site access is required to capture this tab.')).toBeDefined();
+    expect(
+      await screen.findByText('Allow access to this page before starting the recording.'),
+    ).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Retry' }).textContent).toBe('');
     expect(send.mock.calls.some(([request]) => request.type === 'session:start')).toBe(false);
+  });
+
+  it('confirms before permanently discarding a capture', async () => {
+    render(<PopupApp />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Discard capture' }));
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText('Discard this capture?')).toBeDefined();
+    expect(send.mock.calls.some(([request]) => request.type === 'session:discard')).toBe(false);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Discard capture' }));
+
+    await waitFor(() =>
+      expect(send).toHaveBeenCalledWith({
+        type: 'session:discard',
+      }),
+    );
   });
 
   it('guides the user back when recording is active in another tab', async () => {
     render(<PopupApp />);
 
-    await screen.findByText('Recording another tab');
-    expect(screen.queryByLabelText('What did you do?')).toBeNull();
+    await screen.findByText('Recording continues in another tab');
+    expect(screen.queryByLabelText('Add a step you performed')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Return to recorded tab' }));
 

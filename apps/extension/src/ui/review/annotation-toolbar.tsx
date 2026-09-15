@@ -1,20 +1,32 @@
-import type { CSSProperties, ReactNode } from 'react';
+import {
+  BorderFullIcon,
+  CheckmarkCircle02Icon,
+  Cursor01Icon,
+  Delete02Icon,
+  HighlighterIcon,
+  PencilEdit01Icon,
+  RedoIcon,
+  TextCreationIcon,
+  UndoIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
+import type { ReactNode } from 'react';
+import { Button } from '../../components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import { Separator } from '../../components/ui/separator';
+import { ToggleGroup, ToggleGroupItem } from '../../components/ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip';
 import {
   ANNOTATION_COLORS,
   type AnnotationColor,
   type AnnotationTool,
 } from '../../application/annotation-model';
-import {
-  AddTextIcon,
-  BorderIcon,
-  CheckIcon,
-  ClearIcon,
-  HighlightIcon,
-  MarkerIcon,
-  PointerIcon,
-  RedoIcon,
-  UndoIcon,
-} from './annotation-icons';
 
 type AnnotationToolbarProps = {
   subjectLabel?: string;
@@ -36,11 +48,11 @@ type AnnotationToolbarProps = {
 };
 
 const tools = [
-  { id: 'select', label: 'Select', icon: <PointerIcon /> },
-  { id: 'marker', label: 'Marker', icon: <MarkerIcon /> },
-  { id: 'highlight', label: 'Highlight', icon: <HighlightIcon /> },
-  { id: 'border', label: 'Border', icon: <BorderIcon /> },
-  { id: 'text', label: 'Add text', icon: <AddTextIcon /> },
+  { id: 'select', label: 'Select', icon: <HugeiconsIcon icon={Cursor01Icon} /> },
+  { id: 'marker', label: 'Marker', icon: <HugeiconsIcon icon={PencilEdit01Icon} /> },
+  { id: 'highlight', label: 'Highlight', icon: <HugeiconsIcon icon={HighlighterIcon} /> },
+  { id: 'border', label: 'Border', icon: <HugeiconsIcon icon={BorderFullIcon} /> },
+  { id: 'text', label: 'Add text', icon: <HugeiconsIcon icon={TextCreationIcon} /> },
 ] as const;
 
 export function AnnotationToolbar({
@@ -62,99 +74,100 @@ export function AnnotationToolbar({
   onDone,
 }: AnnotationToolbarProps) {
   return (
-    <section className="frame-annotation-toolbar" aria-label="Annotation tools">
-      <div className="frame-annotation-toolbar-inner">
-        <div className="frame-annotation-tool-group" role="toolbar" aria-label="Drawing tools">
+    <section className="mt-4 rounded-xl border bg-card p-3 shadow-sm" aria-label="Annotation tools">
+      <div className="flex min-h-12 flex-wrap items-center gap-2">
+        <ToggleGroup
+          type="single"
+          value={tool}
+          variant="outline"
+          size="sm"
+          aria-label="Drawing tools"
+          onValueChange={(value) => {
+            if (value) onToolChange(value as AnnotationTool);
+          }}
+        >
           {tools.map((item) => (
-            <button
+            <ToggleGroupItem
               key={item.id}
-              className={`frame-annotation-tool${tool === item.id ? ' is-active' : ''}`}
-              type="button"
-              aria-pressed={tool === item.id}
-              title={item.label}
+              value={item.id}
+              aria-label={item.label}
               disabled={saving}
-              onClick={() => onToolChange(item.id)}
             >
               {item.icon}
-              <span>{item.label}</span>
-            </button>
+              <span className="hidden xl:inline">{item.label}</span>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
 
-        <span className="frame-toolbar-separator" aria-hidden="true" />
+        <Separator className="mx-1 h-7" orientation="vertical" />
 
-        <div className="frame-annotation-colors" role="group" aria-label="Annotation color">
+        <div className="flex items-center gap-2" role="group" aria-label="Annotation color">
           {ANNOTATION_COLORS.map((item) => (
-            <button
+            <Button
               key={item.value}
-              className={`frame-color-swatch${color === item.value ? ' is-active' : ''}`}
+              className={`size-7 rounded-full border-4 border-card p-0 ${color === item.value ? 'ring-2 ring-ring ring-offset-2 ring-offset-card' : 'ring-1 ring-border'}`}
               type="button"
+              variant="ghost"
+              size="icon-xs"
               title={item.name}
               aria-label={item.name}
               aria-pressed={color === item.value}
               disabled={saving}
-              style={{ '--swatch-color': item.value } as CSSProperties}
+              style={{ backgroundColor: item.value }}
               onClick={() => onColorChange(item.value)}
             />
           ))}
         </div>
 
-        <label className="frame-stroke-control">
+        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <span>Width</span>
-          <select
-            value={strokeWidth}
-            aria-label="Annotation width"
+          <Select
+            value={String(strokeWidth)}
             disabled={saving || tool === 'text'}
-            title={tool === 'text' ? 'Width does not apply to text notes' : undefined}
-            onChange={(event) => onStrokeWidthChange(Number(event.target.value))}
+            onValueChange={(value) => onStrokeWidthChange(Number(value))}
           >
-            <option value="3">Thin</option>
-            <option value="6">Medium</option>
-            <option value="10">Thick</option>
-          </select>
-        </label>
+            <SelectTrigger className="w-24" size="sm" aria-label="Annotation width">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="3">Thin</SelectItem>
+              <SelectItem value="6">Medium</SelectItem>
+              <SelectItem value="10">Thick</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <span className="frame-toolbar-separator" aria-hidden="true" />
+        <Separator className="mx-1 h-7" orientation="vertical" />
 
-        <div className="frame-annotation-history-actions" role="group" aria-label="Edit history">
+        <div className="flex items-center gap-1" role="group" aria-label="Edit history">
           <ToolbarIconButton
             label="Undo"
             disabled={!canUndo || saving}
-            icon={<UndoIcon />}
+            icon={<HugeiconsIcon icon={UndoIcon} />}
             onClick={onUndo}
           />
           <ToolbarIconButton
             label="Redo"
             disabled={!canRedo || saving}
-            icon={<RedoIcon />}
+            icon={<HugeiconsIcon icon={RedoIcon} />}
             onClick={onRedo}
           />
           <ToolbarIconButton
-            label="Clear all"
+            label="Clear annotations"
             disabled={count === 0 || saving}
-            icon={<ClearIcon />}
+            icon={<HugeiconsIcon icon={Delete02Icon} />}
             onClick={onClear}
           />
         </div>
 
-        <div className="frame-annotation-finish-actions">
-          <button
-            className="frame-annotation-cancel"
-            type="button"
-            disabled={saving}
-            onClick={onCancel}
-          >
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="ghost" size="sm" type="button" disabled={saving} onClick={onCancel}>
             Cancel
-          </button>
-          <button
-            className="frame-annotation-done"
-            type="button"
-            disabled={saving}
-            onClick={onDone}
-          >
-            <CheckIcon />
-            {saving ? 'Saving…' : 'Done'}
-          </button>
+          </Button>
+          <Button size="sm" type="button" disabled={saving} onClick={onDone}>
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} />
+            {saving ? 'Saving…' : 'Save annotations'}
+          </Button>
         </div>
       </div>
       <p className="sr-only" aria-live="polite">
@@ -176,15 +189,20 @@ function ToolbarIconButton({
   onClick: () => void;
 }) {
   return (
-    <button
-      className="frame-toolbar-icon-button"
-      type="button"
-      title={label}
-      aria-label={label}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      {icon}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          type="button"
+          aria-label={label}
+          disabled={disabled}
+          onClick={onClick}
+        >
+          {icon}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   );
 }
