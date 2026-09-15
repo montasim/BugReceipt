@@ -10,7 +10,7 @@ import {
   type ReviewUpdate,
   type SelectedFrame,
 } from '@bugreceipt/capture-model';
-import { filterPayload, filterText, filterUrl } from '@bugreceipt/privacy';
+import { filterPayload, filterRequestHeaders, filterText, filterUrl } from '@bugreceipt/privacy';
 
 const SESSION_KEY = 'reprokit:capture-session';
 
@@ -138,6 +138,9 @@ export async function appendNetworkEvent(
       },
     });
   }
+  const requestHeaders = event.requestHeaders
+    ? filterRequestHeaders(event.requestHeaders)
+    : undefined;
   const requestBody = event.requestBody ? filterPayload(event.requestBody, 16_384) : undefined;
   const responseBody = event.responseBody ? filterPayload(event.responseBody) : undefined;
   const error = event.error ? filterText(event.error) : undefined;
@@ -145,6 +148,7 @@ export async function appendNetworkEvent(
     ...event,
     id: evidenceId,
     url: filterUrl(event.url),
+    ...(requestHeaders ? { requestHeaders: requestHeaders.headers } : {}),
     ...(requestBody ? { requestBody: requestBody.value } : {}),
     ...(responseBody ? { responseBody: responseBody.value } : {}),
     ...(error ? { error: error.value } : {}),
@@ -159,6 +163,7 @@ export async function appendNetworkEvent(
       ...session.filtering,
       redactionCount:
         session.filtering.redactionCount +
+        (requestHeaders?.redactionCount ?? 0) +
         (requestBody?.redactionCount ?? 0) +
         (responseBody?.redactionCount ?? 0) +
         (error?.redactionCount ?? 0),

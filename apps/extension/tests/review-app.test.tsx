@@ -379,6 +379,7 @@ describe('review editor', () => {
           resourceType: 'fetch',
           status: 201,
           durationMs: 80,
+          requestHeaders: [{ name: 'Content-Type', value: 'application/json' }],
           requestBody: '{"amount":42}',
           responseBody: '{"ok":true}',
         },
@@ -404,11 +405,17 @@ describe('review editor', () => {
     );
     expect(within(entries[0]!).getByRole('tab', { name: 'Request' })).toBeDefined();
     expect(within(entries[0]!).getByRole('tab', { name: 'Response' })).toBeDefined();
-    expect(within(entries[0]!).getByText('{"amount":42}')).toBeDefined();
+    expect(within(entries[0]!).getByText(/"amount": 42/)).toBeDefined();
     const responseTab = within(entries[0]!).getByRole('tab', { name: 'Response' });
     fireEvent.mouseDown(responseTab, { button: 0, ctrlKey: false });
     await waitFor(() => expect(responseTab.getAttribute('aria-selected')).toBe('true'));
-    expect(await within(entries[0]!).findByText('{"ok":true}')).toBeDefined();
+    expect(await within(entries[0]!).findByText(/"ok": true/)).toBeDefined();
+    fireEvent.mouseDown(within(entries[0]!).getByRole('tab', { name: 'Request headers' }), {
+      button: 0,
+      ctrlKey: false,
+    });
+    expect(await within(entries[0]!).findByText('Content-Type')).toBeDefined();
+    expect(within(entries[0]!).getByText('application/json')).toBeDefined();
 
     fireEvent.click(
       within(entries[1]!).getByRole('button', {

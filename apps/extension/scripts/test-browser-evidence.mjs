@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import assert from 'node:assert/strict';
 import { setTimeout as delay } from 'node:timers/promises';
+import { setTimeout, clearTimeout } from 'node:timers';
 
 const output = resolve(import.meta.dirname, '../.output');
 const profile = await mkdtemp(join(tmpdir(), 'bugreceipt-browser-test-'));
@@ -41,7 +42,7 @@ const server = createServer((req, res) => {
     return;
   }
   res.end(
-    `<script>console.log('top-startup'); console.table([{name:'fixture'}]); fetch('/redirect'); fetch('/pending'); fetch('http://127.0.0.1:1/blocked').catch(()=>{}); Promise.reject(new Error('fixture-rejection'));</script><iframe src="http://localhost:${server.address().port}/frame"></iframe>`,
+    `<title>Recording fixture</title><script>console.log('top-startup'); console.table([{name:'fixture'}]); fetch('/redirect',{headers:{'X-API-Key':['fixture','header','secret'].join('-'),'X-Fixture':'header-visible'}}); fetch('/pending'); fetch('http://127.0.0.1:1/blocked').catch(()=>{}); Promise.reject(new Error('fixture-rejection'));</script><iframe src="http://localhost:${server.address().port}/frame"></iframe>`,
   );
 });
 await new Promise((resolve) => server.listen(0, resolve));
@@ -88,12 +89,18 @@ try {
     if (!message.id) return;
     const callback = callbacks.get(message.id);
     callbacks.delete(message.id);
+    clearTimeout(callback?.timer);
     if (message.error) callback?.reject(new Error(message.error.message));
     else callback?.resolve(message.result);
   });
   const command = (method, params = {}, sessionId) =>
     new Promise((resolve, reject) => {
-      callbacks.set(++id, { resolve, reject });
+      const requestId = ++id;
+      const timer = setTimeout(() => {
+        callbacks.delete(requestId);
+        reject(new Error(`Timed out: ${method} ${params.expression ?? ''}`));
+      }, 15_000);
+      callbacks.set(requestId, { resolve, reject, timer });
       socket.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
     });
   const { id: extensionId } = await command('Extensions.loadUnpacked', { path: output });
@@ -125,6 +132,9 @@ try {
     ),
   );
   const tab = await evaluate(`chrome.tabs.create({url:${JSON.stringify(base)},active:true})`);
+  await delay(300);
+  const metadataBefore = await evaluate(`chrome.tabs.get(${tab.id})`);
+  assert.equal(metadataBefore.url, undefined, 'tabs permission unexpectedly exposes URL');
   const start = await evaluate(
     `chrome.runtime.sendMessage({type:'session:start',tabId:${tab.id},sessionId:crypto.randomUUID(),recordingError:'Integration test: visual capture disabled.'})`,
   );
@@ -158,8 +168,33 @@ try {
     'Response body missing',
   );
   assert.ok(!JSON.stringify(captured.session).includes('fixture-secret'), 'Secret was persisted');
+  assert.ok(
+    !JSON.stringify(captured.session).includes('fixture-header-secret'),
+    'Header secret was persisted',
+  );
+  assert.ok(
+    captured.session.network.some((event) =>
+      event.requestHeaders?.some(
+        (header) => header.name.toLowerCase() === 'x-fixture' && header.value === 'header-visible',
+      ),
+    ),
+    'Request headers missing',
+  );
+  assert.ok(
+    captured.session.network.some((event) =>
+      event.requestHeaders?.some(
+        (header) => header.name.toLowerCase() === 'x-api-key' && header.value === '[REDACTED]',
+      ),
+    ),
+    'Header redaction missing',
+  );
+  const navigatedUrl = `${base.replace('127.0.0.1', 'localhost')}/checkout?step=2`;
+  await evaluate(`chrome.tabs.update(${tab.id},{url:${JSON.stringify(navigatedUrl)}})`);
+  await delay(500);
   const stop = await evaluate(`chrome.runtime.sendMessage({type:'session:stop'})`);
   assert.equal(stop.ok, true, JSON.stringify(stop));
+  assert.equal(stop.session.page.title, 'Recording fixture');
+  assert.ok(stop.session.page.url.startsWith(base.replace('127.0.0.1', 'localhost') + '/checkout'));
   assert.ok(
     stop.session.network.some(
       (event) => event.url.endsWith('/pending') && event.error?.includes('still in progress'),

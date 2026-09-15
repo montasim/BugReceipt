@@ -41,7 +41,12 @@ export function filterPayload(input: string, maxLength = 32_768): FilterResult {
   let redactionCount = 0;
   let value = input;
   try {
-    value = JSON.stringify(redactStructuredValue(JSON.parse(input), 0, () => redactionCount++));
+    const prefix = input.match(/^\s*\)\]\}',?\s*/)?.[0] ?? '';
+    value =
+      prefix +
+      JSON.stringify(
+        redactStructuredValue(JSON.parse(input.slice(prefix.length)), 0, () => redactionCount++),
+      );
   } catch {
     try {
       const parameters = new URLSearchParams(input);
@@ -85,4 +90,23 @@ function isSensitiveKey(key: string): boolean {
   return /authorization|auth|token|password|passwd|secret|cookie|session|api[-_]?key|csrf|xsrf/i.test(
     key,
   );
+}
+
+/** Bound and redact headers before they enter capture storage or exports. */
+export function filterRequestHeaders(headers: readonly { name: string; value: string }[]) {
+  let redactionCount = 0;
+  const filtered = headers.slice(0, 100).map(({ name, value }) => {
+    const filteredName = filterText(name);
+    redactionCount += filteredName.redactionCount;
+    if (isSensitiveKey(name)) {
+      redactionCount++;
+      return { name: filteredName.value.slice(0, 128), value: '[REDACTED]' };
+    }
+    const filteredValue = filterText(
+      /^(referer|referrer|origin)$/i.test(name) ? filterUrl(value) : value,
+    );
+    redactionCount += filteredValue.redactionCount;
+    return { name: filteredName.value.slice(0, 128), value: filteredValue.value.slice(0, 2_048) };
+  });
+  return { headers: filtered, redactionCount };
 }

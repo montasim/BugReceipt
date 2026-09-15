@@ -1,3 +1,4 @@
+import { NetworkBody } from './network-body';
 import {
   describeCaptureEnvironment,
   getIncludedSession,
@@ -2414,10 +2415,38 @@ function NetworkEvidenceWindow({
                         >
                           <TabsTrigger value="request">Request</TabsTrigger>
                           <TabsTrigger value="response">Response</TabsTrigger>
+                          <TabsTrigger value="headers">Request headers</TabsTrigger>
                         </TabsList>
+                        <TabsContent value="headers">
+                          {event.requestHeaders?.length ? (
+                            <dl className="max-h-80 overflow-auto rounded-lg bg-muted p-3 font-mono text-xs">
+                              {event.requestHeaders.map((header, index) => (
+                                <div
+                                  key={index}
+                                  className="grid gap-1 border-b py-2 last:border-0 sm:grid-cols-[minmax(8rem,1fr)_3fr]"
+                                >
+                                  <dt className="break-words font-semibold">{header.name}</dt>
+                                  <dd className="whitespace-pre-wrap break-words">
+                                    {header.value}
+                                  </dd>
+                                </div>
+                              ))}
+                            </dl>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              No request headers were recorded. Start a new capture to include
+                              available headers.
+                            </p>
+                          )}
+                        </TabsContent>
                         <TabsContent value="request">
                           {event.requestBody ? (
-                            <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-3 font-mono text-xs leading-5">
+                            <NetworkBody
+                              value={event.requestBody}
+                              annotated={textAnnotations.some(
+                                (item) => item.eventId === event.id && item.field === 'requestBody',
+                              )}
+                            >
                               <AnnotatedEvidenceText
                                 value={event.requestBody}
                                 source="network"
@@ -2425,7 +2454,7 @@ function NetworkEvidenceWindow({
                                 field="requestBody"
                                 annotations={textAnnotations}
                               />
-                            </pre>
+                            </NetworkBody>
                           ) : (
                             <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
                               No request payload was recorded.
@@ -2434,7 +2463,13 @@ function NetworkEvidenceWindow({
                         </TabsContent>
                         <TabsContent value="response" className="space-y-3">
                           {event.responseBody ? (
-                            <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-3 font-mono text-xs leading-5">
+                            <NetworkBody
+                              value={event.responseBody}
+                              annotated={textAnnotations.some(
+                                (item) =>
+                                  item.eventId === event.id && item.field === 'responseBody',
+                              )}
+                            >
                               <AnnotatedEvidenceText
                                 value={event.responseBody}
                                 source="network"
@@ -2442,7 +2477,7 @@ function NetworkEvidenceWindow({
                                 field="responseBody"
                                 annotations={textAnnotations}
                               />
-                            </pre>
+                            </NetworkBody>
                           ) : (
                             <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
                               No response body was recorded.

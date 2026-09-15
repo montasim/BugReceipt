@@ -24,6 +24,10 @@ export const networkEventSchema = z.object({
   resourceType: z.string().max(50),
   status: z.number().int().min(0).max(599).optional(),
   durationMs: z.number().nonnegative().max(3_600_000),
+  requestHeaders: z
+    .array(z.object({ name: z.string().max(128), value: z.string().max(2_048) }))
+    .max(100)
+    .optional(),
   requestBody: z.string().max(16_384).optional(),
   responseBody: z.string().max(32_768).optional(),
   error: z.string().max(2_000).optional(),

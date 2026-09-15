@@ -65,7 +65,7 @@ function createHarEntry(event: NetworkEvent, pageId: string) {
       url: event.url,
       httpVersion: '',
       cookies: [],
-      headers: [],
+      headers: event.requestHeaders ?? [],
       queryString: queryParameters(event.url),
       ...(event.requestBody
         ? {

@@ -213,6 +213,12 @@ export class DebuggerRecorder {
               ? 'websocket'
               : text(params.type).toLowerCase() || 'other',
           durationMs: 0,
+          requestHeaders: Object.entries(object(request.headers))
+            .slice(0, 100)
+            .map(([name, value]) => ({
+              name: bounded(name, 128),
+              value: bounded(text(value), 2_048),
+            })),
           ...(request.postData ? { requestBody: bounded(text(request.postData), 16_384) } : {}),
         },
       };
