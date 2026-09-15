@@ -5,6 +5,7 @@ import {
   reviewUpdateSchema,
   type CaptureEndReason,
   type CaptureSession,
+  type EvidenceExclusionKind,
   type NetworkEvent,
   type ReviewUpdate,
   type SelectedFrame,
@@ -60,7 +61,7 @@ export function createSession(
     diagnostics: [],
     network: [],
     page: {
-      url: filterUrl(tab.url),
+      url: filterUrl(tab.url, true),
       title: filterText(tab.title ?? '').value,
       capturedAt: startedAt,
     },
@@ -91,7 +92,7 @@ export async function appendDiagnostic(
   const session = await requireSession('recording');
   if (session.id !== sessionId) throw new Error('This diagnostic belongs to a stale session.');
   if (session.diagnostics.length >= 500) {
-    return saveSession({
+    return saveEvidenceSession(session, {
       ...session,
       filtering: {
         ...session.filtering,
@@ -101,7 +102,7 @@ export async function appendDiagnostic(
   }
   const message = filterText(event.message);
   const stack = event.stack ? filterText(event.stack) : undefined;
-  return saveSession({
+  return saveEvidenceSession(session, {
     ...session,
     diagnostics: [
       ...session.diagnostics,
@@ -123,11 +124,13 @@ export async function appendDiagnostic(
 export async function appendNetworkEvent(
   sessionId: string,
   event: Omit<NetworkEvent, 'id'>,
+  evidenceId: string = crypto.randomUUID(),
 ): Promise<CaptureSession> {
   const session = await requireSession('recording');
   if (session.id !== sessionId) throw new Error('This network event belongs to a stale session.');
-  if (session.network.length >= 500) {
-    return saveSession({
+  const existingIndex = session.network.findIndex((item) => item.id === evidenceId);
+  if (existingIndex < 0 && session.network.length >= 500) {
+    return saveEvidenceSession(session, {
       ...session,
       filtering: {
         ...session.filtering,
@@ -138,19 +141,20 @@ export async function appendNetworkEvent(
   const requestBody = event.requestBody ? filterPayload(event.requestBody, 16_384) : undefined;
   const responseBody = event.responseBody ? filterPayload(event.responseBody) : undefined;
   const error = event.error ? filterText(event.error) : undefined;
-  return saveSession({
+  const filteredEvent = {
+    ...event,
+    id: evidenceId,
+    url: filterUrl(event.url),
+    ...(requestBody ? { requestBody: requestBody.value } : {}),
+    ...(responseBody ? { responseBody: responseBody.value } : {}),
+    ...(error ? { error: error.value } : {}),
+  };
+  return saveEvidenceSession(session, {
     ...session,
-    network: [
-      ...session.network,
-      {
-        ...event,
-        id: crypto.randomUUID(),
-        url: filterUrl(event.url),
-        ...(requestBody ? { requestBody: requestBody.value } : {}),
-        ...(responseBody ? { responseBody: responseBody.value } : {}),
-        ...(error ? { error: error.value } : {}),
-      },
-    ],
+    network:
+      existingIndex < 0
+        ? [...session.network, filteredEvent]
+        : session.network.map((item, index) => (index === existingIndex ? filteredEvent : item)),
     filtering: {
       ...session.filtering,
       redactionCount:
@@ -167,6 +171,34 @@ export async function removeNetworkEvent(id: string): Promise<CaptureSession> {
   return saveSession({ ...session, network: session.network.filter((event) => event.id !== id) });
 }
 
+export async function setEvidenceExcluded(
+  kind: EvidenceExclusionKind,
+  excluded: boolean,
+  id?: string,
+): Promise<CaptureSession> {
+  const session = await requireSession('ready-for-review');
+  const exclusions = session.exclusions ?? {
+    diagnosticIds: [],
+    networkIds: [],
+    selectedFrameBlobIds: [],
+    recording: false,
+    screenshot: false,
+  };
+  if (kind === 'recording' || kind === 'screenshot') {
+    return saveSession({ ...session, exclusions: { ...exclusions, [kind]: excluded } });
+  }
+  if (!id) throw new Error('An evidence identifier is required.');
+  const key =
+    kind === 'diagnostic'
+      ? 'diagnosticIds'
+      : kind === 'network'
+        ? 'networkIds'
+        : 'selectedFrameBlobIds';
+  const ids = exclusions[key].filter((candidate) => candidate !== id);
+  if (excluded) ids.push(id);
+  return saveSession({ ...session, exclusions: { ...exclusions, [key]: ids } });
+}
+
 export async function updateReview(update: ReviewUpdate): Promise<CaptureSession> {
   const session = await requireSession('ready-for-review');
   const draft = reviewUpdateSchema.parse(update);
@@ -179,12 +211,20 @@ export async function updateReview(update: ReviewUpdate): Promise<CaptureSession
     description.redactionCount +
     expectedBehavior.redactionCount +
     actualBehavior.redactionCount;
+  redactionCount += [
+    draft.summary,
+    draft.description ?? '',
+    draft.expectedBehavior,
+    draft.actualBehavior,
+    ...draft.steps.map((step) => step.text),
+  ].reduce((count, value) => count + (value.match(/\[REDACTED\]/g)?.length ?? 0), 0);
   const steps = draft.steps.map((step, position) => {
     const filtered = filterText(step.text);
     redactionCount += filtered.redactionCount;
     return { ...step, position, text: filtered.value };
   });
 
+  const previousReviewRedactionCount = session.filtering.reviewRedactionCount ?? 0;
   return saveSession({
     ...session,
     summary: summary.value,
@@ -194,7 +234,9 @@ export async function updateReview(update: ReviewUpdate): Promise<CaptureSession
     steps,
     filtering: {
       ...session.filtering,
-      redactionCount: session.filtering.redactionCount + redactionCount,
+      redactionCount:
+        session.filtering.redactionCount - previousReviewRedactionCount + redactionCount,
+      reviewRedactionCount: redactionCount,
     },
   });
 }
@@ -307,7 +349,7 @@ export async function finalizeSession(
     stoppedAt: now,
     endReason: 'completed',
     page: {
-      url: filterUrl(tab.url ?? session.origin),
+      url: filterUrl(tab.url ?? session.origin, true),
       title: filterText(tab.title ?? '').value,
       capturedAt: now,
       ...(recording ? { recording } : {}),
@@ -331,4 +373,33 @@ async function requireSession(status: CaptureSession['status']): Promise<Capture
   const session = await loadSession();
   if (!session || session.status !== status) throw new Error(`No ${status} session exists.`);
   return session;
+}
+
+export async function appendCaptureWarning(sessionId: string, message: string): Promise<void> {
+  const session = await loadSession();
+  if (!session || session.id !== sessionId || session.status !== 'recording') return;
+  const warning = filterText(message).value.slice(0, 1_000);
+  const warnings = session.captureWarnings ?? [];
+  if (warnings.includes(warning) || warnings.length >= 20) return;
+  await saveSession({ ...session, captureWarnings: [...warnings, warning] });
+}
+
+// Chrome estimates in-memory storage (including UTF-16 strings), not UTF-8 file size.
+// Leave room for that overhead, review metadata, and warnings.
+async function saveEvidenceSession(
+  previous: CaptureSession,
+  next: CaptureSession,
+): Promise<CaptureSession> {
+  if (new TextEncoder().encode(JSON.stringify(next)).byteLength <= 3_000_000)
+    return saveSession(next);
+  const warning =
+    'The local evidence storage limit was reached. Some additional events or updates were omitted.';
+  return saveSession({
+    ...previous,
+    captureWarnings: [...new Set([warning, ...(previous.captureWarnings ?? [])])].slice(0, 20),
+    filtering: {
+      ...previous.filtering,
+      droppedEventCount: previous.filtering.droppedEventCount + 1,
+    },
+  });
 }

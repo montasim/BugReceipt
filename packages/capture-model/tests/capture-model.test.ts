@@ -3,6 +3,7 @@ import {
   captureSessionSchema,
   describeCaptureEnvironment,
   evidenceTextAnnotationSchema,
+  getIncludedSession,
   getSelectedFrames,
   MAX_SELECTED_FRAMES,
   runtimeRequestSchema,
@@ -111,6 +112,37 @@ describe('capture contracts', () => {
     });
 
     expect(request.type).toBe('session:add-selected-frame');
+  });
+
+  it('omits excluded evidence without deleting the stored capture', () => {
+    const diagnosticId = '00000000-0000-4000-8000-000000000010';
+    const parsed = captureSessionSchema.parse({
+      schemaVersion: 1,
+      id: crypto.randomUUID(),
+      status: 'ready-for-review',
+      tabId: 7,
+      windowId: 2,
+      origin: 'https://example.com',
+      startedAt: new Date().toISOString(),
+      summary: 'Bug report',
+      expectedBehavior: '',
+      actualBehavior: '',
+      steps: [],
+      diagnostics: [
+        {
+          id: diagnosticId,
+          occurredAt: new Date().toISOString(),
+          kind: 'console',
+          level: 'error',
+          message: 'Failure',
+        },
+      ],
+      filtering: { redactionCount: 0, droppedEventCount: 0 },
+      exclusions: { diagnosticIds: [diagnosticId] },
+    });
+
+    expect(parsed.diagnostics).toHaveLength(1);
+    expect(getIncludedSession(parsed).diagnostics).toHaveLength(0);
   });
 
   it('rejects selected frame metadata outside the recording duration ceiling', () => {

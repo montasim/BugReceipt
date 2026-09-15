@@ -29,6 +29,16 @@ const session: CaptureSession = {
 };
 
 describe('GitHub issue renderer', () => {
+  it('includes capture gaps and limits even when there are no selected frames', () => {
+    const markdown = renderGitHubIssue({
+      ...session,
+      captureWarnings: ['Debugger disconnected'],
+      filtering: { redactionCount: 0, droppedEventCount: 3 },
+    });
+    expect(markdown).toContain('Incomplete evidence: Debugger disconnected');
+    expect(markdown).toContain('3 additional events or updates omitted');
+  });
+
   it('renders a deterministic report', () => {
     const markdown = renderGitHubIssue({
       ...session,

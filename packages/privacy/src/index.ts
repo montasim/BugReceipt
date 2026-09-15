@@ -18,10 +18,18 @@ export function filterText(input: string): FilterResult {
   return { value: value.slice(0, 32_768), redactionCount };
 }
 
-export function filterUrl(input: string): string {
+export function filterUrl(input: string, keepQuery = false): string {
   try {
     const url = new URL(input);
-    url.search = '';
+    if (keepQuery) {
+      const filteredQuery = new URLSearchParams();
+      for (const [key, value] of url.searchParams) {
+        filteredQuery.append(key, isSensitiveKey(key) ? '[REDACTED]' : filterText(value).value);
+      }
+      url.search = filteredQuery.toString();
+    } else {
+      url.search = '';
+    }
     url.hash = '';
     return url.toString();
   } catch {
@@ -74,5 +82,7 @@ function redactStructuredValue(value: unknown, depth: number, onRedaction: () =>
 }
 
 function isSensitiveKey(key: string): boolean {
-  return /authorization|auth|token|password|passwd|secret|cookie|session|api[-_]?key/i.test(key);
+  return /authorization|auth|token|password|passwd|secret|cookie|session|api[-_]?key|csrf|xsrf/i.test(
+    key,
+  );
 }

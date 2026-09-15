@@ -11,6 +11,7 @@ export const diagnosticEventSchema = z.object({
   occurredAt: z.string().datetime(),
   kind: z.enum(['console', 'uncaught-error', 'unhandled-rejection']),
   level: z.enum(['debug', 'log', 'info', 'warn', 'error']),
+  consoleType: z.string().min(1).max(50).optional(),
   message: z.string().max(32_768),
   stack: z.string().max(32_768).optional(),
 });
@@ -72,6 +73,7 @@ export const captureSessionSchema = z.object({
   origin: z.string().url(),
   startedAt: z.string().datetime(),
   stoppedAt: z.string().datetime().optional(),
+  captureWarnings: z.array(z.string().max(1_000)).max(20).optional(),
   endReason: z.enum(['completed', 'origin-changed', 'tab-closed']).optional(),
   summary: z.string().max(200),
   description: z.string().max(4_000).optional(),
@@ -111,7 +113,17 @@ export const captureSessionSchema = z.object({
   filtering: z.object({
     redactionCount: z.number().int().nonnegative(),
     droppedEventCount: z.number().int().nonnegative(),
+    reviewRedactionCount: z.number().int().nonnegative().optional(),
   }),
+  exclusions: z
+    .object({
+      diagnosticIds: z.array(z.string().uuid()).max(500).default([]),
+      networkIds: z.array(z.string().uuid()).max(500).default([]),
+      selectedFrameBlobIds: z.array(z.string().uuid()).max(MAX_SELECTED_FRAMES).default([]),
+      recording: z.boolean().default(false),
+      screenshot: z.boolean().default(false),
+    })
+    .optional(),
 });
 
 export type CaptureSession = z.infer<typeof captureSessionSchema>;
@@ -121,6 +133,32 @@ export type NetworkEvent = z.infer<typeof networkEventSchema>;
 export type EvidenceTextAnnotation = z.infer<typeof evidenceTextAnnotationSchema>;
 export type ReproductionStep = z.infer<typeof stepSchema>;
 export type SelectedFrame = z.infer<typeof selectedFrameSchema>;
+export type EvidenceExclusionKind =
+  'diagnostic' | 'network' | 'selected-frame' | 'recording' | 'screenshot';
+
+export function getIncludedSession(session: CaptureSession): CaptureSession {
+  const exclusions = session.exclusions;
+  if (!exclusions) return session;
+  const page = session.page ? { ...session.page } : undefined;
+  if (page) {
+    if (exclusions.recording) delete page.recording;
+    if (exclusions.screenshot) delete page.screenshotBlobId;
+    const frames = getSelectedFrames(page).filter(
+      (frame) => !exclusions.selectedFrameBlobIds.includes(frame.blobId),
+    );
+    delete page.selectedFrame;
+    if (frames.length > 0) page.selectedFrames = frames;
+    else delete page.selectedFrames;
+  }
+  return {
+    ...session,
+    diagnostics: session.diagnostics.filter(
+      (event) => !exclusions.diagnosticIds.includes(event.id),
+    ),
+    network: session.network.filter((event) => !exclusions.networkIds.includes(event.id)),
+    ...(page ? { page } : {}),
+  };
+}
 
 export function getSelectedFrames(page: CaptureSession['page']): SelectedFrame[] {
   if (!page) return [];
@@ -232,6 +270,12 @@ export const runtimeRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('session:update-review') }).extend(reviewUpdateSchema.shape),
   z.object({ type: z.literal('session:remove-diagnostic'), id: z.string().uuid() }),
   z.object({ type: z.literal('session:remove-network'), id: z.string().uuid() }),
+  z.object({
+    type: z.literal('session:set-evidence-excluded'),
+    kind: z.enum(['diagnostic', 'network', 'selected-frame', 'recording', 'screenshot']),
+    id: z.string().uuid().optional(),
+    excluded: z.boolean(),
+  }),
   z.object({ type: z.literal('session:add-selected-frame'), frame: selectedFrameSchema }),
   /** @deprecated Retained for review pages opened before multi-frame support. */
   z.object({ type: z.literal('session:set-selected-frame'), frame: selectedFrameSchema }),
@@ -250,6 +294,7 @@ export const runtimeRequestSchema = z.discriminatedUnion('type', [
       occurredAt: z.string().datetime(),
       kind: z.enum(['console', 'uncaught-error', 'unhandled-rejection']),
       level: z.enum(['debug', 'log', 'info', 'warn', 'error']),
+      consoleType: z.string().min(1).max(50).optional(),
       message: z.string().max(32_768),
       stack: z.string().max(32_768).optional(),
     }),

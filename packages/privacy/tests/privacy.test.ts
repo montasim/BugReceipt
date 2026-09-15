@@ -8,6 +8,17 @@ describe('privacy filter', () => {
     );
   });
 
+  it('keeps useful page queries while redacting sensitive values', () => {
+    expect(
+      filterUrl(
+        'https://www.google.com/search?q=SNOWSKY+Echo+Nano+price+in+bd&sxsrf=private#results',
+        true,
+      ),
+    ).toBe(
+      'https://www.google.com/search?q=SNOWSKY+Echo+Nano+price+in+bd&sxsrf=%5BREDACTED%5D',
+    );
+  });
+
   it('redacts emails and bearer tokens', () => {
     const result = filterText('user@example.com Bearer abc.def-123');
     expect(result.value).toBe('[REDACTED] [REDACTED]');

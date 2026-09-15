@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   addSelectedFrame,
   appendNetworkEvent,
+  appendDiagnostic,
   appendStep,
   createSession,
   interruptSession,
   loadSession,
   removeSelectedFrameReference,
   saveSession,
+  setEvidenceExcluded,
   updateReview,
 } from '../src/application/session-store';
 
@@ -43,7 +45,7 @@ describe('capture session store', () => {
     );
     await saveSession(session);
     expect(await loadSession()).toEqual(session);
-    expect(session.page?.url).toBe('https://example.com/checkout');
+    expect(session.page?.url).toBe('https://example.com/checkout?token=%5BREDACTED%5D');
   });
 
   it('filters sensitive text before persisting a manual step', async () => {
@@ -51,6 +53,20 @@ describe('capture session store', () => {
     const updated = await appendStep('Signed in as fixture@example.com');
     expect(updated.steps[0]?.text).toBe('Signed in as [REDACTED]');
     expect(updated.filtering.redactionCount).toBe(1);
+  });
+
+  it('preserves the console API type when persisting filtered evidence', async () => {
+    const active = createSession(makeTab({ url: 'https://example.com', title: 'Checkout' }));
+    await saveSession(active);
+    await appendDiagnostic(active.id, {
+      id: crypto.randomUUID(),
+      occurredAt: new Date().toISOString(),
+      kind: 'console',
+      level: 'log',
+      consoleType: 'table',
+      message: 'Orders table',
+    });
+    expect((await loadSession())?.diagnostics[0]?.consoleType).toBe('table');
   });
 
   it('stores privacy-filtered request and response evidence', async () => {
@@ -72,6 +88,28 @@ describe('capture session store', () => {
     expect(updated.network[0]?.requestBody).not.toContain('private');
     expect(updated.network[0]?.responseBody).not.toContain('fixture@example.com');
     expect(updated.filtering.redactionCount).toBe(3);
+  });
+
+  it('updates a request in place as browser response and body events arrive', async () => {
+    const active = createSession(makeTab({ url: 'https://example.com', title: 'Checkout' }));
+    await saveSession(active);
+    const id = crypto.randomUUID();
+    const event = {
+      occurredAt: new Date().toISOString(),
+      method: 'GET',
+      url: 'https://example.com/api',
+      resourceType: 'fetch',
+      durationMs: 0,
+    };
+    await appendNetworkEvent(active.id, event, id);
+    const updated = await appendNetworkEvent(
+      active.id,
+      { ...event, status: 200, responseBody: '{"token":"private"}' },
+      id,
+    );
+    expect(updated.network).toHaveLength(1);
+    expect(updated.network[0]).toMatchObject({ id, status: 200 });
+    expect(updated.network[0]?.responseBody).not.toContain('private');
   });
 
   it('persists a privacy-filtered review draft and normalizes step positions', async () => {
@@ -106,6 +144,41 @@ describe('capture session store', () => {
         text: 'Pay as [REDACTED]',
       },
     ]);
+
+    const savedAgain = await updateReview({
+      summary: updated.summary,
+      description: updated.description,
+      expectedBehavior: updated.expectedBehavior,
+      actualBehavior: updated.actualBehavior,
+      steps: updated.steps,
+    });
+    expect(savedAgain.filtering.redactionCount).toBe(updated.filtering.redactionCount);
+  });
+
+  it('persists reversible evidence exclusions', async () => {
+    const active = createSession(makeTab({ url: 'https://example.com', title: 'Checkout' }));
+    const diagnosticId = '00000000-0000-4000-8000-000000000010';
+    await saveSession({
+      ...active,
+      status: 'ready-for-review',
+      stoppedAt: new Date().toISOString(),
+      diagnostics: [
+        {
+          id: diagnosticId,
+          occurredAt: new Date().toISOString(),
+          kind: 'console',
+          level: 'error',
+          message: 'Payment failed',
+        },
+      ],
+    });
+
+    expect((await setEvidenceExcluded('diagnostic', true, diagnosticId)).exclusions).toEqual(
+      expect.objectContaining({ diagnosticIds: [diagnosticId] }),
+    );
+    expect((await setEvidenceExcluded('diagnostic', false, diagnosticId)).exclusions).toEqual(
+      expect.objectContaining({ diagnosticIds: [] }),
+    );
   });
 
   it('preserves partial evidence when a capture is interrupted', async () => {

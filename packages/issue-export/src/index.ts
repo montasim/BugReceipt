@@ -103,7 +103,15 @@ export function renderGitHubIssue(
       : '';
   const visualEvidence = `${selectedFrameEvidence}${recordingEvidence}${fallbackScreenshotEvidence}`;
 
-  return `# ${session.summary || 'Bug report'}
+  const captureWarnings = [
+    ...(session.captureWarnings ?? []),
+    ...(session.filtering.droppedEventCount
+      ? [
+          `${session.filtering.droppedEventCount} additional events or updates omitted because evidence limits were reached.`,
+        ]
+      : []),
+  ];
+  return `${captureWarnings.length ? `> Incomplete evidence: ${captureWarnings.join(' ')}\n\n` : ''}# ${session.summary || 'Bug report'}
 
 ## Description
 
