@@ -34,7 +34,7 @@
       "comp": ".impeccable/mocks/decision/receipt-spine.webp"
     }
   ],
-  "reroll": {"registers": ["safer", "bolder"]},
-  "buildPath": {"value": "comp", "toggle": true},
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "comp", "toggle": true },
   "steer": true
 }

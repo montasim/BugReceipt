@@ -2,27 +2,28 @@
 target: the whole BugReceipt extension UI
 total_score: 21
 max_score: 40
-na_heuristics: 
+na_heuristics:
 p0_count: 0
 p1_count: 5
 timestamp: 2026-09-14T14-58-38Z
 slug: entrypoints-sidepanel-main-tsx
 ---
+
 ## Design Health Score
 
-| # | Heuristic | Score | Key issue |
-|---|---|---:|---|
-| 1 | Visibility of System Status | 2/4 | Many pending labels exist, but review has no dedicated initial loading state and important notices are remote from their triggers. |
-| 2 | Match System / Real World | 3/4 | Evidence language is mostly clear; HAR, visual annotations, and raw runtime errors leak implementation concepts. |
-| 3 | User Control and Freedom | 2/4 | Whole-capture deletion is confirmed, but discard and most evidence removals have no confirmation or undo. |
-| 4 | Consistency and Standards | 2/4 | Shared tokens exist, but actions, notices, empty states, loading states, and removals are composed ad hoc. |
-| 5 | Error Prevention | 2/4 | Validation and limits help, while destructive evidence changes and annotation invalidation lack adequate guardrails. |
-| 6 | Recognition Rather Than Recall | 3/4 | Tabs and labels are visible; shortcuts, annotation rules, and export readiness require discovery or memory. |
-| 7 | Flexibility and Efficiency | 2/4 | Some keyboard support exists, but no surfaced shortcut system or bulk evidence management exists. |
-| 8 | Aesthetic and Minimalist Design | 2/4 | The visual language is coherent, but the review workbench presents too many concurrent jobs and repeated chrome. |
-| 9 | Error Recovery | 2/4 | Messages are often specific, but failed artifacts lack retry paths and no-session handling can expose raw errors. |
-| 10 | Help and Documentation | 1/4 | Support links exist; task-level guidance for permissions, evidence, annotation, and export choices is sparse. |
-| **Total** |  | **21/40** | **Acceptable — significant redesign needed** |
+| #         | Heuristic                       |     Score | Key issue                                                                                                                          |
+| --------- | ------------------------------- | --------: | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 1         | Visibility of System Status     |       2/4 | Many pending labels exist, but review has no dedicated initial loading state and important notices are remote from their triggers. |
+| 2         | Match System / Real World       |       3/4 | Evidence language is mostly clear; HAR, visual annotations, and raw runtime errors leak implementation concepts.                   |
+| 3         | User Control and Freedom        |       2/4 | Whole-capture deletion is confirmed, but discard and most evidence removals have no confirmation or undo.                          |
+| 4         | Consistency and Standards       |       2/4 | Shared tokens exist, but actions, notices, empty states, loading states, and removals are composed ad hoc.                         |
+| 5         | Error Prevention                |       2/4 | Validation and limits help, while destructive evidence changes and annotation invalidation lack adequate guardrails.               |
+| 6         | Recognition Rather Than Recall  |       3/4 | Tabs and labels are visible; shortcuts, annotation rules, and export readiness require discovery or memory.                        |
+| 7         | Flexibility and Efficiency      |       2/4 | Some keyboard support exists, but no surfaced shortcut system or bulk evidence management exists.                                  |
+| 8         | Aesthetic and Minimalist Design |       2/4 | The visual language is coherent, but the review workbench presents too many concurrent jobs and repeated chrome.                   |
+| 9         | Error Recovery                  |       2/4 | Messages are often specific, but failed artifacts lack retry paths and no-session handling can expose raw errors.                  |
+| 10        | Help and Documentation          |       1/4 | Support links exist; task-level guidance for permissions, evidence, annotation, and export choices is sparse.                      |
+| **Total** |                                 | **21/40** | **Acceptable — significant redesign needed**                                                                                       |
 
 ## Design Specificity Verdict
 

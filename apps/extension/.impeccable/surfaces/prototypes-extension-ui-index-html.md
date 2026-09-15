@@ -1,7 +1,7 @@
 ---
 version: 1
-slug: "prototypes-extension-ui-index-html"
-primary_target: "prototypes/extension-ui/index.html"
+slug: 'prototypes-extension-ui-index-html'
+primary_target: 'prototypes/extension-ui/index.html'
 related_targets: []
 ---
 

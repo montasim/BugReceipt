@@ -23,22 +23,22 @@ Do not create `extension-v2`. Do not rewrite working business logic. Delete the 
 
 Feature code must not render a raw interactive element when ShadCN supplies the behavior:
 
-| Raw pattern | Use |
-| --- | --- |
-| `button` | `Button` |
-| `input`, `textarea`, label/error wrappers | `Input`, `Textarea`, `Field` |
-| `select` | `Select` |
-| tab buttons | `Tabs` |
-| download menu | `DropdownMenu` |
-| destructive confirmation | `AlertDialog` |
-| ordinary modal | `Dialog` |
-| notice/error box | `Alert` |
-| interactive `details` | `Collapsible` |
-| icon button help | `Tooltip` |
-| status/count | `Badge` |
-| loading/progress | `Skeleton`, `Spinner`, `Progress` |
-| export manifest | `Table` |
-| transient success/undo | `Sonner` |
+| Raw pattern                               | Use                               |
+| ----------------------------------------- | --------------------------------- |
+| `button`                                  | `Button`                          |
+| `input`, `textarea`, label/error wrappers | `Input`, `Textarea`, `Field`      |
+| `select`                                  | `Select`                          |
+| tab buttons                               | `Tabs`                            |
+| download menu                             | `DropdownMenu`                    |
+| destructive confirmation                  | `AlertDialog`                     |
+| ordinary modal                            | `Dialog`                          |
+| notice/error box                          | `Alert`                           |
+| interactive `details`                     | `Collapsible`                     |
+| icon button help                          | `Tooltip`                         |
+| status/count                              | `Badge`                           |
+| loading/progress                          | `Skeleton`, `Spinner`, `Progress` |
+| export manifest                           | `Table`                           |
+| transient success/undo                    | `Sonner`                          |
 
 Native semantic and media elements remain where they are correct: `main`, `nav`, `section`, headings, paragraphs, lists, `form`, `video`, `canvas`, and images. ShadCN itself renders semantic HTML, so replacing every HTML tag is neither possible nor desirable.
 
