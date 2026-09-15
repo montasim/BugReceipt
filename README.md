@@ -214,6 +214,8 @@ pnpm check
 pnpm release:zip
 ```
 
+The upload archive is named `BugReceipt-<version>-chrome.zip`. Its version comes from `apps/extension/package.json` through the generated manifest; a Git tag or Chrome Web Store publication does not update local package versions. Update the workspace package versions before building a new release.
+
 Inspect the generated Chrome ZIP and confirm `manifest.json` is at its root. Pushing a tag matching `v*` starts the [release workflow](.github/workflows/release.yml), which rebuilds the extension, renames the archive to `BugReceipt-<tag>-chrome-unpacked.zip`, verifies its layout, creates `SHA256SUMS.txt`, and publishes both files with [.github/RELEASE_NOTES.md](.github/RELEASE_NOTES.md).
 
 `v0.1.6` is prepared from the source changes after the published [v0.1.5 release](https://github.com/montasim/BugReceipt/releases/tag/v0.1.5). Historical tags and attached archives remain immutable.

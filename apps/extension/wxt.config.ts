@@ -3,6 +3,10 @@ import { defineConfig, type WxtViteConfig } from 'wxt';
 
 export default defineConfig({
   outDirTemplate: '.',
+  zip: {
+    name: 'BugReceipt',
+    artifactTemplate: '{{name}}-{{version}}-{{browser}}.zip',
+  },
   modules: ['@wxt-dev/module-react'],
   vite: (): WxtViteConfig => ({
     plugins: tailwindcss() as NonNullable<WxtViteConfig['plugins']>,

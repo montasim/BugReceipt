@@ -1,6 +1,6 @@
 {
   "name": "bugreceipt-workspace",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Capture privacy-filtered browser bug reproduction evidence from a persistent Chrome side panel.",
