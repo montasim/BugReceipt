@@ -41,7 +41,8 @@ BugReceipt keeps one user-initiated browser failure trace together: selected-tab
 ### Privacy boundaries
 
 - Sensitive diagnostic values are filtered before extension storage; persisted filtered values are the only values available for export.
-- Cookies, browser storage, page HTML or DOM snapshots, request and response headers, keystrokes, clipboard contents, and form values are not captured directly.
+- Cookies, browser storage, page HTML or DOM snapshots, response headers, keystrokes, clipboard contents, and form values are not captured directly.
+- Available request headers are captured with recognized credentials redacted before storage.
 - Evidence remains in extension-owned local storage until the user deletes it, starts another capture, or downloads it.
 - Screen recordings can still display sensitive information rendered by the page, so the reporter must review visual evidence before sharing it.
 - Filtering reduces risk but does not guarantee recognition of every sensitive value.

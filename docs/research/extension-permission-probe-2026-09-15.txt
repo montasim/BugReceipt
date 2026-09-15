@@ -1,0 +1,8 @@
+PASS: getTargets returns initial URL/title before attach without tabs or activeTab.
+CAPABILITIES: {"storage":"undefined","downloads":"undefined","desktopCapture":"undefined","getDisplayMedia":"function","showDirectoryPicker":"function"}
+PASS: IndexedDB write/read without storage permission (persistence lifecycle not tested).
+PASS: debugger screenshot PNG without activeTab, bytes: 2692
+WITHOUT TABS navigation: {"url":"http://127.0.0.1:45309/checkout?sort=price","tabUrl":null,"debuggerMetadata":"{\"url\":\"http://127.0.0.1:45309/checkout?sort=price\",\"title\":\"Permission audit fixture\"}","console":2,"network":7}
+PASS: debugger screenshot PNG without activeTab, bytes: 2692
+WITHOUT TABS navigation: {"url":"http://localhost:45309/other","tabUrl":null,"debuggerMetadata":"{\"url\":\"http://localhost:45309/other\",\"title\":\"Permission audit fixture\"}","console":3,"network":9}
+PASS: all permission substitute probes; no production workflow changed.

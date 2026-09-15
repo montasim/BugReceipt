@@ -21,7 +21,7 @@ A screenshot shows the result of a failure, but rarely the browser evidence or h
 - sensitive diagnostic values are filtered before extension storage;
 - recording, console, network, environment, and manual context meet in one review;
 - individual evidence can be removed or annotated before export;
-- complete reports export locally as Markdown, a folder, or a ZIP.
+- complete reports export locally as a ZIP containing Markdown and visual evidence.
 
 ## What it captures
 
@@ -51,7 +51,7 @@ A screenshot shows the result of a failure, but rarely the browser evidence or h
 - GitHub-ready `issue.md` with environment and diagnostic evidence
 - Saved console and network highlights represented by explicit `⟦double-bracket⟧` markers
 - `recording.webm`, one or more numbered selected-frame PNGs, or fallback `screenshot.png` when available
-- One ZIP containing the reviewed files, or the same files in a named folder under Chrome Downloads
+- One ZIP containing the reviewed report and visual evidence
 - Clipboard copy of the reviewed Markdown
 - No complete-report upload or capture-level email delivery
 
@@ -103,13 +103,13 @@ Load `apps/extension/.output` through Chrome's **Load unpacked** action. A succe
 
 1. Open a normal HTTP or HTTPS page where the problem occurs.
 2. Open BugReceipt from the Chrome toolbar and select **Choose tab & start**.
-3. Choose the affected tab in Chrome's share dialog and approve site access when requested.
+3. Choose the affected tab in Chrome's share dialog to start recording.
 4. Reproduce the problem and add concise manual steps.
 5. Select **Stop & review**.
 6. Verify the report fields and inspect Visual evidence, Console, and Network.
 7. Pause the recording at useful moments and select **Capture frame**; navigate and annotate the saved PNGs if they improve the evidence.
 8. Use **Annotate text** in Console or Network to preserve an exact diagnostic selection. Remove anything that should not be shared.
-9. Copy the Markdown, download the report as a ZIP, or save the individual files into one report folder under Downloads.
+9. Select **Download as ZIP** to save the report and visual evidence. Console and network evidence can also be downloaded from their tabs.
 10. Use **Report an issue** in the review header to open BugReceipt's GitHub issue form.
 
 Same-origin reloads continue the session. Cross-origin navigation or closing the selected tab ends capture and preserves the evidence collected up to that point with an interruption reason.
@@ -120,7 +120,7 @@ Captured evidence and annotations stay in extension-owned browser storage until 
 
 - page HTML or DOM snapshots;
 - cookies, local storage, or session storage;
-- form values, keystrokes, clipboard contents, or request/response headers;
+- form values, keystrokes, clipboard contents, or response headers;
 - microphone or tab audio.
 
 Console values and supported text or JSON network bodies are bounded before storage. URL query strings, email addresses, bearer tokens, and secret-shaped fields are filtered locally. Binary and oversized response bodies are omitted. Supported text responses are collected through the browser debugger, including resource requests outside fetch and XHR. Bodies unavailable from Chrome are marked explicitly.
@@ -129,7 +129,9 @@ Filtering reduces risk; it cannot guarantee that every sensitive value will be r
 
 **Report an issue** opens the public GitHub issue form in a new tab. BugReceipt does not populate or submit that form, and it does not transmit capture data when opening the link.
 
-The manifest requests `activeTab`, `clipboardWrite`, `desktopCapture`, `debugger`, `downloads`, `scripting`, `sidePanel`, `storage`, and `tabs`. Site access is optional and requested for the current origin when capture begins. The extension has no report-server host permission.
+Network request headers are captured for new recordings and filtered locally before storage. Authorization, cookies, API keys and other recognized sensitive header values are redacted. Request and response JSON can be formatted for reading, with raw text retained for annotations.
+
+The manifest requests `activeTab`, `desktopCapture`, `debugger`, `sidePanel`, and `storage`. Recording starts from the tab chooser without a separate site-access prompt. Browser diagnostics and page metadata use the debugger; `activeTab` preserves the final-screenshot fallback. The extension requests no host permissions.
 
 ## Deterministic test fixture
 
@@ -218,13 +220,12 @@ Inspect the generated Chrome ZIP and confirm `manifest.json` is at its root. Pus
 
 ## Troubleshooting
 
-| Problem                              | What to check                                                                              |
-| ------------------------------------ | ------------------------------------------------------------------------------------------ |
-| Chrome rejects the extension folder  | Select the extracted directory that contains `manifest.json` directly                      |
-| The side panel cannot capture a page | Use a normal HTTP/HTTPS tab; restricted Chrome pages cannot grant site access              |
-| **Download folder** fails            | Check Chrome download permissions and policy, then use **Download ZIP** for the same files |
-| **Report an issue** does not open    | Check that Chrome can open the BugReceipt GitHub issue URL in a new tab                    |
-| A recording cannot be previewed      | Preserve the fallback screenshot or retry capture on the affected tab                      |
+| Problem                              | What to check                                                           |
+| ------------------------------------ | ----------------------------------------------------------------------- |
+| Chrome rejects the extension folder  | Select the extracted directory that contains `manifest.json` directly   |
+| The side panel cannot capture a page | Use a normal HTTP/HTTPS tab; restricted Chrome pages cannot be recorded |
+| **Report an issue** does not open    | Check that Chrome can open the BugReceipt GitHub issue URL in a new tab |
+| A recording cannot be previewed      | Preserve the fallback screenshot or retry capture on the affected tab   |
 
 For ordinary installation and usage help, follow [SUPPORT.md](SUPPORT.md).
 
