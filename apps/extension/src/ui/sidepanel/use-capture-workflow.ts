@@ -1,3 +1,4 @@
+import { withTabMetadata } from '../../infrastructure/tab-metadata';
 import type { CaptureSession } from '@bugreceipt/capture-model';
 import { useEffect, useState } from 'react';
 import { sendRuntimeMessage } from '../../application/protocol';
@@ -9,7 +10,6 @@ import { useOffensiveLanguageValidation } from '../use-offensive-language-valida
 
 export type PendingAction =
   | 'loading'
-  | 'granting-access'
   | 'starting'
   | 'adding-step'
   | 'stopping'
@@ -23,26 +23,34 @@ export function useCaptureWorkflow() {
   const [step, setStep] = useState('');
   const [activeTabId, setActiveTabId] = useState<number | null>(null);
   const [activeTabUrl, setActiveTabUrl] = useState('');
-  const [hasSiteAccess, setHasSiteAccess] = useState(false);
-  const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [pendingAction, setPendingAction] = useState<PendingAction>('loading');
   const [clockNow, setClockNow] = useState(() => Date.now());
   const stepModeration = useOffensiveLanguageValidation(step);
 
   useEffect(() => {
+    let generation = 0;
     const readActiveTab = async () => {
+      const requestGeneration = ++generation;
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      const url = tabs[0]?.url ?? '';
-      const originPattern = getOriginPattern(url);
-      setActiveTabId(tabs[0]?.id ?? null);
+      const tab = tabs[0] ? await withTabMetadata(tabs[0]) : undefined;
+      if (requestGeneration !== generation) return;
+      const url = tab?.url ?? '';
+      setActiveTabId(tab?.id ?? null);
       setActiveTabUrl(url);
-      setHasSiteAccess(
-        originPattern ? await chrome.permissions.contains({ origins: [originPattern] }) : false,
-      );
-      setNotice('');
     };
-    const handleTabActivated = () => void readActiveTab();
+    const handleTabActivated = () =>
+      void readActiveTab().catch(() => {
+        setActiveTabUrl('');
+        setError('BugReceipt could not read the active tab. Reopen the side panel and retry.');
+      });
+    const handleTabUpdated = (
+      _tabId: number,
+      change: { status?: string; url?: string; title?: string },
+    ) => {
+      if (change.status || change.url || change.title) handleTabActivated();
+    };
+    chrome.tabs.onUpdated.addListener(handleTabUpdated);
     chrome.tabs.onActivated.addListener(handleTabActivated);
     void Promise.all([sendRuntimeMessage({ type: 'session:get' }), readActiveTab()])
       .then(([response]) => {
@@ -53,7 +61,11 @@ export function useCaptureWorkflow() {
         setError('BugReceipt could not read the active tab. Reopen the side panel and retry.'),
       )
       .finally(() => setPendingAction(null));
-    return () => chrome.tabs.onActivated.removeListener(handleTabActivated);
+    return () => {
+      generation++;
+      chrome.tabs.onActivated.removeListener(handleTabActivated);
+      chrome.tabs.onUpdated.removeListener(handleTabUpdated);
+    };
   }, []);
 
   const recordingStartedAt =
@@ -80,35 +92,13 @@ export function useCaptureWorkflow() {
       setError('BugReceipt could not identify the page tab. Switch tabs and try again.');
       return;
     }
-    const originPattern = getOriginPattern(activeTabUrl);
-    if (!originPattern) {
+    if (!isRecordablePage(activeTabUrl)) {
       setError(
         'This page cannot be recorded. Open a regular HTTP or HTTPS page, then return to BugReceipt.',
       );
       return;
     }
     setError('');
-    setNotice('');
-    if (!hasSiteAccess) {
-      setPendingAction('granting-access');
-      try {
-        const allowed = await chrome.permissions.request({ origins: [originPattern] });
-        if (!allowed) {
-          setError('Allow access to this page before starting the recording.');
-          return;
-        }
-        setHasSiteAccess(true);
-        setNotice('Access granted. Choose the affected tab to start recording.');
-      } catch {
-        setError(
-          'Chrome could not request access. Close and reopen the side panel, then try again.',
-        );
-      } finally {
-        setPendingAction(null);
-      }
-      return;
-    }
-
     setPendingAction('starting');
     const streamId = await chooseTabToRecord();
     if (!streamId) {
@@ -216,8 +206,6 @@ export function useCaptureWorkflow() {
     session,
     step,
     setStep,
-    hasSiteAccess,
-    notice,
     error,
     pendingAction,
     busy: pendingAction !== null,
@@ -240,18 +228,18 @@ function chooseTabToRecord(): Promise<string> {
   });
 }
 
-function getOriginPattern(urlString: string): string | null {
+function isRecordablePage(urlString: string): boolean {
   try {
     const url = new URL(urlString);
     if (
       url.hostname === 'chromewebstore.google.com' ||
       (url.hostname === 'chrome.google.com' && url.pathname.startsWith('/webstore'))
     ) {
-      return null;
+      return false;
     }
-    return ['http:', 'https:'].includes(url.protocol) ? `${url.origin}/*` : null;
+    return ['http:', 'https:'].includes(url.protocol);
   } catch {
-    return null;
+    return false;
   }
 }
 

@@ -37,9 +37,8 @@ const createTab = vi.fn().mockResolvedValue(undefined);
 const setBadgeText = vi.fn().mockResolvedValue(undefined);
 const closeSidePanel = vi.fn().mockResolvedValue(undefined);
 const queryTabs = vi.fn().mockResolvedValue([{ id: 9, url: 'https://example.com/dashboard' }]);
+const getTargets = vi.fn().mockResolvedValue([]);
 const tabActivated = { addListener: vi.fn(), removeListener: vi.fn() };
-const requestPermission = vi.fn().mockResolvedValue(true);
-const containsPermission = vi.fn().mockResolvedValue(true);
 const chooseDesktopMedia = vi
   .fn()
   .mockImplementation((_sources: string[], callback: (streamId: string) => void) => {
@@ -59,7 +58,9 @@ beforeEach(() => {
       create: createTab,
       update: updateTab,
       onActivated: tabActivated,
+      onUpdated: { addListener: vi.fn(), removeListener: vi.fn() },
     },
+    debugger: { getTargets },
     action: { setBadgeText },
     runtime: {
       getURL: (path: string) => `chrome-extension://bugreceipt${path}`,
@@ -67,7 +68,6 @@ beforeEach(() => {
     },
     sidePanel: { close: closeSidePanel },
     windows: { update: updateWindow },
-    permissions: { contains: containsPermission, request: requestPermission },
     desktopCapture: { chooseDesktopMedia },
   });
 });
@@ -93,9 +93,7 @@ describe('capture popup', () => {
     render(<PopupApp />);
 
     expect(await screen.findByLabelText('BugReceipt')).toBeDefined();
-    expect(
-      screen.getByRole('link', { name: 'Support BugReceipt on SupportKori' }),
-    ).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Support BugReceipt on SupportKori' })).toBeDefined();
     expect(screen.queryByText('v0.1.6')).toBeNull();
   });
 
@@ -233,6 +231,27 @@ describe('capture popup', () => {
     expect(closeSidePanel).toHaveBeenCalledWith({ windowId: session.windowId });
   });
 
+  it('starts without tabs permission using debugger metadata', async () => {
+    queryTabs.mockResolvedValueOnce([{ id: 9 }]);
+    getTargets.mockResolvedValueOnce([
+      {
+        id: 'target-9',
+        type: 'page',
+        tabId: 9,
+        title: 'Checkout',
+        url: 'https://example.com/checkout',
+        attached: false,
+      },
+    ]);
+    send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> =>
+      Promise.resolve({ ok: true, session: request.type === 'session:get' ? null : session }),
+    );
+    render(<PopupApp />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Choose tab to record' }));
+    await waitFor(() => expect(getSentStartRequest()).toMatchObject({ tabId: 9 }));
+    expect(chooseDesktopMedia).toHaveBeenCalledOnce();
+  });
+
   it('starts capture with the tab explicitly selected by the user', async () => {
     send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> => {
       if (request.type === 'session:get') return Promise.resolve({ ok: true, session: null });
@@ -250,8 +269,6 @@ describe('capture popup', () => {
       send.mock.invocationCallOrder.at(-1)!,
     );
     expect(chooseDesktopMedia).toHaveBeenCalledWith(['tab'], expect.any(Function));
-    expect(containsPermission).toHaveBeenCalledWith({ origins: ['https://example.com/*'] });
-    expect(requestPermission).not.toHaveBeenCalled();
   });
 
   it('blocks the Chrome Web Store before opening the tab chooser', async () => {
@@ -273,7 +290,7 @@ describe('capture popup', () => {
 
     fireEvent.click(
       await screen.findByRole('button', {
-        name: /Allow access to this page|Choose tab to record/,
+        name: 'Choose tab to record',
       }),
     );
 
@@ -312,24 +329,6 @@ describe('capture popup', () => {
 
     act(() => finishStarting?.());
     await waitFor(() => expect(getSentStartRequest()).toBeDefined());
-  });
-
-  it('grants site access before offering a fresh recording gesture', async () => {
-    containsPermission.mockResolvedValueOnce(false);
-    send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> => {
-      if (request.type === 'session:get') return Promise.resolve({ ok: true, session: null });
-      return Promise.resolve({ ok: true, session });
-    });
-    render(<PopupApp />);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Allow access to this page' }));
-
-    await waitFor(() =>
-      expect(requestPermission).toHaveBeenCalledWith({ origins: ['https://example.com/*'] }),
-    );
-    expect(send.mock.calls.some(([request]) => request.type === 'session:start')).toBe(false);
-    fireEvent.click(await screen.findByRole('button', { name: 'Choose tab to record' }));
-    await waitFor(() => expect(getSentStartRequest()).toMatchObject({ tabId: 9 }));
   });
 
   it('does not start capture when the tab chooser is cancelled', async () => {
@@ -372,24 +371,6 @@ describe('capture popup', () => {
         }),
       ),
     );
-  });
-
-  it('does not start capture when site access is denied', async () => {
-    containsPermission.mockResolvedValueOnce(false);
-    requestPermission.mockResolvedValueOnce(false);
-    send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> => {
-      if (request.type === 'session:get') return Promise.resolve({ ok: true, session: null });
-      return Promise.resolve({ ok: true, session });
-    });
-    render(<PopupApp />);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Allow access to this page' }));
-
-    expect(
-      await screen.findByText('Allow access to this page before starting the recording.'),
-    ).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Retry' }).textContent).toBe('');
-    expect(send.mock.calls.some(([request]) => request.type === 'session:start')).toBe(false);
   });
 
   it('confirms before permanently discarding a capture', async () => {

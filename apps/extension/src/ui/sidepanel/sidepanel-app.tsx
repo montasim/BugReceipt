@@ -119,19 +119,10 @@ function LoadingState() {
 
 function StartState({ workflow }: { workflow: Workflow }) {
   const pending = workflow.pendingAction;
-  const isStarting = pending === 'starting' || pending === 'granting-access';
+  const isStarting = pending === 'starting';
 
   return (
     <section className="flex flex-1 flex-col gap-5">
-      {workflow.notice ? (
-        <Alert className="border-success/35 bg-success text-success-foreground" role="status">
-          <AlertTitle>Access granted</AlertTitle>
-          <AlertDescription className="text-success-foreground/80">
-            {workflow.notice}
-          </AlertDescription>
-        </Alert>
-      ) : null}
-
       <div className="space-y-2 pt-1">
         <h1 className="max-w-[18rem] text-[28px] leading-[1.02] font-semibold tracking-[-0.045em]">
           Ready to record <span className="text-primary">the problem?</span>
@@ -150,22 +141,10 @@ function StartState({ workflow }: { workflow: Workflow }) {
         onClick={() => void workflow.start()}
         disabled={workflow.busy}
         aria-busy={isStarting}
-        aria-label={
-          pending === 'granting-access'
-            ? 'Requesting site access'
-            : pending === 'starting'
-              ? 'Starting capture'
-              : undefined
-        }
+        aria-label={isStarting ? 'Starting capture' : undefined}
       >
         {isStarting ? <Spinner aria-hidden="true" /> : null}
-        {pending === 'granting-access'
-          ? 'Requesting access…'
-          : pending === 'starting'
-            ? 'Starting capture…'
-            : workflow.hasSiteAccess
-              ? 'Choose tab to record'
-              : 'Allow access to this page'}
+        {isStarting ? 'Starting capture…' : 'Choose tab to record'}
         {!isStarting ? <HugeiconsIcon icon={ArrowRight01Icon} aria-hidden="true" /> : null}
       </Button>
     </section>

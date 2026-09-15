@@ -12,7 +12,7 @@ import {
   saveAnnotationDocument,
 } from '../src/infrastructure/annotation-store';
 import { readRecording } from '../src/infrastructure/recording-store';
-import { downloadReportFolder } from '../src/infrastructure/report-folder-download';
+import { createReportBundle } from '../src/infrastructure/report-bundle';
 import {
   deleteScreenshot,
   readScreenshot,
@@ -30,9 +30,7 @@ vi.mock('../src/application/protocol', () => ({ sendRuntimeMessage: vi.fn() }));
 vi.mock('../src/infrastructure/recording-store', () => ({
   readRecording: vi.fn().mockResolvedValue(null),
 }));
-vi.mock('../src/infrastructure/report-folder-download', () => ({
-  downloadReportFolder: vi.fn().mockResolvedValue(undefined),
-}));
+vi.mock('../src/infrastructure/report-bundle', { spy: true });
 vi.mock('../src/infrastructure/screenshot-store', () => ({
   deleteScreenshot: vi.fn().mockResolvedValue(undefined),
   readScreenshot: vi.fn().mockResolvedValue(null),
@@ -83,7 +81,7 @@ const session: CaptureSession = {
 
 const send = vi.mocked(sendRuntimeMessage);
 const recording = vi.mocked(readRecording);
-const downloadFolder = vi.mocked(downloadReportFolder);
+const bundleReport = vi.mocked(createReportBundle);
 const screenshot = vi.mocked(readScreenshot);
 const saveFrame = vi.mocked(saveScreenshotBlob);
 const removeFrameBlob = vi.mocked(deleteScreenshot);
@@ -95,11 +93,17 @@ const deleteTextAnnotations = vi.mocked(deleteTextAnnotationDocument);
 const readTextAnnotations = vi.mocked(getTextAnnotationDocument);
 const saveTextAnnotations = vi.mocked(saveTextAnnotationDocument);
 const renderAnnotations = vi.mocked(renderAnnotatedPng);
-const writeClipboard = vi.fn().mockResolvedValue(undefined);
+function downloadZip() {
+  fireEvent.click(screen.getByRole('button', { name: 'Download as ZIP' }));
+}
+
+async function downloadedMarkdown() {
+  await waitFor(() => expect(bundleReport).toHaveBeenCalledOnce());
+  return bundleReport.mock.calls[0]?.[0];
+}
 
 beforeEach(() => {
   recording.mockResolvedValue(null);
-  downloadFolder.mockResolvedValue(undefined);
   screenshot.mockResolvedValue(null);
   saveFrame.mockResolvedValue('00000000-0000-4000-8000-000000000004');
   removeFrameBlob.mockResolvedValue(undefined);
@@ -116,10 +120,6 @@ beforeEach(() => {
   readTextAnnotations.mockResolvedValue(null);
   saveTextAnnotations.mockResolvedValue(undefined);
   renderAnnotations.mockImplementation((source) => Promise.resolve(source));
-  Object.defineProperty(navigator, 'clipboard', {
-    configurable: true,
-    value: { writeText: writeClipboard },
-  });
   send.mockImplementation((request: RuntimeRequest): Promise<RuntimeResponse> => {
     if (request.type === 'session:get') return Promise.resolve({ ok: true, session });
     if (request.type === 'session:update-review') {
@@ -139,7 +139,10 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await act(async () => {
+    await Promise.all(bundleReport.mock.results.map((result): unknown => result.value));
+  });
   cleanup();
   vi.clearAllMocks();
   vi.restoreAllMocks();
@@ -639,10 +642,10 @@ describe('review editor', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: /^Console 1$/ }));
     await screen.findByText('Payment', { selector: 'mark' });
-    fireEvent.click(screen.getByRole('button', { name: 'Copy Markdown' }));
-    await waitFor(() => expect(writeClipboard).toHaveBeenCalledOnce());
-    expect(writeClipboard).toHaveBeenCalledWith(expect.stringContaining('⟦Payment⟧'));
-    expect(writeClipboard).toHaveBeenCalledWith(expect.stringContaining('⟦/api/payment⟧'));
+    downloadZip();
+    await waitFor(() => expect(bundleReport).toHaveBeenCalledOnce());
+    expect(await downloadedMarkdown()).toEqual(expect.stringContaining('⟦Payment⟧'));
+    expect(await downloadedMarkdown()).toEqual(expect.stringContaining('⟦/api/payment⟧'));
   });
 
   it('allows export when optional description, steps, and behavior fields are empty', async () => {
@@ -651,7 +654,7 @@ describe('review editor', () => {
     await screen.findByDisplayValue('Checkout fails');
     expect(screen.getByRole('heading', { name: 'Evidence review' })).toBeDefined();
     expect(screen.getByText('Captured page')).toBeDefined();
-    const download = screen.getByRole('button', { name: 'Download report' });
+    const download = screen.getByRole('button', { name: 'Download as ZIP' });
     expect((download as HTMLButtonElement).disabled).toBe(false);
     expect(screen.queryByRole('button', { name: 'Save locally' })).toBeNull();
     expect(screen.queryByText('Saved locally')).toBeNull();
@@ -663,8 +666,8 @@ describe('review editor', () => {
     expect(screen.queryByRole('button', { name: 'Add step' })).toBeNull();
 
     fireEvent.click(download);
-    expect(screen.getByRole('menuitem', { name: /Download folder/ })).toBeDefined();
-    expect(screen.getByRole('menuitem', { name: /Download ZIP/ })).toBeDefined();
+    expect(screen.queryByText('Download folder')).toBeNull();
+    await waitFor(() => expect(bundleReport).toHaveBeenCalledOnce());
   });
 
   it('persists the optional description and includes it in issue.md', async () => {
@@ -674,16 +677,16 @@ describe('review editor', () => {
     fireEvent.change(description, {
       target: { value: 'Checkout stops after the final confirmation step.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Copy Markdown' }));
+    downloadZip();
 
-    await waitFor(() => expect(writeClipboard).toHaveBeenCalledOnce());
+    await waitFor(() => expect(bundleReport).toHaveBeenCalledOnce());
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'session:update-review',
         description: 'Checkout stops after the final confirmation step.',
       }),
     );
-    expect(writeClipboard).toHaveBeenCalledWith(
+    expect(await downloadedMarkdown()).toEqual(
       expect.stringContaining(
         '## Description\n\nCheckout stops after the final confirmation step.',
       ),
@@ -737,10 +740,10 @@ describe('review editor', () => {
     fireEvent.change(screen.getByLabelText('Actual behavior (optional)'), {
       target: { value: 'This fucking form is broken' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Copy Markdown' }));
+    downloadZip();
 
     expect(await screen.findByText(OFFENSIVE_LANGUAGE_ERROR)).toBeDefined();
-    expect(writeClipboard).not.toHaveBeenCalled();
+    expect(bundleReport).not.toHaveBeenCalled();
     expect(send.mock.calls.some(([request]) => request.type === 'session:update-review')).toBe(
       false,
     );
@@ -756,9 +759,9 @@ describe('review editor', () => {
     fireEvent.change(steps, {
       target: { value: 'Opened checkout\nClicked Pay\n\nObserved the failure' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Copy Markdown' }));
+    downloadZip();
 
-    await waitFor(() => expect(writeClipboard).toHaveBeenCalledOnce());
+    await waitFor(() => expect(bundleReport).toHaveBeenCalledOnce());
     const updateRequest = send.mock.calls
       .map(([request]) => request)
       .find((request) => request.type === 'session:update-review');
@@ -767,19 +770,6 @@ describe('review editor', () => {
       expect.objectContaining({ position: 1, text: 'Clicked Pay' }),
       expect.objectContaining({ position: 2, text: 'Observed the failure' }),
     ]);
-  });
-
-  it('downloads the report files unzipped into a named folder', async () => {
-    render(<ReviewApp />);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Download report' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /Download folder/ }));
-
-    await waitFor(() => expect(downloadFolder).toHaveBeenCalledOnce());
-    const [folderName, files] = downloadFolder.mock.calls[0] ?? [];
-    expect(folderName).toBe('bugreceipt-checkout-fails-20260827T120000Z');
-    expect(files?.map((file) => file.filename)).toContain('issue.md');
-    expect(files?.find((file) => file.filename === 'issue.md')?.blob).toBeInstanceOf(Blob);
   });
 
   it('downloads one ZIP containing the report, recording, and selected frame', async () => {
@@ -837,8 +827,7 @@ describe('review editor', () => {
     expect(removeVideo.getAttribute('data-variant')).toBe('outline');
     expect(downloadVideo.querySelector('svg')).not.toBeNull();
     expect(removeVideo.querySelector('svg')).not.toBeNull();
-    fireEvent.click(await screen.findByRole('button', { name: 'Download report' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /Download ZIP/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Download as ZIP' }));
 
     await waitFor(() => expect(objectUrl).toHaveBeenCalledTimes(3));
     const bundle = objectUrl.mock.calls[2]?.[0];
@@ -893,8 +882,7 @@ describe('review editor', () => {
     objectUrl.mockReturnValueOnce('blob:first-frame').mockReturnValueOnce('blob:report-bundle');
 
     render(<ReviewApp />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Download report' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /Download ZIP/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Download as ZIP' }));
 
     await waitFor(() => expect(objectUrl).toHaveBeenCalledTimes(2));
     const bundle = objectUrl.mock.calls[1]?.[0];
@@ -1360,8 +1348,7 @@ describe('review editor', () => {
     objectUrl.mockReturnValueOnce('blob:selected-frame').mockReturnValueOnce('blob:report-bundle');
 
     render(<ReviewApp />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Download report' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /Download ZIP/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Download as ZIP' }));
 
     await waitFor(() => expect(objectUrl).toHaveBeenCalledTimes(2));
     expect(renderAnnotations).toHaveBeenCalledWith(frame, document);
@@ -1451,13 +1438,12 @@ describe('review editor', () => {
     ).toBe(false);
   });
 
-  it('applies edited report fields automatically before folder export', async () => {
+  it('applies edited report fields automatically before ZIP export', async () => {
     render(<ReviewApp />);
 
     const title = await screen.findByDisplayValue('Checkout fails');
     fireEvent.change(title, { target: { value: 'Checkout remains disabled' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Download report' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /Download folder/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Download as ZIP' }));
 
     await waitFor(() =>
       expect(send).toHaveBeenCalledWith(
@@ -1467,20 +1453,20 @@ describe('review editor', () => {
         }),
       ),
     );
-    expect(downloadFolder).toHaveBeenCalled();
+    expect(bundleReport).toHaveBeenCalled();
   });
 
-  it('auto-saves edits before copying Markdown to the clipboard', async () => {
+  it('auto-saves edits before downloading Markdown', async () => {
     render(<ReviewApp />);
 
     await screen.findByDisplayValue('Checkout fails');
     fireEvent.change(screen.getByLabelText('Actual behavior (optional)'), {
       target: { value: 'The payment control remains disabled.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Copy Markdown' }));
+    downloadZip();
 
-    await waitFor(() => expect(writeClipboard).toHaveBeenCalledTimes(1));
-    expect(writeClipboard).toHaveBeenCalledWith(
+    await waitFor(() => expect(bundleReport).toHaveBeenCalledTimes(1));
+    expect(await downloadedMarkdown()).toEqual(
       expect.stringContaining('The payment control remains disabled.'),
     );
     expect(send).toHaveBeenCalledWith(
@@ -1496,7 +1482,7 @@ describe('review editor', () => {
 
     await screen.findByDisplayValue('Checkout fails');
     const deleteCapture = screen.getByRole('button', { name: 'Delete local capture' });
-    expect(screen.getByRole('button', { name: 'Copy Markdown' })).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Copy Markdown' })).toBeNull();
 
     fireEvent.click(deleteCapture);
 

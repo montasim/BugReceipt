@@ -1,3 +1,4 @@
+import { getTabWithMetadata } from '../src/infrastructure/tab-metadata';
 import {
   getSelectedFrames,
   runtimeRequestSchema,
@@ -144,7 +145,7 @@ async function handleRequest(request: RuntimeRequest): Promise<RuntimeResponse> 
       if (current?.page?.screenshotBlobId) await deleteScreenshot(current.page.screenshotBlobId);
       await deleteSelectedFrameArtifacts(getSelectedFrames(current?.page));
       if (current?.page?.recording?.blobId) await deleteRecording(current.page.recording.blobId);
-      const tab = await chrome.tabs.get(request.tabId);
+      const tab = await getTabWithMetadata(request.tabId);
       if (!tab.active) {
         throw new Error('The selected page is no longer active. Return to it and try again.');
       }
@@ -246,7 +247,7 @@ async function handleRequest(request: RuntimeRequest): Promise<RuntimeResponse> 
     case 'session:stop': {
       const session = await loadSession();
       if (!session || session.status !== 'recording') throw new Error('No recording is active.');
-      const tab = await chrome.tabs.get(session.tabId);
+      const tab = await getTabWithMetadata(session.tabId);
       if (!tab.active) throw new Error('Return to the recorded tab before stopping the capture.');
       const { recording, recordingError } = await finishScreenRecording(session);
       const { screenshotBlobId, screenshotError } = recording

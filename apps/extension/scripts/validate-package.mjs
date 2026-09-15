@@ -9,18 +9,7 @@ const packageMetadata = JSON.parse(
 );
 const expectedTitle = 'Capture a bug with BugReceipt';
 const iconSizes = ['16', '32', '48', '128'];
-const requiredPermissions = [
-  'activeTab',
-  'clipboardWrite',
-  'desktopCapture',
-  'debugger',
-  'downloads',
-  'scripting',
-  'sidePanel',
-  'storage',
-  'tabs',
-];
-const requiredOptionalOrigins = ['http://*/*', 'https://*/*'];
+const requiredPermissions = ['activeTab', 'desktopCapture', 'debugger', 'sidePanel', 'storage'];
 
 if (manifest.version !== packageMetadata.version) {
   throw new Error(
@@ -43,10 +32,16 @@ for (const permission of requiredPermissions) {
   }
 }
 
-for (const origin of requiredOptionalOrigins) {
-  if (!manifest.optional_host_permissions?.includes(origin)) {
-    throw new Error(`Required optional host pattern is missing: ${origin}`);
-  }
+if (manifest.permissions.some((permission) => !requiredPermissions.includes(permission))) {
+  throw new Error('The package contains an unexpected extension permission.');
+}
+for (const field of [
+  'host_permissions',
+  'optional_host_permissions',
+  'optional_permissions',
+  'content_scripts',
+]) {
+  if (manifest[field]?.length) throw new Error(`Unexpected manifest field: ${field}`);
 }
 
 for (const size of iconSizes) {

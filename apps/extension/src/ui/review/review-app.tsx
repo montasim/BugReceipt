@@ -20,7 +20,6 @@ import {
   Download01Icon,
   Edit02Icon,
   FileZipIcon,
-  FolderDownloadIcon,
   Globe02Icon,
   PackageIcon,
   SourceCodeIcon,
@@ -47,12 +46,6 @@ import {
   CollapsibleTrigger,
 } from '../../components/ui/collapsible';
 import { FieldLabel } from '../../components/ui/field';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../components/ui/dropdown-menu';
 import { Input } from '../../components/ui/input';
 import {
   Select,
@@ -101,7 +94,6 @@ import {
 } from '../../infrastructure/evidence-download';
 import { createReportBundle, type ReportBundleVisual } from '../../infrastructure/report-bundle';
 import { readRecording } from '../../infrastructure/recording-store';
-import { downloadReportFolder } from '../../infrastructure/report-folder-download';
 import {
   deleteScreenshot,
   readScreenshot,
@@ -199,7 +191,6 @@ function ReviewAppContent() {
   const [error, setError] = useState('');
   const [reviewStage, setReviewStage] = useState<ReviewStage>('report');
   const [evidenceView, setEvidenceView] = useState<EvidenceView>('visual');
-  const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
   const selectedFrames = useMemo(() => getSelectedFrames(session?.page), [session?.page]);
   const activeSelectedFrameIndex = Math.min(
     selectedFrameIndex,
@@ -967,23 +958,12 @@ function ReviewAppContent() {
     offerUndo('recording', 'Screen recording excluded');
   }
 
-  async function downloadReport(format: 'folder' | 'zip') {
+  async function downloadReport() {
     await withPreparedExport(async (saved) => {
       try {
         const savedMarkdown = renderGitHubIssue(saved, textAnnotationDocument.items);
         const savedExportBase = createExportBase(saved);
         const visuals = await readExportVisuals(saved, recordingUrl, screenshotUrl);
-        if (format === 'folder') {
-          await downloadReportFolder(savedExportBase, [
-            {
-              blob: new Blob([savedMarkdown], { type: 'text/markdown;charset=utf-8' }),
-              filename: 'issue.md',
-            },
-            ...visuals,
-          ]);
-          setNotice(`Downloaded all report files to Downloads/${savedExportBase}`);
-          return;
-        }
         const bundle = await createReportBundle(savedMarkdown, visuals);
         downloadBlob(bundle, `${savedExportBase}.zip`);
         setNotice(`Downloaded ${savedExportBase}.zip with the report and visual evidence`);
@@ -993,17 +973,6 @@ function ReviewAppContent() {
             ? reason.message
             : 'Chrome could not prepare the report download.',
         );
-      }
-    });
-  }
-
-  async function copyMarkdown() {
-    await withPreparedExport(async (saved) => {
-      try {
-        await navigator.clipboard.writeText(renderGitHubIssue(saved, textAnnotationDocument.items));
-        setNotice('Report Markdown copied to the clipboard');
-      } catch {
-        setError('Clipboard access failed. Download the Markdown report instead.');
       }
     });
   }
@@ -1090,55 +1059,14 @@ function ReviewAppContent() {
             </AlertDialogContent>
           </AlertDialog>
           <Button
-            variant="outline"
             type="button"
-            onClick={() => void copyMarkdown()}
+            onClick={() => void downloadReport()}
             disabled={reviewActionsDisabled}
             aria-describedby={!exportReady ? 'report-check-heading' : undefined}
           >
-            Copy Markdown
+            <HugeiconsIcon icon={FileZipIcon} aria-hidden="true" />
+            {busy ? 'Preparing…' : 'Download as ZIP'}
           </Button>
-          <DropdownMenu open={downloadMenuOpen} onOpenChange={setDownloadMenuOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                onClick={() => setDownloadMenuOpen(true)}
-                disabled={reviewActionsDisabled}
-                aria-describedby={!exportReady ? 'report-check-heading' : undefined}
-              >
-                <span>{busy ? 'Preparing…' : 'Download report'}</span>
-                <HugeiconsIcon icon={ArrowDown01Icon} aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-80" align="end">
-              <DropdownMenuItem onSelect={() => void downloadReport('folder')}>
-                <HugeiconsIcon
-                  icon={FolderDownloadIcon}
-                  className="size-4 shrink-0 text-foreground"
-                  aria-hidden="true"
-                />
-                <span className="grid gap-0.5 whitespace-normal">
-                  <strong>Download folder</strong>
-                  <small className="font-normal text-muted-foreground">
-                    Save every file in one report folder under Downloads
-                  </small>
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => void downloadReport('zip')}>
-                <HugeiconsIcon
-                  icon={FileZipIcon}
-                  className="size-4 shrink-0 text-foreground"
-                  aria-hidden="true"
-                />
-                <span className="grid gap-0.5 whitespace-normal">
-                  <strong>Download ZIP</strong>
-                  <small className="font-normal text-muted-foreground">
-                    One archive containing the same report files
-                  </small>
-                </span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </section>
 
@@ -2048,7 +1976,7 @@ function ReviewAppContent() {
                 Choose files to download
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Check what will be included, then use Download report above to save a folder or ZIP.
+                Check what will be included, then use Download as ZIP above to save the report.
               </p>
             </div>
             <div className="overflow-hidden rounded-xl border">
@@ -2092,15 +2020,6 @@ function ReviewAppContent() {
             <p className="mt-5 text-sm leading-6 text-muted-foreground">
               Files marked Not included were not captured or were removed during review.
             </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => chrome.downloads.showDefaultFolder()}
-              >
-                Open downloads
-              </Button>
-            </div>
           </section>
         </div>
       </section>
