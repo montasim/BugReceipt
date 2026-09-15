@@ -1,0 +1,10 @@
+Use case: ui-mockup
+Asset type: high-fidelity desktop landing-page first viewport comp, 1536×1024 landscape
+Primary request: Design BugReceipt’s “The 33-Second Failure” landing-page first viewport. Make a restrained horizontal instrument timeline from 00:00 to 00:33 the dominant composition, showing exactly three meaningful product moments: “CAPTURE” at 00:00, “REVIEW” at 00:18, and “EXPORT” at 00:33. Each moment reveals one authentic slice of the BugReceipt interface: selected-tab capture, evidence review with console/network context, and a local ZIP manifest. Add a concise headline reading exactly “A complete bug report in one deliberate trace.”; one primary button reading exactly “Add to Chrome”; and a quiet link reading exactly “Watch 33-second demo”.
+Input image: reference image supplies the authentic BugReceipt 0.2.0 product UI, logo, midnight panels, amber highlights, mint status color, Bricolage-style typography, and crisp evidence rules. Carry these traits over faithfully; do not copy the reference’s marketing layout or headline.
+Style/medium: polished production website UI mockup, not a poster, not a video editor, not a device mockup.
+Composition/framing: visible 1536×1024 browser viewport with compact navigation; headline and CTA above or beside an oversized timeline; product evidence is large and legible; a small hint of the next fold. The timeline should explain the workflow, not decorate it.
+Color palette: midnight #08121b and layered navy #0d1823, warm off-white #f6f1e8, amber #f0b35a only for active/current action, mint #55d6be for completed/local state.
+Materials: instrument panel precision, timestamp ticks, low-contrast rules, softly lifted evidence panes, restrained 10–16px radii matching the extension.
+Text: Use only the exact supplied headline, CTA/demo labels, three moment labels and timestamps, plus short authentic product labels.
+Constraints: simple, minimal, immediately understandable; real extension evidence must dominate; no testimonials, ratings, customer logos, pricing, fake browser chrome, decorative stepper cards, gradients, glassmorphism, automatic upload claims, or unreadable tiny type.

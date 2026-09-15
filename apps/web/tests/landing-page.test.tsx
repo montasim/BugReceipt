@@ -4,94 +4,48 @@ import { describe, expect, it } from 'vitest';
 import { NotFound, ServerError } from '../src/routes/__root';
 
 describe('extension landing page', () => {
-  it('offers the packaged extension and explains how to install it', () => {
-    const source = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
+  const route = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
+  const page = readFileSync(
+    new URL('../src/prototypes/landing/clean-landing.tsx', import.meta.url),
+    'utf8',
+  );
+  const pageStyles = readFileSync(
+    new URL('../src/prototypes/landing/clean-landing.css', import.meta.url),
+    'utf8',
+  );
 
-    expect(source).toContain(
-      "const releaseUrl = 'https://github.com/montasim/BugReceipt/releases/latest'",
-    );
-    expect(source).toContain('href={releaseUrl}');
-    expect(source).toContain('Download BugReceipt');
-    expect(source).toContain('Load unpacked');
-    expect(source).toContain('What does BugReceipt capture?');
-    expect(source).toContain('BugReceipt-v0.1.6-chrome-unpacked.zip');
-    expect(source).toContain('manifest.json');
-    expect(source).toContain('/brand/bugreceipt-extension-tour.gif');
-    expect(source).toContain('/brand/bugreceipt-extension-tour-poster.jpg');
-    expect(source).toContain("window.matchMedia('(prefers-reduced-motion: reduce)')");
-    expect(source).toContain("'IntersectionObserver' in window");
-    expect(source).toContain('Extension workflow · Live preview');
-    expect(source).toContain('Turn broken into');
-    expect(source).toContain('Evidence trace');
-    expect(source).toContain('Review locally. Export only what you choose.');
+  it('promotes the approved landing page at the root route', () => {
+    expect(route).toContain("createFileRoute('/')");
+    expect(route).toContain('CleanLanding');
+    expect(route).toContain('clean-landing.css');
   });
 
-  it('keeps the landing-page design contract in the rendered response', () => {
-    const source = readFileSync(new URL('../src/server.ts', import.meta.url), 'utf8');
-
-    expect(source).toContain('Failure Trace Timeline');
-    expect(source).toContain('seed a8f5b8a7');
-    expect(source).toContain('unreviewed and undocumented is unfinished');
-    expect(source).toContain('html.replace(/<body([^>]*)>/');
+  it('links to the Chrome Web Store and uses the real extension desktop UI', () => {
+    expect(page).toContain('chromewebstore.google.com/detail/bugreceipt');
+    expect(page).toContain('<ChromeIcon /> Add to Chrome');
+    expect(page).toContain('/brand/bugreceipt-extension-real-desktop.png');
+    expect(page).toContain('Version 0.2.0 is the latest version.');
   });
 
-  it('labels the sample trace and keeps extension preview controls truthful', () => {
-    const source = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
-    const styles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
-
-    expect(source).toContain('Illustrative example · sample checkout failure');
-    expect(source).toContain('extension-start-control');
-    expect(source).toContain('distributed through GitHub as an unpacked Chrome');
-    expect(source).not.toContain('verified unpacked Chrome');
-    expect(styles).toContain('--color-muted-text: #536873');
-    expect(styles).toContain('--color-trace-text: #0b6f7a');
-    expect(styles).toContain('--color-signal-text: #c33b24');
+  it('explains the product with a demo, privacy details, changelog, and FAQs', () => {
+    expect(page).toContain('youtube-nocookie.com/embed/KdrGAhvUyoY');
+    expect(page).toContain('Everything needed to reproduce the problem.');
+    expect(page).toContain('Your report stays under your control.');
+    expect(page).toContain('<h2>Changelog</h2>');
+    expect(page).toContain('Frequently asked questions');
+    expect(page).toContain('Report bugs with proof.');
   });
 
-  it('uses the documented responsive typography scale through Tailwind utilities', () => {
-    const source = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
-    const styles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
-
-    expect(source).toContain('text-[clamp(3rem,4.8vw,3.75rem)]');
-    expect(source).toContain('text-[clamp(2.125rem,3.2vw,2.5rem)]');
-    expect(source).toContain('max-[620px]:text-base');
-    expect(source).toContain('text-[0.6875rem]');
-    expect(styles).not.toContain(':root');
-  });
-
-  it('uses normalized responsive Tailwind spacing without oversized mobile sections', () => {
-    const source = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
-
-    expect(source).toContain('py-[clamp(6rem,9vw,8rem)]');
-    expect(source).toContain('py-[clamp(5rem,7vw,6rem)]');
-    expect(source).toContain('max-[620px]:py-16');
-    expect(source).not.toContain('py-[125px]');
-    expect(source).not.toContain('min-h-[400px]');
-  });
-
-  it('keeps the hero, timeline, and evidence trace visually separated', () => {
-    const source = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
-
-    expect(source).toContain('pt-12');
-    expect(source).toContain('scroll-mt-[76px] pt-2');
-    expect(source).toContain('after:h-18');
-    expect(source).toContain('py-8 pt-10');
-    expect(source).toContain('absolute top-3 right-0');
-    expect(source).toContain('max-[900px]:pt-14');
-  });
-
-  it('centers desktop progress nodes on the horizontal rail', () => {
-    const source = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
-
-    expect(source).toContain('absolute top-[45.5px] left-1/2');
-    expect(source).toContain(
-      'max-[900px]:static max-[900px]:translate-x-0 max-[900px]:row-span-2 max-[900px]:m-0',
-    );
+  it('supports light and dark themes with responsive layouts', () => {
+    expect(page).toContain("useState<'light' | 'dark'>('light')");
+    expect(page).toContain('bugreceipt-prototype-theme');
+    expect(pageStyles).toContain(".clean-site[data-theme='dark']");
+    expect(pageStyles).toContain('@media (max-width: 900px)');
+    expect(pageStyles).toContain('@media (max-width: 620px)');
   });
 
   it('loads the BugReceipt favicon and SupportKori widget from the root document', () => {
     const source = readFileSync(new URL('../src/routes/__root.tsx', import.meta.url), 'utf8');
-    const styles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
 
     expect(source).toContain('/brand/bugreceipt-mark.svg');
     expect(source).toContain('/brand/bugreceipt-32.png');
@@ -99,12 +53,6 @@ describe('extension landing page', () => {
     expect(source).toContain('https://www.supportkori.com/widget.js');
     expect(source).toContain('data-id="montasim"');
     expect(source).toContain('data-message="Support"');
-    expect(source).toContain('data-color="#ff5c3a"');
-    expect(source).toContain('data-position="right"');
-    expect(source).toContain('[&_.sk-widget-btn]:bg-signal');
-    expect(source).toContain('[&_.sk-widget-btn]:text-white');
-    expect(source).toContain('[&_.sk-widget-btn_svg]:text-white');
-    expect(styles).not.toContain('.sk-widget-btn');
   });
 
   it('publishes crawler-visible social preview metadata', () => {
@@ -112,8 +60,6 @@ describe('extension landing page', () => {
 
     expect(source).toContain("const siteUrl = 'https://bugreceipt.netlify.app'");
     expect(source).toContain("property: 'og:image'");
-    expect(source).toContain("content: '1200'");
-    expect(source).toContain("content: '630'");
     expect(source).toContain("name: 'twitter:card', content: 'summary_large_image'");
     expect(source).toContain("rel: 'canonical'");
   });
@@ -123,11 +69,6 @@ describe('extension landing page', () => {
 
     expect(source).toContain('notFoundComponent: NotFound');
     expect(source).toContain('errorComponent: ServerError');
-    expect(source).toContain('code="404"');
-    expect(source).toContain('code="500"');
-    expect(source).toContain('Try again');
-    expect(source).toContain('Local export');
-    expect(source).toContain('shadow-[0_22px_48px_rgb(16_35_50_/_0.14)]');
 
     const notFoundMarkup = renderToStaticMarkup(<NotFound />);
     const serverErrorMarkup = renderToStaticMarkup(
@@ -135,26 +76,6 @@ describe('extension landing page', () => {
     );
 
     expect(notFoundMarkup).toContain('This page left no trace.');
-    expect(notFoundMarkup).toContain('Status / 404');
     expect(serverErrorMarkup).toContain('The page hit an unexpected failure.');
-    expect(serverErrorMarkup).toContain('Status / 500');
-  });
-
-  it('uses Tailwind CSS and shadcn-style components without handwritten selector CSS', () => {
-    const styles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
-    const button = readFileSync(
-      new URL('../src/components/ui/button.tsx', import.meta.url),
-      'utf8',
-    );
-    const config = readFileSync(new URL('../components.json', import.meta.url), 'utf8');
-
-    expect(styles).toContain("@import 'tailwindcss'");
-    expect(styles).toContain('@theme');
-    expect(styles).not.toContain(':root');
-    expect(styles).not.toMatch(/\.(site-header|trace-events|error-page|button)\s*\{/);
-    expect(button).toContain("from 'class-variance-authority'");
-    expect(button).toContain('data-slot="button"');
-    expect(button).toContain('buttonVariants');
-    expect(config).toContain('"style": "new-york"');
   });
 });

@@ -1,0 +1,40 @@
+{
+  "title": "Choose the BugReceipt landing structure",
+  "question": "All three directions use the extension’s midnight, amber, and mint identity. Choose the clearest way to introduce BugReceipt, or re-roll the structures.",
+  "options": [
+    {
+      "id": "trace-ledger",
+      "label": "One Bug, Fully Traced",
+      "kicker": "THE ROLL",
+      "thesis": "Follow one failed submission as BugReceipt turns it into a reviewable local report.",
+      "palette": ["#08121b", "#0d1823", "#f0b35a", "#55d6be", "#f6f1e8"],
+      "materials": ["midnight workbench", "thin evidence rules", "live diagnostic trace"],
+      "viewport": "A minimal headline and Web Store action sit beside one continuous evidence trace that moves from the browser failure into the real extension review UI.",
+      "risk": "The trace must stay sparse or the first viewport could feel more technical than inviting.",
+      "comp": ".impeccable/mocks/decision/landing-trace-ledger.webp"
+    },
+    {
+      "id": "failure-timeline",
+      "label": "The 33-Second Failure",
+      "thesis": "A compact timeline makes the product understandable as one deliberate capture-review-export sequence.",
+      "palette": ["#08121b", "#0d1823", "#f0b35a", "#55d6be", "#f6f1e8"],
+      "materials": ["instrument timeline", "timestamped evidence", "quiet status lights"],
+      "viewport": "The page opens on a large 00:00–00:33 timeline with three decisive moments, a concise promise, the Web Store action, and an optional demo link.",
+      "risk": "A timeline can resemble a decorative stepper unless the real extension evidence remains dominant.",
+      "comp": ".impeccable/mocks/decision/landing-failure-timeline.webp"
+    },
+    {
+      "id": "evidence-receipt",
+      "label": "The Evidence Receipt",
+      "thesis": "The landing page behaves like the product: every feature visibly adds to one local evidence receipt.",
+      "palette": ["#08121b", "#0d1823", "#f0b35a", "#55d6be", "#f6f1e8"],
+      "materials": ["receipt rail", "review canvas", "amber approval mark"],
+      "viewport": "A narrow receipt rail lists Screen, Console, Network, and Steps while a generous product stage explains the benefit and shows the extension at work.",
+      "risk": "The receipt metaphor is closest to the app and therefore the least surprising direction.",
+      "comp": ".impeccable/mocks/decision/landing-evidence-receipt.webp"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "comp", "toggle": true },
+  "steer": true
+}

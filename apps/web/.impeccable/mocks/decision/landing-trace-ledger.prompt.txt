@@ -1,0 +1,10 @@
+Use case: ui-mockup
+Asset type: high-fidelity desktop landing-page first viewport comp, 1536×1024 landscape
+Primary request: Design BugReceipt’s “One Bug, Fully Traced” landing-page first viewport. Use a spare, minimal promotional structure: compact top navigation; a left editorial promise reading exactly “Turn browser bugs into clear, reproducible reports.”; one primary button reading exactly “Add to Chrome”; one quiet text link reading exactly “Watch 33-second demo”; and, dominating the right two-thirds, a continuous visual evidence trace that begins as a failed checkout browser moment and flows into the real BugReceipt review UI, ending in a small local export receipt. Make the sequence instantly understandable without paragraphs.
+Input image: reference image supplies the authentic BugReceipt 0.2.0 product UI, logo, midnight panels, amber highlights, mint status color, Bricolage-style typography, and crisp evidence rules. Carry these traits over faithfully; do not copy the reference’s marketing composition or headline.
+Style/medium: polished production website UI mockup, not a poster and not a device mockup.
+Composition/framing: visible 1536×1024 browser viewport with a clear nav, headline/action region, dominant product mechanism, and a hint of the next fold. Strong asymmetry, generous negative space, readable real product detail.
+Color palette: midnight #08121b and layered navy #0d1823, warm off-white #f6f1e8, amber #f0b35a only for the primary action, mint #55d6be for local/success state.
+Materials: low-contrast translucent rules, softly lifted embedded evidence surfaces, restrained 10–16px radii matching the extension.
+Text: Use only the exact supplied headline and CTA/demo labels plus short authentic labels “SCREEN”, “CONSOLE”, “NETWORK”, “LOCAL EXPORT”.
+Constraints: simple, minimal, immediately understandable; preserve truthful local-first positioning; no testimonials, ratings, customer logos, cloud upload, automatic issue creation, pricing, Chrome Web Store approval claims, gradients, glassmorphism, generic SaaS feature cards, giant decorative illustration, fake browser chrome, or unreadable microcopy.
