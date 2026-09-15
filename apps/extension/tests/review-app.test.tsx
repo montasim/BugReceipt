@@ -287,7 +287,7 @@ describe('review editor', () => {
     expect(screen.queryByText('Payment request failed')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Download console' }));
     expect(await screen.findByText(/Downloaded .*console\.json/)).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: 'Clear console search' }));
+    fireEvent.change(consoleSearch, { target: { value: '' } });
     expect(screen.getByText('Payment request failed')).toBeDefined();
 
     fireEvent.click(screen.getByRole('tab', { name: /^Network 1$/ }));
@@ -436,7 +436,7 @@ describe('review editor', () => {
     fireEvent.change(networkSearch, { target: { value: '  ORDERS  ' } });
     expect(screen.getByText('Showing 1 of 2 requests')).toBeDefined();
     expect(screen.getByText('https://example.com/api/orders')).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: 'Clear network search' }));
+    fireEvent.change(networkSearch, { target: { value: '' } });
     expect(screen.getAllByRole('article')).toHaveLength(1);
 
     fireEvent.keyDown(screen.getByRole('combobox', { name: 'Method' }), { key: 'ArrowDown' });

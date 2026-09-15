@@ -2138,16 +2138,6 @@ function ConsoleEvidenceWindow({
           disabled={annotationEditing}
           className="h-9 min-w-0 flex-1 basis-56"
         />
-        {search && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSearch('')}
-            disabled={annotationEditing}
-          >
-            Clear console search
-          </Button>
-        )}
         <span className="text-xs text-muted-foreground" role="status">
           Showing {visibleEvents.length} of {events.length} messages
         </span>
@@ -2307,16 +2297,6 @@ function NetworkEvidenceWindow({
           disabled={annotationEditing}
           className="h-9 min-w-0 flex-1 basis-56"
         />
-        {search && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSearch('')}
-            disabled={annotationEditing}
-          >
-            Clear network search
-          </Button>
-        )}
         <span className="text-xs text-muted-foreground" role="status">
           Showing {visibleEvents.length} of {events.length} requests
         </span>
