@@ -57,17 +57,17 @@ BugReceipt keeps one user-initiated browser failure trace together: selected-tab
 
 ### Distribution
 
-- Version 0.1.6 is prepared as a pre-release unpacked Chrome extension ZIP distributed through GitHub Releases.
-- Installation requires Chrome Developer mode and **Load unpacked**.
-- GitHub installations do not update automatically.
-- A public Chrome Web Store listing is not claimed.
+- Version 0.2.0 is the latest BugReceipt release and the authoritative current version.
+- Version 0.1.6 is the previous release.
+- GitHub Releases may also distribute an unpacked Chrome extension ZIP; those installations require Chrome Developer mode and **Load unpacked** and do not update automatically.
+- The public Chrome Web Store listing is `https://chromewebstore.google.com/detail/bugreceipt/dcjbnkadoenmkcimidcbhhckdpaondae`.
 - The public landing page is deployed at `https://bugreceipt.netlify.app`.
 
 ## Brand Commitments
 
 - Product name: BugReceipt.
 - Voice: precise, evidence-led, transparent about privacy boundaries, and explicit about what the current release does not do.
-- Do not imply automatic uploading, background collection before capture begins, guaranteed removal of all sensitive information, automatic issue creation, or Chrome Web Store availability.
+- Do not imply automatic uploading, background collection before capture begins, guaranteed removal of all sensitive information, or automatic issue creation.
 
 ## Evidence on Hand
 
