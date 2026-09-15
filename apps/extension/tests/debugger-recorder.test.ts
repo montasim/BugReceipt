@@ -4,10 +4,11 @@ import { DebuggerRecorder } from '../src/infrastructure/debugger-recorder';
 const root = { tabId: 7 };
 function harness() {
   const command = vi.fn().mockResolvedValue({});
+  const detach = vi.fn().mockResolvedValue(undefined);
   vi.stubGlobal('chrome', {
     debugger: {
       attach: vi.fn().mockResolvedValue(undefined),
-      detach: vi.fn().mockResolvedValue(undefined),
+      detach,
       sendCommand: command,
     },
   });
@@ -15,7 +16,7 @@ function harness() {
   const network = vi.fn();
   const warning = vi.fn();
   const recorder = new DebuggerRecorder({ diagnostic, network, warning });
-  return { recorder, command, diagnostic, network, warning };
+  return { recorder, command, detach, diagnostic, network, warning };
 }
 afterEach(() => vi.unstubAllGlobals());
 
@@ -218,6 +219,27 @@ describe('browser evidence recorder', () => {
         responseBody: 'hello',
       }),
     );
+  });
+
+  it('detaches before waiting for a child command interrupted by navigation', async () => {
+    const { recorder, command, detach, warning } = harness();
+    await recorder.start(7, 'capture');
+    let rejectSetup!: (error: Error) => void;
+    command.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectSetup = reject;
+        }),
+    );
+    const pending = recorder.event(root, 'Target.attachedToTarget', { sessionId: 'gone' });
+    detach.mockImplementation(() => {
+      rejectSetup(new Error('Detached while handling command.'));
+      return Promise.resolve();
+    });
+    await recorder.stop();
+    await pending;
+    expect(warning).not.toHaveBeenCalled();
+    expect(chrome.debugger.detach).toHaveBeenCalledWith(root);
   });
 
   it('reports detach and ignores unrelated tabs and old console history', async () => {

@@ -109,6 +109,7 @@ export class DebuggerRecorder {
       const child = { tabId: this.tabId, sessionId: text(params.sessionId) };
       const task = this.enable(child)
         .catch((error: unknown) => {
+          if (this.tabId !== source.tabId || this.sessionId !== sessionId) return;
           // Reload may destroy an old child between auto-attach and domain setup.
           if (
             error instanceof Error &&
@@ -333,10 +334,11 @@ export class DebuggerRecorder {
   }
   async stop(): Promise<void> {
     const tabId = this.tabId;
-    await Promise.allSettled([...this.children]);
     this.flushRequests('', 'Capture stopped while request was still in progress.');
     this.tabId = undefined;
+    // Detaching releases pending commands for frames destroyed during navigation.
+    // Waiting for their setup before detaching can leave Stop blocked indefinitely.
     if (tabId !== undefined) await chrome.debugger.detach({ tabId }).catch(() => undefined);
-    await Promise.allSettled([...this.bodies]);
+    await Promise.allSettled([...this.children, ...this.bodies]);
   }
 }
