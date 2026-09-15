@@ -1,0 +1,40 @@
+{
+  "title": "Choose the BugReceipt prototype structure",
+  "question": "All three preserve the Evidence Desk identity and the Report → Evidence → Export check sequence. Choose the composition that should become the interactive prototype.",
+  "options": [
+    {
+      "id": "export-ledger",
+      "label": "Export Ledger",
+      "kicker": "THE ROLL",
+      "thesis": "A wide verification desk where the active task fills the canvas and an export ledger accumulates along the bottom edge.",
+      "palette": ["#102332", "#eef3f5", "#f8fbfc", "#1f9fae", "#ff5c3a"],
+      "materials": ["cool technical paper", "ruled evidence sheets", "ink status stamps"],
+      "viewport": "A three-step rail spans the top, the evidence workspace dominates the center, and a persistent bottom ledger previews exactly what will leave the device.",
+      "risk": "The bottom ledger can compete with dense evidence unless it collapses intelligently.",
+      "comp": ".impeccable/mocks/decision/export-ledger.webp"
+    },
+    {
+      "id": "evidence-cockpit",
+      "label": "Evidence Cockpit",
+      "thesis": "A focused central evidence canvas flanked by report context and a live bundle manifest.",
+      "palette": ["#102332", "#eef3f5", "#f8fbfc", "#1f9fae", "#ff5c3a"],
+      "materials": ["cool technical paper", "instrument rules", "diagnostic ink"],
+      "viewport": "A compact stage header sits above three columns: report synopsis, active evidence, and a receipt-like manifest with readiness and redaction totals.",
+      "risk": "Three columns may feel compressed at ordinary laptop widths and require disciplined collapse behavior.",
+      "comp": ".impeccable/mocks/decision/evidence-cockpit.webp"
+    },
+    {
+      "id": "receipt-spine",
+      "label": "Receipt Spine",
+      "thesis": "A continuous left-hand receipt spine makes every stage, count, warning, and completion state visible without competing with the active task.",
+      "palette": ["#102332", "#eef3f5", "#f8fbfc", "#1f9fae", "#ff5c3a"],
+      "materials": ["cool technical paper", "perforated ledger rules", "square evidence plates"],
+      "viewport": "A narrow evidence-receipt rail anchors the left; the active stage uses the rest of the screen with a compact contextual action bar and no permanent export controls.",
+      "risk": "The spine must remain legible without becoming another navigation sidebar.",
+      "comp": ".impeccable/mocks/decision/receipt-spine.webp"
+    }
+  ],
+  "reroll": {"registers": ["safer", "bolder"]},
+  "buildPath": {"value": "comp", "toggle": true},
+  "steer": true
+}

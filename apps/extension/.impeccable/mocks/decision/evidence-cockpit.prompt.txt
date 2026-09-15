@@ -1,0 +1,8 @@
+Use case: ui-mockup
+Asset type: high-fidelity desktop browser-extension review workspace comp
+Primary request: Design BugReceipt's Evidence Cockpit prototype: a real, shippable evidence-review product UI with a guided "Report → Evidence → Export check" sequence. A compact stage header sits above three purposeful columns: report synopsis on the left, active evidence in a dominant center canvas, and a live receipt-like bundle manifest on the right.
+Input image: visual identity reference only—carry over its cool paper/fog surfaces, deep ink, coral signal, teal trace, square geometry, editorial Bricolage-like headings, compact mono metadata, thin rules, and evidence density. Do not reuse its layout, old content/version, or obsolete email-sharing action.
+Composition/framing: 16:10 desktop application viewport, edge-to-edge UI, not a device mockup or mood board. The center column is visibly widest and shows a selected failure frame plus separate actions for "Mark frame" and "Highlight text". The right manifest shows evidence health and export readiness with clear counts, one warning, redaction total, and "Review export" action. The left synopsis is compact, not a full form.
+Text (verbatim where legible): "BugReceipt", "Evidence review", "Report", "Evidence", "Export check", "Report stays local", "Evidence receipt", "4 steps", "1 recording", "3 console errors", "2 failed requests", "5 redactions", "Review export".
+Style/medium: realistic production UI screenshot, serious evidence instrument, accessible, information-rich without generic SaaS cards.
+Constraints: strict square geometry; one clear focal canvas; no gradients, glass, rounded cards, cloud upload, email sharing, fake metrics, or decorative charts; no watermark.
