@@ -2165,7 +2165,7 @@ function ConsoleEvidenceWindow({
           {visibleEvents.length ? (
             visibleEvents.map((event) => (
               <div
-                className="grid grid-cols-[6rem_1fr_auto] gap-3 border-b border-white/10 px-4 py-3 text-xs [&_time]:font-mono [&_time]:text-white/50 [&_code]:whitespace-pre-wrap [&_code]:break-words"
+                className="grid grid-cols-[6rem_minmax(0,1fr)_auto] gap-3 border-b border-white/10 px-4 py-3 text-xs [&_time]:font-mono [&_time]:text-white/50 [&_code]:min-w-0 [&_code]:whitespace-pre-wrap [&_code]:break-words"
                 key={event.id}
               >
                 <time>{new Date(event.occurredAt).toLocaleTimeString()}</time>
@@ -2383,7 +2383,7 @@ function NetworkEvidenceWindow({
                                 annotations={textAnnotations}
                               />
                             </time>
-                            <code className="col-span-3 block min-w-0 break-all font-mono text-xs text-muted-foreground">
+                            <code className="col-span-3 block min-w-0 whitespace-normal break-all font-mono text-xs text-muted-foreground">
                               <AnnotatedEvidenceText
                                 value={event.url}
                                 source="network"
