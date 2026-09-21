@@ -1,277 +1,107 @@
 # BugReceipt
 
-> Capture a browser failure once and leave developers a privacy-filtered, reproducible report instead of “the page does not work.”
+BugReceipt is a local-first Chrome extension for reporting web application bugs with more than a screenshot. It records a selected tab, collects bounded browser diagnostics, and lets reporters review and remove evidence before exporting a reproducible report. It is built for QA testers, support teams, developers, and anyone who needs to explain a browser failure clearly.
 
-[![CI](https://github.com/montasim/BugReceipt/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/montasim/BugReceipt/actions/workflows/ci.yml)
-[![Latest release](https://img.shields.io/github/v/release/montasim/BugReceipt?display_name=tag&sort=semver)](https://github.com/montasim/BugReceipt/releases/latest)
-[![Chrome 125+](https://img.shields.io/badge/Chrome-125%2B-1f9fae)](apps/extension/wxt.config.ts)
-[![Support on SupportKori](https://img.shields.io/badge/Support-SupportKori-ffdd00)](https://www.supportkori.com/montasim)
+**[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/bugreceipt/dcjbnkadoenmkcimidcbhhckdpaondae) · [Visit the product site](https://bugreceipt.netlify.app) · [Get help](SUPPORT.md)**
 
-BugReceipt is a local-first Chrome extension for people reporting web application bugs and the developers who must reproduce them. A persistent side panel records the selected tab, collects bounded console and network evidence, keeps manual steps beside the browser context, and opens a review workbench where the reporter decides exactly what to export locally.
+![BugReceipt review workbench](store-assets/v0.2.0/screenshots/01-report-1280x800.png)
 
-**[Open the landing page](https://bugreceipt.netlify.app) · [Download the latest release](https://github.com/montasim/BugReceipt/releases/latest) · [Try the deterministic fixture](#deterministic-test-fixture) · [Report a non-sensitive bug](https://github.com/montasim/BugReceipt/issues/new/choose)**
+The Chrome Web Store currently lists version 0.1.6; this source tree is version 0.2.0. The store listing and this repository may therefore differ until a new store version is published. The repository also publishes [checksummed, unpacked Chrome archives](https://github.com/montasim/BugReceipt/releases) for manual installation.
 
-**Release status:** the source tree is prepared for version `0.1.6`, targeting Chrome 125 and newer. GitHub Releases distributes BugReceipt as a checksummed, unpacked extension archive; it is not currently available through the Chrome Web Store.
+## What you can do
 
-## Why BugReceipt?
+- Record the selected Chrome tab as WebM without microphone or tab audio, and add reproduction steps as the problem occurs.
+- Capture console messages, exceptions, and bounded network evidence from the moment capture starts. The recorder includes supported document and resource requests, redirect hops, request headers, and available text or JSON response bodies.
+- Review the recording, capture up to 20 frames, annotate selected images, highlight exact console or network text, and remove evidence that should not be shared.
+- Edit the issue title, expected and actual behavior, and steps before exporting a local ZIP containing `issue.md` and available visual files. Console JSON and network HAR can be downloaded separately.
 
-A screenshot shows the result of a failure, but rarely the browser evidence or human sequence that produced it. BugReceipt keeps those pieces together while making the sharing boundary explicit:
+BugReceipt does **not** automatically create a GitHub issue or upload the capture. The **Report an issue** action opens a blank GitHub issue form; you decide what to attach.
 
-- capture starts only after the user chooses a tab;
-- sensitive diagnostic values are filtered before extension storage;
-- recording, console, network, environment, and manual context meet in one review;
-- individual evidence can be removed or annotated before export;
-- complete reports export locally as a ZIP containing Markdown and visual evidence.
+## Install and make a first report
 
-## What it captures
+1. [Add BugReceipt from the Chrome Web Store](https://chromewebstore.google.com/detail/bugreceipt/dcjbnkadoenmkcimidcbhhckdpaondae) and pin it to the toolbar.
+2. Open an ordinary HTTP or HTTPS page where the bug occurs. For a safe local example, use the [deterministic test page](#try-the-deterministic-test-page).
+3. Open BugReceipt and select **Choose tab to record**. In Chrome's share dialog, choose the affected tab.
+4. Reproduce the problem, add manual steps, then select **Stop & review**.
+5. Inspect the Visual evidence, Console, and Network tabs. Edit the report and remove anything private.
+6. Select **Download as ZIP**. The downloaded archive contains `issue.md` plus any recording, selected-frame PNGs, or fallback screenshot retained in the review.
 
-### During reproduction
+Start capture _before_ refreshing or reproducing the bug: earlier console and network events cannot be recovered. A same-origin reload remains in the session; cross-origin navigation or closing the selected tab ends capture and records why it stopped.
 
-- The selected Chrome tab as a WebM recording, without microphone or tab audio
-- Console logs, warnings, errors, uncaught exceptions, and rejected promises after capture starts
-- Fetch, XHR, and page-resource requests with method, status, duration, filtered URL, and bounded text or JSON bodies where supported
-- Ordered reproduction steps added by the reporter
-- Page URL, page title, capture time, operating system, browser, platform, raw user agent, and BugReceipt version
-- A final screenshot fallback when Chrome cannot produce a screen recording
+### Try the deterministic test page
 
-### During review
+The repository includes a deliberately broken checkout page with known console and network failures. From the repository root, run:
 
-- Editable issue title, expected behavior, actual behavior, and reproduction steps
-- A video player with **Capture frame** at the current playhead position
-- Navigation across as many as 20 timestamped selected frames from one recording
-- Local selected-frame annotation with select, marker, highlight, border, color, width, undo, redo, and clear controls
-- Exact text highlighting inside the Console and Network tabs
-- Per-entry removal for console, network, recording, individual selected-frame, and fallback-screenshot evidence
-- Required-field and offensive-language validation while editing and again immediately before export
-- A direct link to the BugReceipt GitHub issue form
-- Responsive issue inspector and Visual evidence, Console, and Network workspaces
+```sh
+python3 -m http.server 4173 --bind 127.0.0.1 --directory examples/broken-web-app
+```
 
-### At export
+Open [http://127.0.0.1:4173](http://127.0.0.1:4173), start a BugReceipt capture, and select **Complete payment**. Review the resulting evidence locally; the fixture does not need production data.
 
-- GitHub-ready `issue.md` with environment and diagnostic evidence
-- Saved console and network highlights represented by explicit `⟦double-bracket⟧` markers
-- `recording.webm`, one or more numbered selected-frame PNGs, or fallback `screenshot.png` when available
-- One ZIP containing the reviewed report and visual evidence
-- Clipboard copy of the reviewed Markdown
-- No complete-report upload or capture-level email delivery
+## Build from source
 
-BugReceipt does not currently provide Firefox or Safari support, automatic interaction-step capture, WebSocket frames, feature-flag or application-version SDK capture, or authenticated GitHub/Linear issue creation.
+You need Node.js 24 or newer, pnpm 11.7.0, and Chrome 125 or newer for the current source build.
 
-## Install BugReceipt
-
-### From a GitHub release
-
-1. Download the Chrome ZIP and `SHA256SUMS.txt` from the [latest GitHub release](https://github.com/montasim/BugReceipt/releases/latest).
-2. Put both files in the same directory and verify the archive.
-
-   Linux:
-
-   ```bash
-   sha256sum --check SHA256SUMS.txt
-   ```
-
-   macOS:
-
-   ```bash
-   shasum -a 256 --check SHA256SUMS.txt
-   ```
-
-3. Extract the ZIP to a folder you will keep.
-4. Open `chrome://extensions`, enable **Developer mode**, and select **Load unpacked**.
-5. Choose the extracted folder containing `manifest.json`, then pin BugReceipt.
-
-Chrome loads the unpacked extension from that folder. Do not delete or move it while BugReceipt is installed. GitHub installations do not update automatically; load each new release from its newly extracted folder, confirm it works, then remove the older unpacked entry.
-
-### Build the current source
-
-Prerequisites:
-
-- Node.js 24 or newer
-- pnpm 11.7.0
-- Chrome 125 or newer
-
-```bash
+```sh
 git clone https://github.com/montasim/BugReceipt.git
 cd BugReceipt
 pnpm install --frozen-lockfile
 pnpm build:extension
 ```
 
-Load `apps/extension/.output` through Chrome's **Load unpacked** action. A successful build contains `manifest.json`, `sidepanel.html`, `review.html`, the background worker, compiled chunks, fonts, and icons.
+The successful build writes `manifest.json`, `sidepanel.html`, `review.html`, background code, assets, and icons to `apps/extension/.output`. Open `chrome://extensions`, turn on **Developer mode**, select **Load unpacked**, and choose that output folder. Keep the folder in place while using the unpacked extension.
 
-## Capture and export a bug
+For a release archive, run `pnpm release:zip`; it creates `apps/extension/.output/BugReceipt-<version>-chrome.zip` after the extension checks. Unpack that ZIP before using **Load unpacked**. A manually loaded archive does not receive Chrome Web Store updates.
 
-1. Open a normal HTTP or HTTPS page where the problem occurs.
-2. Open BugReceipt from the Chrome toolbar and select **Choose tab & start**.
-3. Choose the affected tab in Chrome's share dialog to start recording.
-4. Reproduce the problem and add concise manual steps.
-5. Select **Stop & review**.
-6. Verify the report fields and inspect Visual evidence, Console, and Network.
-7. Pause the recording at useful moments and select **Capture frame**; navigate and annotate the saved PNGs if they improve the evidence.
-8. Use **Annotate text** in Console or Network to preserve an exact diagnostic selection. Remove anything that should not be shared.
-9. Select **Download as ZIP** to save the report and visual evidence. Console and network evidence can also be downloaded from their tabs.
-10. Use **Report an issue** in the review header to open BugReceipt's GitHub issue form.
+## Privacy and limitations
 
-Same-origin reloads continue the session. Cross-origin navigation or closing the selected tab ends capture and preserves the evidence collected up to that point with an interruption reason.
+Capture data and annotations are held in extension-owned browser storage and IndexedDB. Complete reports are exported locally, not automatically uploaded or emailed. BugReceipt filters supported diagnostic values before storage, including URL query strings, email addresses, bearer tokens, secret-shaped fields, and recognized sensitive request headers. Binary and oversized response bodies are omitted or bounded. The filter is not a guarantee: recordings and screenshots can show anything visible on the page, and unrecognized secrets can still appear in diagnostics. Review every artifact before sharing it.
 
-## Privacy and trust boundary
+The extension does not directly collect page HTML or DOM snapshots, cookies, browser storage, form values, keystrokes, clipboard contents, microphone audio, or tab audio. It requests `activeTab`, `desktopCapture`, `debugger`, `sidePanel`, and `storage`, with no host permissions. Chrome's debugger access is needed for console and network evidence; cancelling its debugging banner or another debugger taking over can interrupt capture.
 
-Captured evidence and annotations stay in extension-owned browser storage until the user deletes them, starts another capture, or downloads them. Complete capture reports are not uploaded or emailed by this release. BugReceipt does not directly collect:
+Current constraints:
 
-- page HTML or DOM snapshots;
-- cookies, local storage, or session storage;
-- form values, keystrokes, clipboard contents, or response headers;
-- microphone or tab audio.
+- Chrome desktop is the supported browser target. Firefox and Safari are not supported by this build.
+- Only one capture session can run at a time; restricted browser pages cannot be recorded.
+- Diagnostic collection is bounded, not a full DevTools archive. Events before attachment, some browser-internal targets, unavailable response bodies, and dropped events may be absent. The report records capture warnings where available.
+- Steps are entered manually; interactions are not automatically tracked. Export does not authenticate with GitHub, Linear, or another issue tracker.
+- Screen recordings and the Markdown report must be attached separately if you publish a GitHub issue.
 
-Console values and supported text or JSON network bodies are bounded before storage. URL query strings, email addresses, bearer tokens, and secret-shaped fields are filtered locally. Binary and oversized response bodies are omitted. Supported text responses are collected through the browser debugger, including resource requests outside fetch and XHR. Bodies unavailable from Chrome are marked explicitly.
+For more on safe reporting, see [SUPPORT.md](SUPPORT.md) and [SECURITY.md](SECURITY.md).
 
-Filtering reduces risk; it cannot guarantee that every sensitive value will be recognized. Screen recordings can display personal or confidential information rendered by the page. Review every field, highlight, and visual artifact before sharing it.
+## Repository and development
 
-**Report an issue** opens the public GitHub issue form in a new tab. BugReceipt does not populate or submit that form, and it does not transmit capture data when opening the link.
+| Path                      | Role                                                                 |
+| ------------------------- | -------------------------------------------------------------------- |
+| `apps/extension`          | WXT Manifest V3 side panel, background capture, and review workbench |
+| `apps/web`                | TanStack Start product site                                          |
+| `packages/capture-model`  | Shared schemas and extension message contracts                       |
+| `packages/privacy`        | Diagnostic and URL filtering                                         |
+| `packages/issue-export`   | Markdown report rendering                                            |
+| `examples/broken-web-app` | Local reproduction fixture                                           |
 
-Network request headers are captured for new recordings and filtered locally before storage. Authorization, cookies, API keys and other recognized sensitive header values are redacted. Request and response JSON can be formatted for reading, with raw text retained for annotations.
+The background worker owns capture sessions and debugger events. Session records use extension storage; recordings, screenshots, frames, and annotations use extension-owned IndexedDB. Review edits pass through the background protocol before local export. [CONTEXT.md](CONTEXT.md) defines the domain vocabulary; [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) records the architecture's development history, while the current code is authoritative.
 
-The manifest requests `activeTab`, `desktopCapture`, `debugger`, `sidePanel`, and `storage`. Recording starts from the tab chooser without a separate site-access prompt. Browser diagnostics and page metadata use the debugger; `activeTab` preserves the final-screenshot fallback. The extension requests no host permissions.
+After installing dependencies from the repository root:
 
-## Deterministic test fixture
+| Command                | Purpose                                                                 |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `pnpm dev:extension`   | Start extension development mode                                        |
+| `pnpm dev:web`         | Start the product site on port 3000                                     |
+| `pnpm build:extension` | Build the unpacked Chrome extension                                     |
+| `pnpm build:web`       | Build the product site for Netlify                                      |
+| `pnpm check`           | Check formatting, lint, types, tests, builds, and the extension package |
+| `pnpm release:zip`     | Validate and package a Chrome release ZIP                               |
 
-The repository includes a deliberately broken checkout page for exercising capture without production data.
+[CI](.github/workflows/ci.yml) runs `pnpm check` on pull requests and pushes to `main`. Browser permission prompts, tab sharing, recording, installation, and downloads still need manual Chrome testing. The product site's [Netlify configuration](netlify.toml) builds `apps/web`; it does not publish the extension. A `v*` tag triggers the [GitHub release workflow](.github/workflows/release.yml), which publishes an unpacked Chrome ZIP and `SHA256SUMS.txt`. Tagging does not update the package or Chrome Web Store version automatically.
 
-```bash
-python3 -m http.server 4173 --bind 127.0.0.1 --directory examples/broken-web-app
-```
+## Help and participation
 
-Open [http://127.0.0.1:4173](http://127.0.0.1:4173), start a BugReceipt capture, and select **Complete payment**. The fixture emits known console and network failures containing safe redaction fixtures so recording, review, filtering, annotation, and export can be inspected locally.
-
-## How it works
-
-```mermaid
-flowchart LR
-    A[Persistent side panel] --> B[Background capture session]
-    A --> C[Selected-tab recorder]
-    B --> D[Page instrumentation]
-    D --> E[Local privacy filter]
-    E --> B
-    B --> F[Review workbench]
-    C --> F
-    F --> G[Markdown + local files]
-    F --> H[GitHub issue link]
-```
-
-The root workspace is named `bugreceipt-workspace`. Its background worker owns capture lifecycle and session transitions. A tab-scoped Chrome debugger attachment records Runtime, Log, and Network events across reloads and enables related frame and worker targets before their startup scripts resume. Filtered session records live in extension storage; recordings, screenshots, selected frames, and annotation documents live in extension-owned IndexedDB. Review edits return through the background protocol before local export.
-
-```text
-apps/extension          WXT Manifest V3 side panel, recorder, review page, and worker
-apps/web                TanStack Start landing page
-packages/capture-model  Zod schemas and extension message contracts
-packages/privacy        Deterministic text, URL, and diagnostic filtering
-packages/issue-export   Markdown and local report rendering
-examples/broken-web-app Deterministic browser failure fixture
-```
-
-See [CONTEXT.md](CONTEXT.md) for the domain language and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the staged architecture record. The implementation is authoritative where the plan describes earlier screenshot-only behavior.
-
-## Local development
-
-Install dependencies once from the repository root:
-
-```bash
-pnpm install --frozen-lockfile
-```
-
-| Command                | Purpose                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------- |
-| `pnpm dev:extension`   | Start WXT extension development mode                                            |
-| `pnpm dev:web`         | Start the landing page on port 3000                                             |
-| `pnpm build:extension` | Build the unpacked Chrome extension                                             |
-| `pnpm build:web`       | Build the TanStack Start application and Netlify function                       |
-| `pnpm lint`            | Run workspace ESLint checks                                                     |
-| `pnpm typecheck`       | Run strict TypeScript checks                                                    |
-| `pnpm test`            | Run workspace tests                                                             |
-| `pnpm check`           | Format-check, lint, type-check, test, build, and validate the extension package |
-| `pnpm release:zip`     | Run the extension release gate and create its Chrome ZIP                        |
-
-CI runs `pnpm check` for pushes to `main` and pull requests. Browser permission prompts, tab sharing, and unpacked-extension installation still require proportionate manual checks in Chrome.
-
-## Deployment
-
-The public landing page is deployed at [bugreceipt.netlify.app](https://bugreceipt.netlify.app). The root [netlify.toml](netlify.toml) pins the deployable workspace to `apps/web`:
-
-- build command: `pnpm --filter @bugreceipt/web build`;
-- Node.js 24 and pnpm 11.7.0;
-- client output: `apps/web/dist/client`;
-- server output: `apps/web/.netlify/v1/functions`;
-- build filtering that skips extension-only changes while retaining web and shared-workspace changes.
-
-## Release process
-
-The workspace packages, landing-page release copy, and extension manifest derive from version `0.1.6`. The release validator rejects a built manifest whose version differs from `apps/extension/package.json`.
-
-Before tagging a release:
-
-```bash
-pnpm check
-pnpm release:zip
-```
-
-The upload archive is named `BugReceipt-<version>-chrome.zip`. Its version comes from `apps/extension/package.json` through the generated manifest; a Git tag or Chrome Web Store publication does not update local package versions. Update the workspace package versions before building a new release.
-
-Inspect the generated Chrome ZIP and confirm `manifest.json` is at its root. Pushing a tag matching `v*` starts the [release workflow](.github/workflows/release.yml), which rebuilds the extension, renames the archive to `BugReceipt-<tag>-chrome-unpacked.zip`, verifies its layout, creates `SHA256SUMS.txt`, and publishes both files with [.github/RELEASE_NOTES.md](.github/RELEASE_NOTES.md).
-
-`v0.1.6` is prepared from the source changes after the published [v0.1.5 release](https://github.com/montasim/BugReceipt/releases/tag/v0.1.5). Historical tags and attached archives remain immutable.
-
-## Troubleshooting
-
-| Problem                              | What to check                                                           |
-| ------------------------------------ | ----------------------------------------------------------------------- |
-| Chrome rejects the extension folder  | Select the extracted directory that contains `manifest.json` directly   |
-| The side panel cannot capture a page | Use a normal HTTP/HTTPS tab; restricted Chrome pages cannot be recorded |
-| **Report an issue** does not open    | Check that Chrome can open the BugReceipt GitHub issue URL in a new tab |
-| A recording cannot be previewed      | Preserve the fallback screenshot or retry capture on the affected tab   |
-
-For ordinary installation and usage help, follow [SUPPORT.md](SUPPORT.md).
-
-## Current limitations
-
-- Chrome desktop is the only supported browser target.
-- Only one capture session can be active at a time.
-- Restricted browser pages and pages where Chrome denies access cannot be captured.
-- Cross-origin navigation ends capture rather than following the user across sites.
-- GitHub release installs use Developer mode and do not update automatically.
-- Screen recordings and Markdown remain separate GitHub-issue attachments.
-- Export does not authenticate with or create GitHub or Linear issues.
-- Automated tests cannot replace manual verification of Chrome permission, sharing, recording, download, and installation gestures.
-
-## Support, security, and contributing
-
-- [SUPPORT.md](SUPPORT.md) explains how to ask for help without exposing captured data.
-- [SECURITY.md](SECURITY.md) defines the private vulnerability-reporting path.
-- [CONTRIBUTING.md](CONTRIBUTING.md) documents setup, validation, and privacy expectations for pull requests.
-- [Microsoft Teams and Azure DevOps integration research](docs/research/microsoft-teams-azure-devops-integrations.md) records the evaluated sharing and ticketing options without claiming an implemented integration.
-- [GitHub Issues](https://github.com/montasim/BugReceipt/issues/new/choose) accepts ordinary non-sensitive bugs and feature requests.
-
-Never attach an unreviewed capture, production payload, credential, recording, or screenshot to a public issue. Use [GitHub private vulnerability reporting](https://github.com/montasim/BugReceipt/security/advisories/new) for suspected security problems.
-
-## Funding
-
-BugReceipt is maintained independently. Optional support helps fund release verification, hosting, and continued development.
-
-[![Support BugReceipt on SupportKori](https://img.shields.io/badge/Support_BugReceipt-SupportKori-ffdd00?style=for-the-badge)](https://www.supportkori.com/montasim)
-
-Bug reports, careful reproduction cases, documentation fixes, and code contributions are equally valuable ways to help.
-
-## Author
-
-Built and maintained by [Montasim](https://github.com/montasim).
+- [SUPPORT.md](SUPPORT.md) covers ordinary installation and usage questions. Do not post an unreviewed capture or production payload in a public issue.
+- [SECURITY.md](SECURITY.md) gives the private vulnerability-reporting route.
+- [CONTRIBUTING.md](CONTRIBUTING.md) describes local checks and privacy expectations for pull requests.
+- [GitHub Issues](https://github.com/montasim/BugReceipt/issues/new/choose) accepts non-sensitive bugs and feature requests.
 
 ## License
 
-No license file currently grants permission to copy, modify, or redistribute BugReceipt. The workspace is marked `UNLICENSED`; use is limited to rights provided by applicable law and platform terms until the maintainer publishes an explicit license.
-
-### Browser evidence coverage
-
-Start capture **before** refreshing or reproducing the bug. The browser recorder captures console API events (including tables and traces), exceptions, browser log entries, HTTP requests including documents/resources and blocked requests, redirect hops, and available WebSocket/EventSource messages. Same-process frames share the tab session; out-of-process frames and worker targets exposed by Chrome are enabled recursively. Capture continues across navigation without reinjecting page scripts.
-
-This is bounded diagnostic evidence, not a complete DevTools archive: historical events before attachment, browser-internal targets, and unrelated extension/shared-worker activity may be unavailable. Object arguments use Chrome's previews rather than an interactive object inspector. Headers, cookies, binary bodies, and oversized bodies are not exported. Up to 500 console events and 500 network entries are retained. Disconnects and dropped evidence are shown in the side panel, review, and Markdown report. Chrome's debugger permission is required; cancelling its debugging banner or another debugger taking over can disconnect recording. Reload the updated extension and accept the new permission before testing.
-
-For an automated real-browser check after building, run `CHROMIUM_PATH=/path/to/chromium node apps/extension/scripts/test-browser-evidence.mjs`. This uses a temporary browser profile and a local fixture; it does not access your normal browser profile.
+The workspace is marked `UNLICENSED`, and no license file grants permission to copy, modify, or redistribute BugReceipt. Use is limited to rights provided by applicable law and platform terms until an explicit license is published.
