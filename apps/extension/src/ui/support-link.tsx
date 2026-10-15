@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 
 export function SupportLink() {
   return (
-    <Button variant="outline" size="sm" className="ml-auto" asChild>
+    <Button variant="outline" size="sm" asChild>
       <a
         href="https://www.supportkori.com/montasim"
         target="_blank"

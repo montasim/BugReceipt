@@ -3,8 +3,51 @@ import {
   getSelectedFrameFilename,
   getSelectedFrames,
   type CaptureSession,
+  type CorrectionReport,
+  type CorrectionCollection,
   type EvidenceTextAnnotation,
 } from '@bugreceipt/capture-model';
+
+export function renderCorrectionJson(report: CorrectionReport): string {
+  const payload = {
+    schemaVersion: report.schemaVersion,
+    type: 'translation-correction',
+    originalText: report.originalText,
+    proposedText: report.proposedText,
+    ...(report.locale ? { locale: report.locale } : {}),
+    page: {
+      url: report.page.url,
+      title: report.page.title,
+      capturedAt: report.page.capturedAt,
+    },
+    ...(report.context ? { context: report.context } : {}),
+    ...(report.environment ? { environment: report.environment } : {}),
+    ...(report.page.screenshotBlobId ? { screenshot: 'correction.png' } : {}),
+  };
+  return `${JSON.stringify(payload, null, 2)}\n`;
+}
+
+export function renderCorrectionCollectionJson(collection: CorrectionCollection): string {
+  const payload = {
+    schemaVersion: collection.schemaVersion,
+    type: 'translation-correction-collection',
+    page: collection.page,
+    createdAt: collection.createdAt,
+    updatedAt: collection.updatedAt,
+    corrections: collection.corrections.map((report, index) => ({
+      id: report.id,
+      originalText: report.originalText,
+      proposedText: report.proposedText,
+      ...(report.locale ? { locale: report.locale } : {}),
+      ...(report.context ? { context: report.context } : {}),
+      ...(report.environment ? { environment: report.environment } : {}),
+      ...(report.page.screenshotBlobId
+        ? { screenshot: `correction-${String(index + 1).padStart(2, '0')}.png` }
+        : {}),
+    })),
+  };
+  return `${JSON.stringify(payload, null, 2)}\n`;
+}
 
 export function getIssueValidationErrors(session: CaptureSession): string[] {
   const errors: string[] = [];

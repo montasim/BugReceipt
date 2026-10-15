@@ -68,6 +68,79 @@ export const selectedFrameSchema = z.object({
 
 export const MAX_SELECTED_FRAMES = 20;
 
+export const correctionContextSchema = z.object({
+  before: z.string().max(500).optional(),
+  after: z.string().max(500).optional(),
+  element: z.string().max(50).optional(),
+  selector: z.string().max(500).optional(),
+  rect: z
+    .object({
+      x: z.number().finite().nonnegative().max(32_768),
+      y: z.number().finite().nonnegative().max(32_768),
+      width: z.number().finite().positive().max(32_768),
+      height: z.number().finite().positive().max(32_768),
+    })
+    .optional(),
+});
+
+export const correctionReportSchema = z.object({
+  schemaVersion: z.literal(1),
+  id: z.string().uuid(),
+  status: z.enum(['draft', 'ready-for-export']),
+  originalText: z.string().trim().min(1).max(10_000),
+  proposedText: z.string().max(10_000),
+  locale: z
+    .object({
+      source: z.string().trim().max(20).optional(),
+      target: z.string().trim().max(20).optional(),
+    })
+    .optional(),
+  page: z.object({
+    url: z.string().max(2_048),
+    title: z.string().max(500),
+    capturedAt: z.string().datetime(),
+    screenshotBlobId: z.string().uuid().optional(),
+    screenshotError: z.string().max(500).optional(),
+  }),
+  context: correctionContextSchema.optional(),
+  environment: z
+    .object({
+      userAgent: z.string().max(1_000),
+      platform: z.string().max(200),
+      reproKitVersion: z.string().max(50),
+    })
+    .optional(),
+});
+
+export type CorrectionReport = z.infer<typeof correctionReportSchema>;
+
+export const MAX_CORRECTIONS = 20;
+
+export const correctionCollectionSchema = z.object({
+  schemaVersion: z.literal(1),
+  id: z.string().uuid(),
+  page: z.object({
+    url: z.string().max(2_048),
+    title: z.string().max(500),
+  }),
+  activeCorrectionId: z.string().uuid().nullable(),
+  corrections: z.array(correctionReportSchema).max(MAX_CORRECTIONS),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export type CorrectionCollection = z.infer<typeof correctionCollectionSchema>;
+
+export function normalizeLocaleTag(value: string | undefined): string | undefined {
+  const candidate = value?.trim();
+  if (!candidate) return undefined;
+  try {
+    return Intl.getCanonicalLocales(candidate)[0]?.split('-')[0]?.toLowerCase();
+  } catch {
+    return undefined;
+  }
+}
+
 export const captureSessionSchema = z.object({
   schemaVersion: z.literal(1),
   id: z.string().uuid(),
@@ -264,6 +337,24 @@ export type ReviewUpdate = z.infer<typeof reviewUpdateSchema>;
 
 export const runtimeRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('session:get') }),
+  z.object({ type: z.literal('correction:get') }),
+  z.object({ type: z.literal('correction:get-collection') }),
+  z.object({
+    type: z.literal('correction:update'),
+    proposedText: z.string().max(10_000),
+    sourceLocale: z.string().trim().max(20).optional(),
+    targetLocale: z.string().trim().max(20).optional(),
+  }),
+  z.object({ type: z.literal('correction:discard') }),
+  z.object({
+    type: z.literal('correction:update-draft'),
+    correctionId: z.string().uuid(),
+    proposedText: z.string().max(10_000),
+    sourceLocale: z.string().trim().max(20).optional(),
+    targetLocale: z.string().trim().max(20).optional(),
+  }),
+  z.object({ type: z.literal('correction:set-active'), correctionId: z.string().uuid() }),
+  z.object({ type: z.literal('correction:discard-collection') }),
   z.object({
     type: z.literal('session:start'),
     tabId: z.number().int().nonnegative(),
@@ -314,6 +405,8 @@ export type RuntimeRequest = z.infer<typeof runtimeRequestSchema>;
 
 export const runtimeResponseSchema = z.union([
   z.object({ ok: z.literal(true), session: captureSessionSchema.nullable() }),
+  z.object({ ok: z.literal(true), correction: correctionReportSchema.nullable() }),
+  z.object({ ok: z.literal(true), correctionCollection: correctionCollectionSchema.nullable() }),
   z.object({ ok: z.literal(true) }),
   z.object({ ok: z.literal(false), code: z.string(), message: z.string() }),
 ]);

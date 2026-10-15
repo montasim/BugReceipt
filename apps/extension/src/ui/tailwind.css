@@ -62,7 +62,7 @@
 }
 
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme]) {
     color-scheme: light;
     --background: #f2f6f7;
     --foreground: #162a37;
@@ -87,6 +87,36 @@
     --success: #e5f4f1;
     --success-foreground: #076b60;
   }
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --background: #f2f6f7;
+  --foreground: #162a37;
+  --card: #fffdfa;
+  --card-foreground: #162a37;
+  --popover: #fffdfa;
+  --popover-foreground: #162a37;
+  --primary: #e9a13e;
+  --primary-foreground: #211507;
+  --secondary: #e7edef;
+  --secondary-foreground: #203542;
+  --muted: #edf2f4;
+  --muted-foreground: #5f707b;
+  --accent: #fff2dc;
+  --accent-foreground: #7a4700;
+  --destructive: #b53f36;
+  --border: #cbd7dc;
+  --input: #b8c7ce;
+  --ring: #b97819;
+  --warning: #fff5e5;
+  --warning-foreground: #7a4700;
+  --success: #e5f4f1;
+  --success-foreground: #076b60;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 @layer base {

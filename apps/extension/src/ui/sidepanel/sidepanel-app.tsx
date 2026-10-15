@@ -30,6 +30,7 @@ import { Separator } from '../../components/ui/separator';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Spinner } from '../../components/ui/spinner';
 import { Textarea } from '../../components/ui/textarea';
+import { Input } from '../../components/ui/input';
 import {
   Tooltip,
   TooltipContent,
@@ -38,14 +39,17 @@ import {
 } from '../../components/ui/tooltip';
 import { Brand } from '../brand';
 import { SupportLink } from '../support-link';
+import { ThemeToggle } from '../theme-toggle';
 import {
   formatRecordingDuration,
   getInterruptionCopy,
   useCaptureWorkflow,
 } from './use-capture-workflow';
+import { useCorrectionWorkflow } from './use-correction-workflow';
 
 export function SidePanelApp() {
   const workflow = useCaptureWorkflow();
+  const correction = useCorrectionWorkflow();
   const interruptionCopy = workflow.session
     ? getInterruptionCopy(workflow.session.endReason)
     : null;
@@ -55,7 +59,10 @@ export function SidePanelApp() {
       <main className="mx-auto flex min-h-svh w-full max-w-md flex-col bg-background">
         <header className="flex h-16 shrink-0 items-center border-b px-5">
           <Brand showVersion={false} />
-          <SupportLink />
+          <div className="ml-auto flex items-center gap-1">
+            <ThemeToggle />
+            <SupportLink />
+          </div>
         </header>
 
         <div className="flex flex-1 flex-col gap-5 px-5 py-5">
@@ -65,6 +72,14 @@ export function SidePanelApp() {
               detail={workflow.error}
               retry={workflow.session ? undefined : workflow.start}
               busy={workflow.busy}
+            />
+          ) : null}
+          {correction.error ? (
+            <StatusAlert
+              title="Correction needs attention"
+              detail={correction.error}
+              busy={correction.busy}
+              retry={undefined}
             />
           ) : null}
 
@@ -86,7 +101,11 @@ export function SidePanelApp() {
             />
           )}
 
-          {workflow.pendingAction === 'loading' && !workflow.session ? (
+          {correction.pending === 'loading' ? (
+            <LoadingState />
+          ) : correction.correction ? (
+            <CorrectionState workflow={correction} />
+          ) : workflow.pendingAction === 'loading' && !workflow.session ? (
             <LoadingState />
           ) : workflow.session?.status === 'recording' ? (
             <RecordingState workflow={workflow} />
@@ -207,6 +226,132 @@ function EvidenceReceipt({ session }: { session?: CaptureSession }) {
         </dl>
       </CardContent>
     </Card>
+  );
+}
+
+type CorrectionWorkflow = ReturnType<typeof useCorrectionWorkflow>;
+
+function CorrectionState({ workflow }: { workflow: CorrectionWorkflow }) {
+  const correction = workflow.correction;
+  if (!correction) return null;
+  const canExport = Boolean(workflow.proposedText.trim()) && !workflow.proposedModeration.error;
+  return (
+    <section className="flex flex-1 flex-col gap-5">
+      <div className="space-y-2 pt-1">
+        <Badge variant="secondary">Text correction</Badge>
+        <h1 className="text-[28px] leading-[1.05] font-semibold tracking-[-0.04em]">
+          Suggest a <span className="text-primary">correction.</span>
+        </h1>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Review the selected wording, add your proposed text, then export it for the developer.
+        </p>
+      </div>
+
+      {workflow.corrections.length > 1 ? (
+        <div className="flex flex-wrap gap-1.5" aria-label="Corrections">
+          {workflow.corrections.map((item, index) => (
+            <Button
+              key={item.id}
+              type="button"
+              size="sm"
+              variant={item.id === correction.id ? 'secondary' : 'outline'}
+              onClick={() => void workflow.setActiveCorrection(item.id)}
+              disabled={workflow.busy}
+            >
+              <span className={item.proposedText.trim() ? undefined : 'text-red-300'}>
+                {index + 1}
+              </span>
+              {item.proposedText.trim() ? ' ✓' : ''}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+
+      <Field>
+        <FieldLabel htmlFor="original-correction">Original text</FieldLabel>
+        <Textarea
+          id="original-correction"
+          className="max-h-[calc(6lh+1rem+2px)] overflow-y-auto"
+          value={correction.originalText}
+          readOnly
+          rows={3}
+        />
+        <FieldDescription className="truncate" title={correction.page.url}>
+          {correction.page.title || correction.page.url}
+        </FieldDescription>
+      </Field>
+
+      <Field data-invalid={Boolean(workflow.proposedModeration.error)}>
+        <FieldLabel htmlFor="proposed-correction">Suggested text</FieldLabel>
+        <Textarea
+          id="proposed-correction"
+          className="max-h-[calc(6lh+1rem+2px)] overflow-y-auto"
+          value={workflow.proposedText}
+          onChange={(event) => workflow.setProposedText(event.target.value)}
+          rows={3}
+          maxLength={10_000}
+          aria-invalid={Boolean(workflow.proposedModeration.error)}
+          aria-describedby={workflow.proposedModeration.error ? 'correction-error' : undefined}
+          placeholder="Enter the corrected wording"
+        />
+        {workflow.proposedModeration.error ? (
+          <FieldError id="correction-error">{workflow.proposedModeration.error}</FieldError>
+        ) : null}
+      </Field>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Field>
+          <FieldLabel htmlFor="source-locale">Source locale</FieldLabel>
+          <Input
+            id="source-locale"
+            value={workflow.sourceLocale}
+            onChange={(event) => workflow.setSourceLocale(event.target.value)}
+            placeholder="de"
+            maxLength={20}
+          />
+          <FieldDescription>Detected from the page when available; editable.</FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="target-locale">Target locale</FieldLabel>
+          <Input
+            id="target-locale"
+            value={workflow.targetLocale}
+            onChange={(event) => workflow.setTargetLocale(event.target.value)}
+            placeholder="en"
+            maxLength={20}
+          />
+        </Field>
+      </div>
+
+      {workflow.screenshotUrl ? (
+        <img
+          className="max-h-48 w-full rounded-lg border object-cover object-top"
+          src={workflow.screenshotUrl}
+          alt="Captured page with the selected text marked"
+        />
+      ) : null}
+
+      <div className="mt-auto grid grid-cols-[1fr_auto] gap-2">
+        <Button
+          type="button"
+          onClick={() => void workflow.exportCorrections()}
+          disabled={workflow.busy || !canExport}
+          aria-busy={workflow.pending === 'exporting'}
+        >
+          {workflow.pending === 'exporting' ? <Spinner aria-hidden="true" /> : null}
+          {workflow.pending === 'exporting' ? 'Exporting…' : 'Export corrections'}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void workflow.discard()}
+          disabled={workflow.busy}
+        >
+          <HugeiconsIcon icon={Delete02Icon} aria-hidden="true" />
+          Discard
+        </Button>
+      </div>
+    </section>
   );
 }
 

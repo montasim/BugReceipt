@@ -14,6 +14,7 @@ The Chrome Web Store currently lists version 0.1.6; this source tree is version 
 - Capture console messages, exceptions, and bounded network evidence from the moment capture starts. The recorder includes supported document and resource requests, redirect hops, request headers, and available text or JSON response bodies.
 - Review the recording, capture up to 20 frames, annotate selected images, highlight exact console or network text, and remove evidence that should not be shared.
 - Edit the issue title, expected and actual behavior, and steps before exporting a local ZIP containing `issue.md` and available visual files. Console JSON and network HAR can be downloaded separately.
+- Select text on any regular webpage, choose **Suggest a correction** from the context menu, enter improved wording in the side panel, and export a local correction JSON plus screenshot ZIP.
 
 BugReceipt does **not** automatically create a GitHub issue or upload the capture. The **Report an issue** action opens a blank GitHub issue form; you decide what to attach.
 
@@ -25,6 +26,8 @@ BugReceipt does **not** automatically create a GitHub issue or upload the captur
 4. Reproduce the problem, add manual steps, then select **Stop & review**.
 5. Inspect the Visual evidence, Console, and Network tabs. Edit the report and remove anything private.
 6. Select **Download as ZIP**. The downloaded archive contains `issue.md` plus any recording, selected-frame PNGs, or fallback screenshot retained in the review.
+
+To report translation or wording feedback, select the text first, right-click, choose **Suggest a correction**, enter the proposed wording in the side panel, and download the correction export. The correction workflow captures one visible viewport and does not upload it anywhere.
 
 Start capture _before_ refreshing or reproducing the bug: earlier console and network events cannot be recovered. A same-origin reload remains in the session; cross-origin navigation or closing the selected tab ends capture and records why it stopped.
 
@@ -57,7 +60,7 @@ For a release archive, run `pnpm release:zip`; it creates `apps/extension/.outpu
 
 Capture data and annotations are held in extension-owned browser storage and IndexedDB. Complete reports are exported locally, not automatically uploaded or emailed. BugReceipt filters supported diagnostic values before storage, including URL query strings, email addresses, bearer tokens, secret-shaped fields, and recognized sensitive request headers. Binary and oversized response bodies are omitted or bounded. The filter is not a guarantee: recordings and screenshots can show anything visible on the page, and unrecognized secrets can still appear in diagnostics. Review every artifact before sharing it.
 
-The extension does not directly collect page HTML or DOM snapshots, cookies, browser storage, form values, keystrokes, clipboard contents, microphone audio, or tab audio. It requests `activeTab`, `desktopCapture`, `debugger`, `sidePanel`, and `storage`, with no host permissions. Chrome's debugger access is needed for console and network evidence; cancelling its debugging banner or another debugger taking over can interrupt capture.
+The extension does not directly collect page HTML or DOM snapshots, cookies, browser storage, form values, keystrokes, clipboard contents, microphone audio, or tab audio. It requests `activeTab`, `contextMenus`, `desktopCapture`, `debugger`, `scripting`, `sidePanel`, and `storage`, with no host permissions. Chrome's debugger access is needed for console and network evidence; cancelling its debugging banner or another debugger taking over can interrupt capture.
 
 Current constraints:
 
@@ -65,6 +68,7 @@ Current constraints:
 - Only one capture session can run at a time; restricted browser pages cannot be recorded.
 - Diagnostic collection is bounded, not a full DevTools archive. Events before attachment, some browser-internal targets, unavailable response bodies, and dropped events may be absent. The report records capture warnings where available.
 - Steps are entered manually; interactions are not automatically tracked. Export does not authenticate with GitHub, Linear, or another issue tracker.
+- Correction reports contain one selected passage at a time and capture the visible viewport rather than a stitched full-page screenshot. Locale and DOM context are optional hints, not automatic i18n-key detection.
 - Screen recordings and the Markdown report must be attached separately if you publish a GitHub issue.
 
 For more on safe reporting, see [SUPPORT.md](SUPPORT.md) and [SECURITY.md](SECURITY.md).

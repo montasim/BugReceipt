@@ -18,7 +18,15 @@ export default defineConfig({
     short_name: 'BugReceipt',
     description: 'Capture a clear, privacy-filtered bug reproduction bundle.',
     minimum_chrome_version: '125',
-    permissions: ['activeTab', 'desktopCapture', 'debugger', 'sidePanel', 'storage'],
+    permissions: [
+      'activeTab',
+      'contextMenus',
+      'desktopCapture',
+      'debugger',
+      'scripting',
+      'sidePanel',
+      'storage',
+    ],
     icons: {
       16: 'icon/16.png',
       32: 'icon/32.png',

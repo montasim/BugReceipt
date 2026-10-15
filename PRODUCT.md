@@ -27,6 +27,7 @@ BugReceipt keeps one user-initiated browser failure trace together: selected-tab
 - Review includes editable issue details and separate Visual evidence, Console, and Network workspaces.
 - The reporter can capture and annotate selected video frames, highlight exact diagnostic text, and remove individual evidence before export.
 - Export produces GitHub-ready Markdown plus selected local files as a ZIP or a folder under Chrome Downloads. A separate action opens BugReceipt's public GitHub issue form without populating or submitting it.
+- The reporter can select one passage on any regular webpage, choose **Suggest a correction** from the context menu, enter proposed wording in the existing side panel, and export filtered JSON plus a visible-viewport screenshot locally.
 
 ## Capabilities and Constraints
 
@@ -37,6 +38,7 @@ BugReceipt keeps one user-initiated browser failure trace together: selected-tab
 - Fetch, XHR, and page-resource activity with method, status, duration, filtered URL, and bounded supported text or JSON bodies.
 - Manual reproduction steps, page URL and title, capture time, operating system, browser and platform details, user agent, application context, expected behavior, and actual behavior.
 - Up to 20 selected video frames with local visual annotations, plus exact text annotations for Console and Network evidence.
+- Single-passage correction reports with original text, proposed text, optional locale/context hints, page metadata, and a screenshot reference.
 
 ### Privacy boundaries
 
@@ -46,6 +48,7 @@ BugReceipt keeps one user-initiated browser failure trace together: selected-tab
 - Evidence remains in extension-owned local storage until the user deletes it, starts another capture, or downloads it.
 - Screen recordings can still display sensitive information rendered by the page, so the reporter must review visual evidence before sharing it.
 - Filtering reduces risk but does not guarantee recognition of every sensitive value.
+- Correction screenshots may contain anything visible in the viewport and must be reviewed before sharing; the workflow does not collect full HTML or infer translation keys.
 
 ### Current product constraints
 

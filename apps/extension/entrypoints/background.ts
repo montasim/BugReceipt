@@ -27,6 +27,18 @@ import {
   setSelectedFrame,
   updateReview,
 } from '../src/application/session-store';
+import {
+  clearCorrection,
+  clearCorrectionCollection,
+  createCorrection,
+  appendCorrection,
+  loadCorrectionCollection,
+  loadCorrection,
+  saveCorrectionCollection,
+  setActiveCorrection,
+  updateCorrectionDraft,
+  updateCorrection,
+} from '../src/application/correction-store';
 import { interruptCaptureAfterTabClosed } from '../src/application/capture-lifecycle';
 import { DebuggerRecorder } from '../src/infrastructure/debugger-recorder';
 import { deleteScreenshot, saveScreenshot } from '../src/infrastructure/screenshot-store';
@@ -73,6 +85,7 @@ const recorder = new DebuggerRecorder({
 
 export default defineBackground(() => {
   void initializeSidePanel();
+  void initializeCorrectionMenu();
   // Chrome 125+ keeps an active debugger worker alive. On an extension restart,
   // persisted captures can outlive the attachment and must not look complete.
   const recovery = requestQueue.then(async () => {
@@ -128,6 +141,12 @@ export default defineBackground(() => {
     );
     void task.catch(() => undefined);
   });
+  chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId !== 'bugreceipt-suggest-correction' || !tab?.id) return;
+    // Open synchronously from the context-menu gesture; delayed API calls can lose user activation.
+    void chrome.sidePanel.open({ tabId: tab.id }).catch(() => undefined);
+    void startCorrectionFromSelection(tab, info.selectionText ?? '').catch(() => undefined);
+  });
 });
 
 async function initializeSidePanel(): Promise<void> {
@@ -135,10 +154,156 @@ async function initializeSidePanel(): Promise<void> {
   await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 }
 
+async function initializeCorrectionMenu(): Promise<void> {
+  await chrome.contextMenus.removeAll();
+  chrome.contextMenus.create({
+    id: 'bugreceipt-suggest-correction',
+    title: 'Suggest a correction',
+    contexts: ['selection'],
+  });
+}
+
+async function startCorrectionFromSelection(tab: chrome.tabs.Tab, selectionText: string) {
+  if (!tab.id || !tab.url || !selectionText.trim()) return;
+  const url = new URL(tab.url);
+  if (!['http:', 'https:'].includes(url.protocol)) return;
+  const selection = await readSelectionContext(tab.id).catch(() => undefined);
+  const context = selection?.context;
+  let report = createCorrection(tab, selectionText, context, selection?.sourceLocale);
+  await appendCorrection(report);
+  const screenshot = await captureCorrectionScreenshot(tab.windowId, tab.id, context?.rect);
+  report = {
+    ...report,
+    page: {
+      ...report.page,
+      ...(screenshot.screenshotBlobId ? { screenshotBlobId: screenshot.screenshotBlobId } : {}),
+      ...(screenshot.screenshotError ? { screenshotError: screenshot.screenshotError } : {}),
+    },
+  };
+  const collection = await loadCorrectionCollection();
+  if (!collection) return;
+  await saveCorrectionCollection({
+    ...collection,
+    corrections: collection.corrections.map((item) => (item.id === report.id ? report : item)),
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+async function readSelectionContext(tabId: number) {
+  const results = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: () => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return undefined;
+      const range = selection.getRangeAt(0);
+      const element = range.commonAncestorContainer.parentElement;
+      const rect = range.getBoundingClientRect();
+      const text = document.body?.innerText ?? '';
+      const selected = selection.toString();
+      const index = text.indexOf(selected);
+      const sourceLocale =
+        document.documentElement.lang ||
+        document.querySelector('meta[http-equiv="content-language"]')?.getAttribute('content') ||
+        document.querySelector('meta[name="language"]')?.getAttribute('content') ||
+        navigator.language;
+      return {
+        context: {
+          before: index >= 0 ? text.slice(Math.max(0, index - 200), index) : undefined,
+          after:
+            index >= 0
+              ? text.slice(index + selected.length, index + selected.length + 200)
+              : undefined,
+          element: element?.tagName.toLowerCase(),
+          rect:
+            rect.width > 0 && rect.height > 0
+              ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+              : undefined,
+        },
+        sourceLocale,
+      };
+    },
+  });
+  return results[0]?.result;
+}
+
+async function captureCorrectionScreenshot(
+  windowId: number,
+  tabId: number,
+  rect?: { x: number; y: number; width: number; height: number },
+) {
+  try {
+    if (rect) {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        func: (selectionRect) => {
+          const marker = document.createElement('div');
+          marker.dataset.bugreceiptCorrectionMarker = 'true';
+          Object.assign(marker.style, {
+            position: 'fixed',
+            left: `${selectionRect.x}px`,
+            top: `${selectionRect.y}px`,
+            width: `${selectionRect.width}px`,
+            height: `${selectionRect.height}px`,
+            border: '3px solid #ff5c3a',
+            background: 'rgba(255, 92, 58, 0.12)',
+            pointerEvents: 'none',
+            zIndex: '2147483647',
+          });
+          document.documentElement.append(marker);
+        },
+        args: [rect],
+      });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    return {
+      screenshotBlobId: await saveScreenshot(
+        await chrome.tabs.captureVisibleTab(windowId, { format: 'png' }),
+      ),
+    };
+  } catch {
+    return { screenshotError: 'Chrome could not capture a screenshot of this page.' };
+  } finally {
+    if (rect) {
+      await chrome.scripting
+        .executeScript({
+          target: { tabId },
+          func: () =>
+            document.querySelector('[data-bugreceipt-correction-marker="true"]')?.remove(),
+        })
+        .catch(() => undefined);
+    }
+  }
+}
+
 async function handleRequest(request: RuntimeRequest): Promise<RuntimeResponse> {
   switch (request.type) {
     case 'session:get':
       return { ok: true, session: await loadSession() };
+    case 'correction:get':
+      return { ok: true, correction: await loadCorrection() };
+    case 'correction:get-collection':
+      return { ok: true, correctionCollection: await loadCorrectionCollection() };
+    case 'correction:update':
+      return { ok: true, correction: await updateCorrection(request) };
+    case 'correction:update-draft':
+      return { ok: true, correctionCollection: await updateCorrectionDraft(request) };
+    case 'correction:set-active':
+      return { ok: true, correctionCollection: await setActiveCorrection(request.correctionId) };
+    case 'correction:discard': {
+      const correction = await loadCorrection();
+      if (correction?.page.screenshotBlobId)
+        await deleteScreenshot(correction.page.screenshotBlobId);
+      await clearCorrection();
+      return { ok: true };
+    }
+    case 'correction:discard-collection': {
+      const collection = await loadCorrectionCollection();
+      for (const item of collection?.corrections ?? []) {
+        if (item.page.screenshotBlobId) await deleteScreenshot(item.page.screenshotBlobId);
+      }
+      await clearCorrectionCollection();
+      return { ok: true };
+    }
     case 'session:start': {
       const current = await loadSession();
       if (current?.status === 'recording') return { ok: true, session: current };

@@ -1,6 +1,6 @@
-import type { CaptureSession } from '@bugreceipt/capture-model';
+import type { CaptureSession, CorrectionReport } from '@bugreceipt/capture-model';
 import { describe, expect, it } from 'vitest';
-import { getIssueValidationErrors, renderGitHubIssue } from '../src/index';
+import { getIssueValidationErrors, renderCorrectionJson, renderGitHubIssue } from '../src/index';
 
 const userAgent =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36';
@@ -29,6 +29,28 @@ const session: CaptureSession = {
 };
 
 describe('GitHub issue renderer', () => {
+  it('renders a stable correction JSON payload', () => {
+    const report: CorrectionReport = {
+      schemaVersion: 1,
+      id: '00000000-0000-4000-8000-000000000000',
+      status: 'ready-for-export',
+      originalText: 'Willkommen in unserem App',
+      proposedText: 'Willkommen in unserer App',
+      locale: { source: 'de', target: 'de' },
+      page: {
+        url: 'https://example.com/settings',
+        title: 'Settings',
+        capturedAt: '2026-08-27T12:00:00.000Z',
+        screenshotBlobId: '00000000-0000-4000-8000-000000000001',
+      },
+      context: { element: 'p' },
+    };
+    const json = renderCorrectionJson(report);
+    expect(json).toContain('"type": "translation-correction"');
+    expect(json).toContain('"screenshot": "correction.png"');
+    expect(JSON.parse(json).proposedText).toBe('Willkommen in unserer App');
+  });
+
   it('includes capture gaps and limits even when there are no selected frames', () => {
     const markdown = renderGitHubIssue({
       ...session,

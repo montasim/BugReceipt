@@ -107,6 +107,7 @@ import {
 } from '../../infrastructure/text-annotation-store';
 import { Brand } from '../brand';
 import { SupportLink } from '../support-link';
+import { ThemeToggle } from '../theme-toggle';
 import { useOffensiveLanguageValidation } from '../use-offensive-language-validation';
 import { AnnotatedEvidenceText } from './annotated-evidence-text';
 import { AnnotationOverlay } from './annotation-overlay';
@@ -1020,7 +1021,10 @@ function ReviewAppContent() {
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-[1575px] items-center gap-6 px-6">
           <Brand showVersion={false} />
-          <SupportLink />
+          <div className="ml-auto flex items-center gap-1">
+            <ThemeToggle />
+            <SupportLink />
+          </div>
         </div>
       </header>
 

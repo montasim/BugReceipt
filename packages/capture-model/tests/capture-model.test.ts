@@ -1,15 +1,43 @@
 import { describe, expect, it } from 'vitest';
 import {
   captureSessionSchema,
+  correctionReportSchema,
   describeCaptureEnvironment,
   evidenceTextAnnotationSchema,
   getIncludedSession,
   getSelectedFrames,
   MAX_SELECTED_FRAMES,
+  normalizeLocaleTag,
   runtimeRequestSchema,
 } from '../src/index';
 
 describe('capture contracts', () => {
+  it('normalizes detected locale tags to language codes', () => {
+    expect(normalizeLocaleTag('de-DE')).toBe('de');
+    expect(normalizeLocaleTag('tr')).toBe('tr');
+    expect(normalizeLocaleTag('')).toBeUndefined();
+  });
+
+  it('accepts a correction command and report', () => {
+    expect(
+      runtimeRequestSchema.parse({ type: 'correction:update', proposedText: 'Willkommen' }),
+    ).toEqual({ type: 'correction:update', proposedText: 'Willkommen' });
+    expect(
+      correctionReportSchema.parse({
+        schemaVersion: 1,
+        id: '00000000-0000-4000-8000-000000000000',
+        status: 'draft',
+        originalText: 'Willkommen in unserem App',
+        proposedText: '',
+        page: {
+          url: 'https://example.com',
+          title: 'Example',
+          capturedAt: '2026-08-27T12:00:00.000Z',
+        },
+      }).status,
+    ).toBe('draft');
+  });
+
   it('accepts a bounded start-session request', () => {
     expect(
       runtimeRequestSchema.parse({
