@@ -3,7 +3,10 @@ import { renderCorrectionCollectionJson } from '@bugreceipt/issue-export';
 import { useEffect, useState } from 'react';
 import { sendRuntimeMessage } from '../../application/protocol';
 import { CORRECTION_COLLECTION_KEY } from '../../application/correction-store';
-import { createReportBundle } from '../../infrastructure/report-bundle';
+import {
+  createReportBundle,
+  type ReportBundleVisual,
+} from '../../infrastructure/report-bundle';
 import { readScreenshot } from '../../infrastructure/screenshot-store';
 import { useOffensiveLanguageValidation } from '../use-offensive-language-validation';
 
@@ -112,7 +115,7 @@ export function useCorrectionWorkflow() {
       );
       if (invalid) throw new Error('Complete every correction before exporting.');
       const json = renderCorrectionCollectionJson(next);
-      const visuals = [];
+      const visuals: ReportBundleVisual[] = [];
       for (const [index, item] of next.corrections.entries())
         if (item.page.screenshotBlobId) {
           const blob = await readScreenshot(item.page.screenshotBlobId);

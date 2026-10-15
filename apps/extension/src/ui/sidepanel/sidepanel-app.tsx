@@ -56,7 +56,7 @@ export function SidePanelApp() {
 
   return (
     <TooltipProvider>
-      <main className="mx-auto flex min-h-svh w-full max-w-md flex-col bg-background">
+      <main className="mx-auto flex h-svh w-full max-w-md flex-col overflow-hidden bg-background">
         <header className="flex h-16 shrink-0 items-center border-b px-5">
           <Brand showVersion={false} />
           <div className="ml-auto flex items-center gap-1">
@@ -65,55 +65,57 @@ export function SidePanelApp() {
           </div>
         </header>
 
-        <div className="flex flex-1 flex-col gap-5 px-5 py-5">
-          {workflow.error ? (
-            <StatusAlert
-              title={getErrorTitle(workflow.error)}
-              detail={workflow.error}
-              retry={workflow.session ? undefined : workflow.start}
-              busy={workflow.busy}
-            />
-          ) : null}
-          {correction.error ? (
-            <StatusAlert
-              title="Correction needs attention"
-              detail={correction.error}
-              busy={correction.busy}
-              retry={undefined}
-            />
-          ) : null}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+          <div className="flex min-h-full flex-col gap-5">
+            {workflow.error ? (
+              <StatusAlert
+                title={getErrorTitle(workflow.error)}
+                detail={workflow.error}
+                retry={workflow.session ? undefined : workflow.start}
+                busy={workflow.busy}
+              />
+            ) : null}
+            {correction.error ? (
+              <StatusAlert
+                title="Correction needs attention"
+                detail={correction.error}
+                busy={correction.busy}
+                retry={undefined}
+              />
+            ) : null}
 
-          {workflow.session?.captureWarnings?.map((warning) => (
-            <StatusAlert
-              key={warning}
-              title="Evidence recording interrupted"
-              detail={warning}
-              busy={false}
-              retry={undefined}
-            />
-          ))}
-          {(workflow.session?.filtering.droppedEventCount ?? 0) > 0 && (
-            <StatusAlert
-              title="Evidence limit reached"
-              detail="Some additional events or updates were omitted. Stop and start a new capture for a shorter reproduction."
-              busy={false}
-              retry={undefined}
-            />
-          )}
+            {workflow.session?.captureWarnings?.map((warning) => (
+              <StatusAlert
+                key={warning}
+                title="Evidence recording interrupted"
+                detail={warning}
+                busy={false}
+                retry={undefined}
+              />
+            ))}
+            {(workflow.session?.filtering.droppedEventCount ?? 0) > 0 && (
+              <StatusAlert
+                title="Evidence limit reached"
+                detail="Some additional events or updates were omitted. Stop and start a new capture for a shorter reproduction."
+                busy={false}
+                retry={undefined}
+              />
+            )}
 
-          {correction.pending === 'loading' ? (
-            <LoadingState />
-          ) : correction.correction ? (
-            <CorrectionState workflow={correction} />
-          ) : workflow.pendingAction === 'loading' && !workflow.session ? (
-            <LoadingState />
-          ) : workflow.session?.status === 'recording' ? (
-            <RecordingState workflow={workflow} />
-          ) : workflow.session?.status === 'ready-for-review' ? (
-            <ReadyState workflow={workflow} interruptionCopy={interruptionCopy} />
-          ) : (
-            <StartState workflow={workflow} />
-          )}
+            {correction.pending === 'loading' ? (
+              <LoadingState />
+            ) : correction.correction ? (
+              <CorrectionState workflow={correction} />
+            ) : workflow.pendingAction === 'loading' && !workflow.session ? (
+              <LoadingState />
+            ) : workflow.session?.status === 'recording' ? (
+              <RecordingState workflow={workflow} />
+            ) : workflow.session?.status === 'ready-for-review' ? (
+              <ReadyState workflow={workflow} interruptionCopy={interruptionCopy} />
+            ) : (
+              <StartState workflow={workflow} />
+            )}
+          </div>
         </div>
       </main>
     </TooltipProvider>
@@ -331,7 +333,7 @@ function CorrectionState({ workflow }: { workflow: CorrectionWorkflow }) {
         />
       ) : null}
 
-      <div className="mt-auto grid grid-cols-[1fr_auto] gap-2">
+      <div className="sticky bottom-0 z-10 -mx-5 mt-auto grid grid-cols-[1fr_auto] gap-2 border-t bg-background px-5 pt-3 pb-0">
         <Button
           type="button"
           onClick={() => void workflow.exportCorrections()}

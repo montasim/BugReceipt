@@ -111,8 +111,8 @@ export async function appendCorrection(report: CorrectionReport): Promise<Correc
 export async function updateCorrectionDraft(input: {
   correctionId: string;
   proposedText: string;
-  sourceLocale?: string;
-  targetLocale?: string;
+  sourceLocale?: string | undefined;
+  targetLocale?: string | undefined;
 }): Promise<CorrectionCollection> {
   const current = await loadCorrectionCollection();
   if (!current) throw new Error('No correction draft exists.');
@@ -153,8 +153,8 @@ export async function loadCorrection() {
 }
 export async function updateCorrection(input: {
   proposedText: string;
-  sourceLocale?: string;
-  targetLocale?: string;
+  sourceLocale?: string | undefined;
+  targetLocale?: string | undefined;
 }) {
   const c = await loadCorrection();
   if (!c) throw new Error('No correction draft exists.');
