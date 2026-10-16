@@ -18,6 +18,19 @@ The panel shown in every slide is captured from the compiled BugReceipt extensio
 
 Upload `bugreceipt-store-demo.mp4` as the product video. It is a 45-second, silent walkthrough with embedded captions that explains the workflow step by step: find the issue, open the side panel, capture context, preserve the original wording, add a suggestion, review locales, collect multiple corrections, check the handoff, and export the final bundle.
 
+## Promo tiles
+
+- `bugreceipt-small-promo-440x280.png` — 440×280 small promo tile
+- `bugreceipt-marquee-promo-1400x560.png` — 1400×560 marquee promo tile
+
+Both are opaque RGB PNGs and use the same dark teal, orange-accented visual system as the screenshots and video.
+
+## YouTube thumbnail
+
+- `bugreceipt-youtube-thumbnail-1280x720.jpg` — 1280×720 JPEG thumbnail for the product video
+
+The thumbnail uses the same recording-focused extension UI and product message as the video opening.
+
 ## Source
 
 `compose-assets.html` is the deterministic source used to render the screenshots. `video-scenes.html` is the deterministic source for the nine-step video scenes. `ui-start.png`, `ui-recording.png`, `ui-ready.png`, `ui-correction.png`, and `ui-batch.png` are captures of the actual extension side panel used by the compositions. `marketing-background.png` is the background texture used by the source.
