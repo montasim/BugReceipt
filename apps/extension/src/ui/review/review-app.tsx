@@ -212,7 +212,7 @@ function ReviewAppContent() {
   const expectedBehaviorModeration = useOffensiveLanguageValidation(
     session?.expectedBehavior ?? '',
   );
-  const actualBehaviorModeration = useOffensiveLanguageValidation(session?.actualBehavior ?? '');
+  const currentBehaviorModeration = useOffensiveLanguageValidation(session?.actualBehavior ?? '');
   const stepsModeration = useOffensiveLanguageValidation(stepsText);
   const moderationFieldStates = [
     { id: 'issue-summary', label: 'Issue title', ...summaryModeration },
@@ -222,7 +222,7 @@ function ReviewAppContent() {
       label: 'Expected behavior',
       ...expectedBehaviorModeration,
     },
-    { id: 'actual-behavior', label: 'Actual behavior', ...actualBehaviorModeration },
+    { id: 'current-behavior', label: 'Current behavior', ...currentBehaviorModeration },
     { id: 'steps-to-reproduce', label: 'Steps to reproduce', ...stepsModeration },
   ];
   const moderationValidationErrors = moderationFieldStates.flatMap(({ error, label }) =>
@@ -1017,7 +1017,7 @@ function ReviewAppContent() {
   const environment = describeCaptureEnvironment(session.environment);
 
   return (
-    <main className="min-h-svh bg-background pb-16">
+    <main className="min-h-svh bg-background pb-24">
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-[1575px] items-center gap-6 px-6">
           <Brand showVersion={false} />
@@ -1027,53 +1027,6 @@ function ReviewAppContent() {
           </div>
         </div>
       </header>
-
-      <section
-        className="relative mx-auto grid max-w-[1575px] gap-5 px-6 py-6 after:absolute after:inset-x-6 after:bottom-0 after:h-px after:bg-border lg:grid-cols-[1fr_auto] lg:items-center"
-        aria-labelledby="review-title"
-      >
-        <div className="max-w-2xl space-y-1">
-          <h1 id="review-title" className="text-2xl font-semibold tracking-[-0.035em]">
-            Evidence review
-          </h1>
-          <p className="text-sm leading-6 text-muted-foreground">
-            {session.page?.title || 'Captured page'}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" type="button" disabled={busy}>
-                Delete local capture
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="bg-card">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete this capture permanently?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This removes the recording, report, frames, events, and annotations stored on this
-                  device. It cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Keep capture</AlertDialogCancel>
-                <AlertDialogAction variant="destructive" onClick={() => void discard()}>
-                  Delete now
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <Button
-            type="button"
-            onClick={() => void downloadReport()}
-            disabled={reviewActionsDisabled}
-            aria-describedby={!exportReady ? 'report-check-heading' : undefined}
-          >
-            <HugeiconsIcon icon={FileZipIcon} aria-hidden="true" />
-            {busy ? 'Preparing…' : 'Download as ZIP'}
-          </Button>
-        </div>
-      </section>
 
       {session.captureWarnings?.length || session.filtering.droppedEventCount > 0 ? (
         <div className="mx-auto max-w-[1575px] px-6 pt-5">
@@ -1185,9 +1138,6 @@ function ReviewAppContent() {
                   Give the developer the shortest clear account of what failed.
                 </p>
               </div>
-              <span className="font-mono text-xs text-muted-foreground">
-                {session.steps.length}/50 steps
-              </span>
             </div>
             <div className="space-y-2">
               <FieldLabel htmlFor="issue-summary">Issue title</FieldLabel>
@@ -1247,7 +1197,7 @@ function ReviewAppContent() {
                   </p>
                 ) : null}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-start-2 md:row-start-2">
                 <FieldLabel htmlFor="expected-behavior">Expected behavior (optional)</FieldLabel>
                 <Textarea
                   className={REPORT_TEXTAREA_CLASS}
@@ -1280,20 +1230,22 @@ function ReviewAppContent() {
                   </p>
                 ) : null}
               </div>
-              <div className="space-y-2">
-                <FieldLabel htmlFor="actual-behavior">Actual behavior (optional)</FieldLabel>
+              <div className="space-y-2 md:col-start-1 md:row-start-2">
+                <FieldLabel htmlFor="current-behavior">Current behavior (optional)</FieldLabel>
                 <Textarea
                   className={REPORT_TEXTAREA_CLASS}
-                  id="actual-behavior"
+                  id="current-behavior"
                   value={session.actualBehavior}
-                  aria-invalid={Boolean(actualBehaviorModeration.error)}
-                  aria-busy={actualBehaviorModeration.checking}
+                  aria-invalid={Boolean(currentBehaviorModeration.error)}
+                  aria-busy={currentBehaviorModeration.checking}
                   aria-describedby={
-                    actualBehaviorModeration.error ? 'actual-behavior-moderation-error' : undefined
+                    currentBehaviorModeration.error
+                      ? 'current-behavior-moderation-error'
+                      : undefined
                   }
                   maxLength={4_000}
                   rows={5}
-                  placeholder="What happened instead?"
+                  placeholder="What is happening now?"
                   onChange={(event) =>
                     updateSession((current) => ({
                       ...current,
@@ -1301,17 +1253,17 @@ function ReviewAppContent() {
                     }))
                   }
                 />
-                {actualBehaviorModeration.error ? (
+                {currentBehaviorModeration.error ? (
                   <p
                     className="text-sm font-medium text-destructive"
-                    id="actual-behavior-moderation-error"
+                    id="current-behavior-moderation-error"
                     role="status"
                   >
-                    {actualBehaviorModeration.error}
+                    {currentBehaviorModeration.error}
                   </p>
                 ) : null}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-start-2 md:row-start-1">
                 <FieldLabel htmlFor="steps-to-reproduce">Steps to reproduce (optional)</FieldLabel>
                 <Textarea
                   className={REPORT_TEXTAREA_CLASS}
@@ -1330,7 +1282,6 @@ function ReviewAppContent() {
                   onChange={(event) => {
                     const nextText = event.target.value
                       .split(/\r?\n/)
-                      .slice(0, 50)
                       .map((line) => line.slice(0, 1_000))
                       .join('\n');
                     setStepsText(nextText);
@@ -1981,7 +1932,8 @@ function ReviewAppContent() {
                 Choose files to download
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Check what will be included, then use Download as ZIP above to save the report.
+                Check what will be included, then use Download as ZIP in the footer to save the
+                report.
               </p>
             </div>
             <div className="overflow-hidden rounded-xl border">
@@ -2030,14 +1982,49 @@ function ReviewAppContent() {
       </section>
 
       <footer className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 py-3 text-sm text-muted-foreground backdrop-blur">
-        <div className="mx-auto flex max-w-[1575px] flex-wrap items-center justify-between gap-x-6 gap-y-1 px-6">
-          <p aria-live="polite">
-            {notice || 'Export creates local files only. You choose whether to publish them.'}
-          </p>
+        <div className="mx-auto flex max-w-[1575px] flex-wrap items-center justify-between gap-3 px-6">
           <p className="flex shrink-0 items-center gap-2 font-mono text-[10px] font-semibold tracking-wide uppercase">
             <span className="size-2 rounded-full bg-success-foreground" aria-hidden="true" />
             Report stays local
           </p>
+          {notice ? (
+            <p className="sr-only" aria-live="polite">
+              {notice}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" type="button" disabled={busy}>
+                  Delete local capture
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="bg-card">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this capture permanently?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This removes the recording, report, frames, events, and annotations stored on
+                    this device. It cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep capture</AlertDialogCancel>
+                  <AlertDialogAction variant="destructive" onClick={() => void discard()}>
+                    Delete now
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button
+              type="button"
+              onClick={() => void downloadReport()}
+              disabled={reviewActionsDisabled}
+              aria-describedby={!exportReady ? 'report-check-heading' : undefined}
+            >
+              <HugeiconsIcon icon={FileZipIcon} aria-hidden="true" />
+              {busy ? 'Preparing…' : 'Download as ZIP'}
+            </Button>
+          </div>
         </div>
       </footer>
       {error && (

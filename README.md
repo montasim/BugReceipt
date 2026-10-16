@@ -13,7 +13,7 @@ The Chrome Web Store currently lists version 0.1.6; this source tree is version 
 - Record the selected Chrome tab as WebM without microphone or tab audio, and add reproduction steps as the problem occurs.
 - Capture console messages, exceptions, and bounded network evidence from the moment capture starts. The recorder includes supported document and resource requests, redirect hops, request headers, and available text or JSON response bodies.
 - Review the recording, capture up to 20 frames, annotate selected images, highlight exact console or network text, and remove evidence that should not be shared.
-- Edit the issue title, expected and actual behavior, and steps before exporting a local ZIP containing `issue.md` and available visual files. Console JSON and network HAR can be downloaded separately.
+- Edit the issue title, expected and current behavior, and steps before exporting a local ZIP containing `issue.md` and available visual files. Console JSON and network HAR can be downloaded separately.
 - Select text on any regular webpage, choose **Suggest a correction** from the context menu, enter improved wording in the side panel, and export a local correction JSON plus screenshot ZIP.
 
 BugReceipt does **not** automatically create a GitHub issue or upload the capture. The **Report an issue** action opens a blank GitHub issue form; you decide what to attach.

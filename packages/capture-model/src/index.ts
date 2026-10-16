@@ -156,7 +156,7 @@ export const captureSessionSchema = z.object({
   description: z.string().max(4_000).optional(),
   expectedBehavior: z.string().max(4_000),
   actualBehavior: z.string().max(4_000),
-  steps: z.array(stepSchema).max(50),
+  steps: z.array(stepSchema),
   diagnostics: z.array(diagnosticEventSchema).max(500),
   network: z.array(networkEventSchema).max(500).default([]),
   page: z
@@ -330,7 +330,7 @@ export const reviewUpdateSchema = z.object({
   description: z.string().trim().max(4_000).optional(),
   expectedBehavior: z.string().trim().max(4_000),
   actualBehavior: z.string().trim().max(4_000),
-  steps: z.array(stepSchema).max(50),
+  steps: z.array(stepSchema),
 });
 
 export type ReviewUpdate = z.infer<typeof reviewUpdateSchema>;

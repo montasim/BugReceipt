@@ -168,7 +168,7 @@ ${steps}
 
 ${session.expectedBehavior || '_Not provided._'}
 
-## Actual behavior
+## Current behavior
 
 ${session.actualBehavior || '_Not provided._'}
 

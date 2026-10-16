@@ -659,8 +659,8 @@ describe('review editor', () => {
     render(<ReviewApp />);
 
     await screen.findByDisplayValue('Checkout fails');
-    expect(screen.getByRole('heading', { name: 'Evidence review' })).toBeDefined();
-    expect(screen.getByText('Captured page')).toBeDefined();
+    expect(screen.queryByRole('heading', { name: 'Evidence review' })).toBeNull();
+    expect(screen.getByText('Review progress')).toBeDefined();
     const download = screen.getByRole('button', { name: 'Download as ZIP' });
     expect((download as HTMLButtonElement).disabled).toBe(false);
     expect(screen.queryByRole('button', { name: 'Save locally' })).toBeNull();
@@ -668,7 +668,7 @@ describe('review editor', () => {
     expect(screen.queryByText('Complete the report before export')).toBeNull();
     expect(screen.getByLabelText('Description (optional)')).toBeDefined();
     expect(screen.getByLabelText('Expected behavior (optional)')).toBeDefined();
-    expect(screen.getByLabelText('Actual behavior (optional)')).toBeDefined();
+    expect(screen.getByLabelText('Current behavior (optional)')).toBeDefined();
     expect(screen.getByLabelText('Steps to reproduce (optional)')).toBeDefined();
     expect(screen.queryByRole('button', { name: 'Add step' })).toBeNull();
 
@@ -708,7 +708,7 @@ describe('review editor', () => {
       screen.getByLabelText<HTMLInputElement>('Issue title'),
       screen.getByLabelText<HTMLTextAreaElement>('Description (optional)'),
       screen.getByLabelText<HTMLTextAreaElement>('Expected behavior (optional)'),
-      screen.getByLabelText<HTMLTextAreaElement>('Actual behavior (optional)'),
+      screen.getByLabelText<HTMLTextAreaElement>('Current behavior (optional)'),
       screen.getByLabelText<HTMLTextAreaElement>('Steps to reproduce (optional)'),
     ];
 
@@ -731,7 +731,7 @@ describe('review editor', () => {
     for (const label of [
       'Description (optional)',
       'Expected behavior (optional)',
-      'Actual behavior (optional)',
+      'Current behavior (optional)',
       'Steps to reproduce (optional)',
     ]) {
       const field = screen.getByLabelText<HTMLTextAreaElement>(label);
@@ -744,7 +744,7 @@ describe('review editor', () => {
     render(<ReviewApp />);
 
     await screen.findByDisplayValue('Checkout fails');
-    fireEvent.change(screen.getByLabelText('Actual behavior (optional)'), {
+    fireEvent.change(screen.getByLabelText('Current behavior (optional)'), {
       target: { value: 'This fucking form is broken' },
     });
     downloadZip();
@@ -1467,7 +1467,7 @@ describe('review editor', () => {
     render(<ReviewApp />);
 
     await screen.findByDisplayValue('Checkout fails');
-    fireEvent.change(screen.getByLabelText('Actual behavior (optional)'), {
+    fireEvent.change(screen.getByLabelText('Current behavior (optional)'), {
       target: { value: 'The payment control remains disabled.' },
     });
     downloadZip();

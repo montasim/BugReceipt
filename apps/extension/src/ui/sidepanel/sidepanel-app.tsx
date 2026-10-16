@@ -410,9 +410,6 @@ function RecordingState({ workflow }: { workflow: Workflow }) {
 
           <div className="flex items-center justify-between text-sm font-medium">
             <span>Steps you performed</span>
-            <span className="font-mono text-xs text-muted-foreground">
-              {session.steps.length}/50
-            </span>
           </div>
 
           {session.steps.length ? (
