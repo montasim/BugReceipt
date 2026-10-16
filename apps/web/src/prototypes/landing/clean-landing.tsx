@@ -2,7 +2,37 @@ import { useEffect, useState } from 'react';
 
 const storeUrl =
   'https://chromewebstore.google.com/detail/bugreceipt/dcjbnkadoenmkcimidcbhhckdpaondae';
-const videoUrl = 'https://www.youtube-nocookie.com/embed/KdrGAhvUyoY?rel=0';
+const videoUrl = 'https://www.youtube-nocookie.com/embed/BVdi7FF21Sg?rel=0';
+
+const carouselSlides = [
+  {
+    src: '/brand/bugreceipt-slide-1.png',
+    alt: 'BugReceipt capture workflow showing the browser page where a problem is found',
+    caption: 'Start on the page where the wording or behavior feels wrong.',
+  },
+  {
+    src: '/brand/bugreceipt-slide-2.png',
+    alt: 'BugReceipt side panel showing steps, console messages, network requests, and recording evidence',
+    caption: 'Keep the important technical evidence together.',
+  },
+  {
+    src: '/brand/bugreceipt-slide-3.png',
+    alt: 'BugReceipt report showing browser, platform, and page context',
+    caption: 'Give developers the page and browser context they need.',
+  },
+  {
+    src: '/brand/bugreceipt-slide-4.png',
+    alt: 'BugReceipt correction workflow showing original wording and suggested text',
+    caption: 'Capture wording and translation corrections with the source context.',
+  },
+  {
+    src: '/brand/bugreceipt-slide-5.png',
+    alt: 'BugReceipt export workflow showing the final local developer handoff',
+    caption: 'Review everything, then export one clear developer handoff.',
+  },
+] as const;
+
+const CAROUSEL_INTERVAL_MS = 6_000;
 
 const features = [
   ['Screen recording', 'Record the selected browser tab without microphone or tab audio.'],
@@ -34,7 +64,7 @@ const faqs = [
   ],
   [
     'Which browsers are supported?',
-    'BugReceipt currently supports Chrome desktop version 120 and newer.',
+    'BugReceipt currently supports Chrome desktop version 125 and newer.',
   ],
   [
     'Does it create GitHub issues automatically?',
@@ -44,11 +74,38 @@ const faqs = [
 
 export function CleanLanding() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [carouselPaused, setCarouselPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem('bugreceipt-prototype-theme');
     if (saved === 'dark') setTheme('dark');
   }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReducedMotion(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener('change', update);
+    return () => mediaQuery.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (carouselPaused || reducedMotion) return;
+    const timer = window.setInterval(() => {
+      setActiveSlide((current) => (current + 1) % carouselSlides.length);
+    }, CAROUSEL_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [carouselPaused, reducedMotion]);
+
+  const activeCarouselSlide = carouselSlides[activeSlide];
+
+  const moveCarousel = (direction: -1 | 1) => {
+    setActiveSlide(
+      (current) => (current + direction + carouselSlides.length) % carouselSlides.length,
+    );
+  };
 
   const toggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
@@ -100,19 +157,82 @@ export function CleanLanding() {
                 <ChromeIcon /> Add to Chrome
               </a>
               <a className="text-action" href="#demo">
-                <PlayIcon /> Watch the 33-second demo
+                <PlayIcon /> Watch the 45-second demo
               </a>
             </div>
             <p className="release-note">
-              <span /> Version 0.2.0 is the latest version.
+              <span /> Version 0.3.0 is the latest version.
             </p>
           </div>
-          <figure className="product-preview">
-            <img
-              src="/brand/bugreceipt-extension-real-desktop.png"
-              alt="The real BugReceipt desktop review interface showing report details and export controls"
-            />
-            <figcaption>Review the report before choosing what to export.</figcaption>
+          <figure
+            className="product-preview"
+            onMouseEnter={() => setCarouselPaused(true)}
+            onMouseLeave={() => setCarouselPaused(false)}
+            onFocus={() => setCarouselPaused(true)}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) setCarouselPaused(false);
+            }}
+          >
+            <div
+              className="image-carousel"
+              role="region"
+              aria-roledescription="carousel"
+              aria-label="BugReceipt workflow screenshots"
+            >
+              <div className="image-carousel-frame">
+                <img
+                  key={activeSlide}
+                  src={activeCarouselSlide.src}
+                  alt={activeCarouselSlide.alt}
+                />
+                <button
+                  className="carousel-control carousel-control-prev"
+                  type="button"
+                  aria-label="Show previous workflow screenshot"
+                  onClick={() => moveCarousel(-1)}
+                >
+                  <ChevronIcon direction="left" />
+                </button>
+                <button
+                  className="carousel-control carousel-control-next"
+                  type="button"
+                  aria-label="Show next workflow screenshot"
+                  onClick={() => moveCarousel(1)}
+                >
+                  <ChevronIcon direction="right" />
+                </button>
+              </div>
+              <div className="carousel-toolbar">
+                <div
+                  className="carousel-dots"
+                  role="tablist"
+                  aria-label="Choose workflow screenshot"
+                >
+                  {carouselSlides.map((slide, index) => (
+                    <button
+                      key={slide.src}
+                      type="button"
+                      role="tab"
+                      aria-selected={index === activeSlide}
+                      aria-label={`Show screenshot ${index + 1} of ${carouselSlides.length}`}
+                      onClick={() => setActiveSlide(index)}
+                    >
+                      <span />
+                    </button>
+                  ))}
+                </div>
+                <div className="carousel-progress" aria-hidden="true">
+                  <span
+                    key={`${activeSlide}-${carouselPaused}-${reducedMotion}`}
+                    className={carouselPaused || reducedMotion ? 'is-paused' : undefined}
+                  />
+                </div>
+                <span className="carousel-count" aria-live="polite">
+                  {activeSlide + 1} / {carouselSlides.length}
+                </span>
+              </div>
+            </div>
+            <figcaption>{activeCarouselSlide.caption}</figcaption>
           </figure>
         </section>
 
@@ -157,7 +277,7 @@ export function CleanLanding() {
         <section className="demo-section" id="demo">
           <div className="clean-shell demo-grid">
             <div className="section-heading">
-              <h2>See the full workflow in 33 seconds.</h2>
+              <h2>See the full workflow in 45 seconds.</h2>
               <p>
                 From a failed browser action to a reviewed local export—without leaving the evidence
                 scattered across screenshots and DevTools.
@@ -211,7 +331,7 @@ export function CleanLanding() {
             <div className="release-list">
               <article>
                 <div>
-                  <strong>0.2.0</strong>
+                  <strong>0.3.0</strong>
                   <span>Latest version</span>
                 </div>
                 <p>
@@ -307,6 +427,13 @@ function ChromeIcon() {
       <circle cx="12" cy="12" r="10" />
       <circle cx="12" cy="12" r="4" />
       <path d="M8.53 14 4.03 6M11.5 21.5l4-7.5M12 8h9" />
+    </svg>
+  );
+}
+function ChevronIcon({ direction }: { direction: 'left' | 'right' }) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d={direction === 'left' ? 'm12.5 4-6 6 6 6' : 'm7.5 4 6 6-6 6'} />
     </svg>
   );
 }

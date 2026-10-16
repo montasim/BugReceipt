@@ -100,6 +100,7 @@ body:has(.clean-site) .sk-widget-btn {
   border-color: #e8a13f !important;
   background: #e8a13f !important;
   color: #102332 !important;
+  border-radius: 9px !important;
 }
 body:has(.clean-site) .sk-widget-btn:hover {
   background: #d88c29 !important;
@@ -243,11 +244,130 @@ body:has(.clean-site) .sk-widget-btn svg {
 .product-preview {
   margin: 0;
 }
-.product-preview img {
+.image-carousel {
+  position: relative;
+}
+.image-carousel-frame {
+  position: relative;
+}
+.image-carousel-frame img {
   display: block;
   width: 100%;
+  aspect-ratio: 8 / 5;
+  object-fit: cover;
   border-radius: 14px;
   box-shadow: 0 24px 55px rgba(16, 35, 50, 0.16);
+}
+.carousel-control {
+  position: absolute;
+  top: 50%;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-50%);
+  transition:
+    opacity 160ms ease-out,
+    background-color 160ms ease-out;
+}
+.carousel-control:hover {
+  background: var(--bg);
+}
+.carousel-control:focus-visible,
+.image-carousel:hover .carousel-control,
+.image-carousel:focus-within .carousel-control {
+  opacity: 1;
+}
+.carousel-control-prev {
+  left: 14px;
+}
+.carousel-control-next {
+  right: 14px;
+}
+.carousel-control svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.carousel-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.carousel-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.carousel-dots button {
+  width: 20px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.carousel-dots button span {
+  width: 6px;
+  height: 6px;
+  display: block;
+  border-radius: 999px;
+  background: var(--line);
+  transition:
+    width 160ms ease-out,
+    background-color 160ms ease-out;
+}
+.carousel-dots button[aria-selected='true'] span {
+  width: 20px;
+  background: var(--mint);
+}
+.carousel-progress {
+  height: 3px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--soft-line);
+}
+.carousel-progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--mint);
+  transform-origin: left;
+  animation: carousel-progress 6s linear forwards;
+}
+.carousel-progress span.is-paused {
+  animation-play-state: paused;
+}
+.carousel-count {
+  min-width: 34px;
+  color: var(--muted);
+  font:
+    600 11px/1.5 'JetBrains Mono Variable',
+    monospace;
+  text-align: right;
+}
+@keyframes carousel-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 .product-preview figcaption {
   margin-top: 12px;
@@ -549,7 +669,7 @@ body:has(.clean-site) .sk-widget-btn svg {
   .text-action {
     width: 100%;
   }
-  .product-preview img {
+  .image-carousel-frame img {
     border-radius: 10px;
   }
   .trust-row .clean-shell {

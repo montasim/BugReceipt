@@ -23,12 +23,15 @@ describe('extension landing page', () => {
   it('links to the Chrome Web Store and uses the real extension desktop UI', () => {
     expect(page).toContain('chromewebstore.google.com/detail/bugreceipt');
     expect(page).toContain('<ChromeIcon /> Add to Chrome');
-    expect(page).toContain('/brand/bugreceipt-extension-real-desktop.png');
-    expect(page).toContain('Version 0.2.0 is the latest version.');
+    for (let index = 1; index <= 5; index += 1) {
+      expect(page).toContain(`/brand/bugreceipt-slide-${index}.png`);
+    }
+    expect(page).toContain('aria-roledescription="carousel"');
+    expect(page).toContain('Version 0.3.0 is the latest version.');
   });
 
   it('explains the product with a demo, privacy details, changelog, and FAQs', () => {
-    expect(page).toContain('youtube-nocookie.com/embed/KdrGAhvUyoY');
+    expect(page).toContain('youtube-nocookie.com/embed/BVdi7FF21Sg');
     expect(page).toContain('Everything needed to reproduce the problem.');
     expect(page).toContain('Your report stays under your control.');
     expect(page).toContain('<h2>Changelog</h2>');
