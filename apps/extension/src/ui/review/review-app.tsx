@@ -1228,7 +1228,7 @@ function ReviewAppContent() {
                     descriptionModeration.error ? 'issue-description-moderation-error' : undefined
                   }
                   maxLength={4_000}
-                  rows={4}
+                  rows={5}
                   placeholder="Describe the problem and add any useful context."
                   onChange={(event) =>
                     updateSession((current) => ({
@@ -1261,7 +1261,7 @@ function ReviewAppContent() {
                       : undefined
                   }
                   maxLength={4_000}
-                  rows={4}
+                  rows={5}
                   placeholder="What should have happened?"
                   onChange={(event) =>
                     updateSession((current) => ({
@@ -1292,7 +1292,7 @@ function ReviewAppContent() {
                     actualBehaviorModeration.error ? 'actual-behavior-moderation-error' : undefined
                   }
                   maxLength={4_000}
-                  rows={4}
+                  rows={5}
                   placeholder="What happened instead?"
                   onChange={(event) =>
                     updateSession((current) => ({
@@ -1311,7 +1311,7 @@ function ReviewAppContent() {
                   </p>
                 ) : null}
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2">
                 <FieldLabel htmlFor="steps-to-reproduce">Steps to reproduce (optional)</FieldLabel>
                 <Textarea
                   className={REPORT_TEXTAREA_CLASS}
@@ -1532,7 +1532,7 @@ function ReviewAppContent() {
                 )}
                 {recordingState === 'ready' && recordingUrl && !isAnnotating && (
                   <section className="space-y-4" aria-label="Recording preview">
-                    <div className="rounded-xl border bg-black p-3 [&_video]:max-h-[60vh] [&_video]:w-full">
+                    <div className="rounded-xl border bg-card p-3 [&_video]:max-h-[60vh] [&_video]:w-full [&_video]:bg-card">
                       <video
                         ref={videoRef}
                         src={recordingUrl}
@@ -2115,8 +2115,8 @@ function ConsoleEvidenceWindow({
       event.message.toLowerCase().includes(query),
   );
   return (
-    <div className="overflow-hidden rounded-xl border bg-[#08121b] text-[#f6f1e8]">
-      <div className="flex flex-wrap items-center gap-3 border-b border-white/10 px-4 py-3">
+    <div className="overflow-hidden rounded-xl border bg-card text-card-foreground">
+      <div className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <div className="flex items-center gap-3">
           <FieldLabel htmlFor="console-type-filter">Type</FieldLabel>
           <Select value={typeFilter} onValueChange={setTypeFilter} disabled={annotationEditing}>
@@ -2150,7 +2150,7 @@ function ConsoleEvidenceWindow({
         className={`relative min-h-80 ${annotationEditing ? 'ring-2 ring-inset ring-ring' : ''}`}
       >
         <div className="min-h-80">
-          <div className="flex items-center gap-1.5 border-b border-white/10 px-4 py-3 [&>span]:size-2.5 [&>span]:rounded-full [&>span]:bg-white/20 [&>b]:ml-auto [&>b]:font-mono [&>b]:text-[10px] [&>b]:text-white/60">
+          <div className="flex items-center gap-1.5 border-b px-4 py-3 [&>span]:size-2.5 [&>span]:rounded-full [&>span]:bg-muted-foreground/40 [&>b]:ml-auto [&>b]:font-mono [&>b]:text-[10px] [&>b]:text-muted-foreground">
             <span />
             <span />
             <span />
@@ -2159,7 +2159,7 @@ function ConsoleEvidenceWindow({
           {visibleEvents.length ? (
             visibleEvents.map((event) => (
               <div
-                className="grid grid-cols-[6rem_minmax(0,1fr)_auto] gap-3 border-b border-white/10 px-4 py-3 text-xs [&_time]:font-mono [&_time]:text-white/50 [&_code]:min-w-0 [&_code]:whitespace-pre-wrap [&_code]:break-words"
+                className="grid grid-cols-[6rem_minmax(0,1fr)_auto] gap-3 border-b px-4 py-3 text-xs [&_time]:font-mono [&_time]:text-muted-foreground [&_code]:min-w-0 [&_code]:whitespace-pre-wrap [&_code]:break-words"
                 key={event.id}
               >
                 <time>{new Date(event.occurredAt).toLocaleTimeString()}</time>
