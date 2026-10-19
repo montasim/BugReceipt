@@ -30,6 +30,7 @@ describe('extension landing page', () => {
     expect(content).toContain('Bug reports developers can reproduce.');
     expect(page).toContain('{hero.title}');
     expect(page).toContain('<Receipt />');
+    expect(page).toContain('className="hero-scene"');
     expect(receipt).toContain('receipt.generated.json');
     expect(page).not.toContain('bugreceipt-slide-');
     expect(page).not.toContain('carousel');
@@ -141,6 +142,7 @@ describe('extension landing page', () => {
       'utf8',
     );
     expect(content).toContain('youtube-nocookie.com/embed/BVdi7FF21Sg');
+    expect(content).toContain('/guide/hero-page.png');
     expect(content).toContain('/guide/01-side-panel.png');
     expect(content).toContain('/guide/03-recording.png');
     expect(content).toContain('/guide/05-report-details.png');

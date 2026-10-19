@@ -31,9 +31,19 @@ export function LandingPage() {
             </div>
             <p className="hero-fine">{hero.finePrint}</p>
           </div>
-          <figure className="hero-receipt">
-            <Receipt />
-            <figcaption>{hero.receiptCaption}</figcaption>
+          <figure className="hero-scene">
+            <div className="browser-frame">
+              <div className="browser-frame-bar" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="scene">
+                <img className="scene-page" {...hero.scene.page} fetchPriority="high" />
+                <img className="scene-panel" {...hero.scene.panel} fetchPriority="high" />
+              </div>
+            </div>
+            <figcaption>{hero.scene.caption}</figcaption>
           </figure>
         </section>
         <section className="clean-shell content-section" id="how-it-works">
@@ -47,23 +57,12 @@ export function LandingPage() {
           <ol className="steps">
             {steps.map((step, index) => (
               <li className="step" key={step.title}>
-                <div className="step-copy">
-                  <span className="mono">0{index + 1}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.body}</p>
+                <div className="step-shot">
+                  <img {...step.image} loading="lazy" />
                 </div>
-                {'frame' in step.image ? (
-                  <BrowserFrame {...step.image} />
-                ) : (
-                  <img
-                    className="panel-shot"
-                    src={step.image.src}
-                    alt={step.image.alt}
-                    width={step.image.width}
-                    height={step.image.height}
-                    loading="lazy"
-                  />
-                )}
+                <span className="mono">0{index + 1}</span>
+                <h3>{step.title}</h3>
+                <p>{step.body}</p>
               </li>
             ))}
           </ol>
@@ -103,7 +102,10 @@ export function LandingPage() {
               ))}
             </div>
           </div>
-          <BrowserFrame {...deliverables.image} />
+          <figure className="deliverable-receipt">
+            <Receipt />
+            <figcaption>{deliverables.receiptCaption}</figcaption>
+          </figure>
         </section>
 
         <section className="privacy-section" id="privacy">

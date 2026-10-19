@@ -294,6 +294,22 @@ try {
   await delay(1_500);
   await send({ type: 'session:add-step', text: 'Clicked Place order and saw the error' });
 
+  // Hero scene: the failing page at a tab-like size, shown beside the recording panel.
+  await command(
+    'Emulation.setDeviceMetricsOverride',
+    { width: 900, height: 760, deviceScaleFactor: SCALE, mobile: false },
+    pageSession,
+  );
+  await delay(500);
+  const { data: heroShot } = await command(
+    'Page.captureScreenshot',
+    { format: 'png' },
+    pageSession,
+  );
+  await writeFile(join(outDir, 'hero-page.png'), Buffer.from(heroShot, 'base64'));
+  console.log('wrote hero-page.png');
+  await command('Emulation.clearDeviceMetricsOverride', {}, pageSession);
+
   // Hide the "no recording" note so the panel looks like an ordinary capture.
   let session = await readSession();
   delete session.page.recordingError;

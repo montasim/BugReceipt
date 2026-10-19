@@ -2,7 +2,22 @@ export const hero = {
   title: 'Bug reports developers can reproduce.',
   lead: 'BugReceipt records the Chrome tab you are testing, keeps the console and network evidence with your steps, and exports a report you review first. Nothing leaves your machine until you share it.',
   finePrint: 'Chrome desktop 125 and newer · Free · No account',
-  receiptCaption: 'Exported from the capture shown in the screens below.',
+  scene: {
+    page: {
+      src: '/guide/hero-page.png',
+      width: 1800,
+      height: 1520,
+      alt: 'Demo checkout page showing the error “We couldn’t place your order”',
+    },
+    panel: {
+      src: '/guide/03-recording.png',
+      width: 880,
+      height: 1520,
+      alt: 'BugReceipt side panel recording the tab, with three steps typed by the tester',
+    },
+    caption:
+      'A real capture: the demo checkout failing on the left, the BugReceipt side panel recording it on the right.',
+  },
 } as const;
 
 export const steps = [
@@ -34,7 +49,6 @@ export const steps = [
       width: 2880,
       height: 1800,
       alt: 'BugReceipt review page with the report details stage',
-      frame: true,
     },
   },
 ] as const;
@@ -93,12 +107,7 @@ export const deliverables = {
     'recording.webm and selected-frame PNGs carry the visual proof. Annotated frames are rendered into the PNG.',
     'BugReceipt does not open or submit a GitHub issue for you. You attach what you reviewed.',
   ],
-  image: {
-    src: '/guide/09-choose-files.png',
-    width: 2880,
-    height: 1800,
-    alt: 'Choose files stage listing the report files with Included badges',
-  },
+  receiptCaption: 'The issue.md from the capture above, rendered as the developer receives it.',
 } as const;
 
 export const privacyColumns = [

@@ -65,7 +65,7 @@ components:
 
 ## Overview
 
-The site uses the extension's own light theme, so real product captures sit on the page without a seam. There is no marketing layer between the page and the product: the hero shows the actual exported issue.md as a receipt, and every later section shows a real capture of the screen it describes. Amber is the single action color, mint marks state, and one shadow is shared by all proof frames. Numbered markers appear only where the page shows the capture sequence.
+The site uses the extension's own light theme, so real product captures sit on the page without a seam. There is no marketing layer between the page and the product: the hero shows a real capture scene (the demo page failing beside the side panel recording it), the Export section shows the actual exported issue.md as a receipt, and every other section shows a real capture of the screen it describes. Amber is the single action color, mint marks state, and one shadow is shared by all proof frames. Numbered markers appear only where the page shows the capture sequence.
 
 ## Colors
 
@@ -114,7 +114,7 @@ The signature component. It renders the real issue.md produced by `@bugreceipt/i
 
 ### Browser frame
 
-Wraps desktop captures: three-dot bar, one-pixel line border, 12px radius, proof shadow. Side-panel captures are shown bare with a line border and are height-bounded inside the how-it-works cards. All images carry intrinsic width and height and load lazily below the hero.
+Wraps desktop captures: three-dot bar, one-pixel line border, 12px radius, proof shadow. Side-panel captures are shown bare with a line border, or cropped to a 4:3 top detail inside the how-it-works columns; the hero scene places the page capture and the panel capture side by side inside one frame. All images carry intrinsic width and height and load lazily below the hero.
 
 ### Numbered markers
 
