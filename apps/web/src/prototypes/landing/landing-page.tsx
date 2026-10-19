@@ -1,6 +1,6 @@
 import { ArrowIcon, ChromeIcon, SiteShell, storeUrl } from './site-shell';
 import { Receipt } from './receipt';
-import { hero } from './landing-content';
+import { demoVideo, hero, steps } from './landing-content';
 
 export function LandingPage() {
   return (
@@ -25,7 +25,60 @@ export function LandingPage() {
             <figcaption>{hero.receiptCaption}</figcaption>
           </figure>
         </section>
+        <section className="clean-shell content-section" id="how-it-works">
+          <div className="section-heading">
+            <p className="eyebrow">How it works</p>
+            <h2>Three actions. One report.</h2>
+            <p>
+              Capture is intentional: it starts when you choose a tab and ends when you stop it.
+            </p>
+          </div>
+          <ol className="steps">
+            {steps.map((step, index) => (
+              <li className="step" key={step.title}>
+                <div className="step-copy">
+                  <span className="mono">0{index + 1}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.body}</p>
+                </div>
+                {'frame' in step.image ? (
+                  <BrowserFrame src={step.image.src} alt={step.image.alt} />
+                ) : (
+                  <img
+                    className="panel-shot"
+                    src={step.image.src}
+                    alt={step.image.alt}
+                    loading="lazy"
+                  />
+                )}
+              </li>
+            ))}
+          </ol>
+          <figure className="video-frame">
+            <iframe
+              src={demoVideo.src}
+              title={demoVideo.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              loading="lazy"
+            />
+            <figcaption>{demoVideo.caption}</figcaption>
+          </figure>
+        </section>
       </main>
     </SiteShell>
+  );
+}
+
+export function BrowserFrame({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div className="browser-frame">
+      <div className="browser-frame-bar" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+      <img src={src} alt={alt} loading="lazy" />
+    </div>
   );
 }

@@ -132,4 +132,16 @@ describe('extension landing page', () => {
     expect(notFoundMarkup).toContain('This page left no trace.');
     expect(serverErrorMarkup).toContain('The page hit an unexpected failure.');
   });
+
+  it('walks through capture in three steps and reuses the demo video', () => {
+    expect(page).toContain('id="how-it-works"');
+    const content = readFileSync(
+      new URL('../src/prototypes/landing/landing-content.ts', import.meta.url),
+      'utf8',
+    );
+    expect(content).toContain('youtube-nocookie.com/embed/BVdi7FF21Sg');
+    expect(content).toContain('/guide/01-side-panel.png');
+    expect(content).toContain('/guide/03-recording.png');
+    expect(content).toContain('/guide/05-report-details.png');
+  });
 });
