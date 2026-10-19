@@ -166,6 +166,8 @@ describe('extension landing page', () => {
     expect(page).toContain('id="audiences"');
     expect(page).toContain('id="faq"');
     expect(page).not.toContain('id="changelog"');
+    expect(page).toContain('<details key={faq.question}>');
+    expect(page).toContain('className="clean-shell content-section closing"');
     const content = readFileSync(
       new URL('../src/prototypes/landing/landing-content.ts', import.meta.url),
       'utf8',

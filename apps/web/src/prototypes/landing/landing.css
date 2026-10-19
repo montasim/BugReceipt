@@ -25,6 +25,10 @@
   font-size: 13px;
   font-weight: 500;
 }
+.hero-receipt,
+.receipt {
+  min-width: 0;
+}
 .hero-receipt {
   margin: 0;
   animation: receipt-enter 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -139,7 +143,7 @@
 
 @media (max-width: 900px) {
   .hero {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 48px;
     padding-top: 64px;
   }
@@ -151,6 +155,9 @@
   }
   .hero-actions .btn-primary {
     width: 100%;
+  }
+  .closing .btn-link {
+    justify-content: center;
   }
   .receipt-title,
   .receipt h3,
@@ -245,7 +252,7 @@
 }
 @media (max-width: 900px) {
   .step {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 28px;
     padding: 24px;
   }
@@ -311,7 +318,7 @@
 }
 @media (max-width: 900px) {
   .evidence {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 28px;
   }
 }
@@ -384,11 +391,11 @@
 }
 @media (max-width: 900px) {
   .deliverable {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 40px;
   }
   .privacy-table {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .privacy-table > div + div {
     border-left: 0;
@@ -470,6 +477,7 @@
 }
 .faq-list details p {
   margin: -6px 40px 22px 0;
+  max-width: 64ch;
   color: var(--muted);
 }
 
@@ -488,14 +496,14 @@
 @media (max-width: 900px) {
   .corrections,
   .faq {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 36px;
   }
   .corrections-shots {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .audiences {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 28px;
   }
 }
