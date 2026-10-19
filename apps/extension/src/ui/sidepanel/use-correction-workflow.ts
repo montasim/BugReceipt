@@ -3,10 +3,7 @@ import { renderCorrectionCollectionJson } from '@bugreceipt/issue-export';
 import { useEffect, useState } from 'react';
 import { sendRuntimeMessage } from '../../application/protocol';
 import { CORRECTION_COLLECTION_KEY } from '../../application/correction-store';
-import {
-  createReportBundle,
-  type ReportBundleVisual,
-} from '../../infrastructure/report-bundle';
+import { createReportBundle, type ReportBundleVisual } from '../../infrastructure/report-bundle';
 import { readScreenshot } from '../../infrastructure/screenshot-store';
 import { useOffensiveLanguageValidation } from '../use-offensive-language-validation';
 
