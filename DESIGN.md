@@ -8,7 +8,7 @@ colors:
   muted: '#5d6d76'
   line: '#dde4e7'
   amber: '#e8a13f'
-  mint: '#168f80'
+  mint: '#0f7a6d'
   danger: '#b83c24'
 typography:
   display:
@@ -77,7 +77,7 @@ Eight tokens, declared once on `.clean-site` in `site.css`.
 - **Surface `#ffffff`:** The receipt, browser frames, and bands that carry proof.
 - **Line `#dde4e7`:** Borders and dividers.
 - **Amber `#e8a13f`:** The one action color. Used for Add to Chrome and nothing else; hover is `#d88c29`.
-- **Mint `#168f80`:** State: included files, eyebrows, step numbers, and the keyboard focus ring.
+- **Mint `#0f7a6d`:** State: included files, eyebrows, step numbers, and the keyboard focus ring.
 - **Danger `#b83c24`:** Reserved for failed or destructive detail.
 
 ## Typography
