@@ -363,15 +363,9 @@
 .privacy-table > div + div {
   border-left: 1px solid var(--line);
 }
-.privacy-table h3 {
+.clean-site .privacy-table h3 {
   font-size: 15px;
   font-weight: 600;
-}
-.privacy-table > div:first-child h3 {
-  color: var(--mint);
-}
-.privacy-table > div:last-child h3 {
-  color: var(--danger);
 }
 .privacy-table ul {
   margin: 14px 0 0;
@@ -386,7 +380,7 @@
   margin-top: 20px;
   max-width: 64ch;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 15px;
 }
 @media (max-width: 900px) {
   .deliverable {

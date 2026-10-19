@@ -149,6 +149,9 @@ describe('extension landing page', () => {
   it('states the deliverable and the privacy boundaries as a table, not icon cards', () => {
     expect(page).toContain('id="deliverable"');
     expect(page).toContain('id="privacy"');
+    expect(page).not.toContain('role="table"');
+    expect(page).toContain('{privacyFootnote}');
+    expect(page).toContain('deliverables.paragraphs.map');
     const content = readFileSync(
       new URL('../src/prototypes/landing/landing-content.ts', import.meta.url),
       'utf8',

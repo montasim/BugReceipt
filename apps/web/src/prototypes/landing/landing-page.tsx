@@ -86,6 +86,7 @@ export function LandingPage() {
             <EvidenceTabs />
           </div>
         </section>
+
         <section className="clean-shell content-section deliverable" id="deliverable">
           <div>
             <p className="eyebrow">Export</p>
@@ -110,15 +111,13 @@ export function LandingPage() {
                 which local files to export.
               </p>
             </div>
-            <div className="privacy-table" role="table" aria-label="What BugReceipt captures">
+            <div className="privacy-table">
               {privacyColumns.map((column) => (
-                <div role="rowgroup" key={column.title}>
-                  <h3 role="columnheader">{column.title}</h3>
+                <div key={column.title}>
+                  <h3>{column.title}</h3>
                   <ul>
                     {column.items.map((item) => (
-                      <li role="cell" key={item}>
-                        {item}
-                      </li>
+                      <li key={item}>{item}</li>
                     ))}
                   </ul>
                 </div>
