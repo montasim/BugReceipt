@@ -160,4 +160,17 @@ describe('extension landing page', () => {
     expect(content).toContain('does not open or submit a GitHub issue');
     expect(content).toContain('does not recognize every secret');
   });
+
+  it('closes with corrections, audiences, and a five-question FAQ', () => {
+    expect(page).toContain('id="corrections"');
+    expect(page).toContain('id="audiences"');
+    expect(page).toContain('id="faq"');
+    expect(page).not.toContain('id="changelog"');
+    const content = readFileSync(
+      new URL('../src/prototypes/landing/landing-content.ts', import.meta.url),
+      'utf8',
+    );
+    expect(content.match(/question: '/g)).toHaveLength(5);
+    expect(content).toContain('/guide#corrections');
+  });
 });

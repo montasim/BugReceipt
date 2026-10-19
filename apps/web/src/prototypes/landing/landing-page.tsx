@@ -2,8 +2,11 @@ import { ArrowIcon, ChromeIcon, SiteShell, storeUrl } from './site-shell';
 import { BrowserFrame, EvidenceTabs } from './evidence-tabs';
 import { Receipt } from './receipt';
 import {
+  audiences,
+  corrections,
   deliverables,
   demoVideo,
+  faqs,
   hero,
   privacyColumns,
   privacyFootnote,
@@ -124,6 +127,74 @@ export function LandingPage() {
               ))}
             </div>
             <p className="privacy-footnote">{privacyFootnote}</p>
+          </div>
+        </section>
+
+        <section className="clean-shell content-section corrections" id="corrections">
+          <div>
+            <p className="eyebrow">Text corrections</p>
+            <h2>{corrections.title}</h2>
+            <p className="corrections-body">{corrections.body}</p>
+            <a className="btn-link" href={corrections.link.href}>
+              {corrections.link.label} <ArrowIcon />
+            </a>
+          </div>
+          <div className="corrections-shots">
+            <BrowserFrame src={corrections.images[0].src} alt={corrections.images[0].alt} />
+            <img
+              className="panel-shot"
+              src={corrections.images[1].src}
+              alt={corrections.images[1].alt}
+              loading="lazy"
+            />
+          </div>
+        </section>
+
+        <section className="audiences-section" id="audiences">
+          <div className="clean-shell content-section">
+            <div className="section-heading">
+              <p className="eyebrow">Built for</p>
+              <h2>Whoever has to explain the failure.</h2>
+            </div>
+            <div className="audiences">
+              {audiences.map((audience) => (
+                <div key={audience.title}>
+                  <h3>{audience.title}</h3>
+                  <p>{audience.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="clean-shell content-section faq" id="faq">
+          <div className="section-heading">
+            <p className="eyebrow">FAQ</p>
+            <h2>Questions before you install.</h2>
+          </div>
+          <div className="faq-list">
+            {faqs.map((faq) => (
+              <details key={faq.question}>
+                <summary>
+                  {faq.question}
+                  <span aria-hidden="true">+</span>
+                </summary>
+                <p>{faq.answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="clean-shell content-section closing">
+          <h2>Install it before the next bug.</h2>
+          <p>Free, local-first, no account. Works on Chrome desktop 125 and newer.</p>
+          <div className="hero-actions">
+            <a className="btn-primary" href={storeUrl} target="_blank" rel="noreferrer">
+              <ChromeIcon /> Add to Chrome
+            </a>
+            <a className="btn-link" href="/guide">
+              Read the user guide <ArrowIcon />
+            </a>
           </div>
         </section>
       </main>
