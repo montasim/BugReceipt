@@ -16,7 +16,7 @@ export const hero = {
       alt: 'BugReceipt side panel recording the tab, with three steps typed by the tester',
     },
     caption:
-      'A real capture: the demo checkout failing on the left, the BugReceipt side panel recording it on the right.',
+      'A real capture: the demo checkout failing, with the BugReceipt side panel recording it.',
   },
 } as const;
 
