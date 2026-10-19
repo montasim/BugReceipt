@@ -418,6 +418,13 @@ try {
   await review.shoot('09-choose-files.png');
   await review.close();
 
+  // Persist the exact session so the landing receipt renders from the same capture.
+  await writeFile(
+    resolve(import.meta.dirname, '../src/prototypes/landing/receipt-session.json'),
+    `${JSON.stringify(await readSession(), null, 2)}\n`,
+  );
+  console.log('wrote receipt-session.json');
+
   // Part 2 · text corrections. Chrome's native context menu cannot be screenshotted, so the
   // page selection is made directly and the resulting correction is seeded the way the
   // "Suggest a correction" menu item stores it.

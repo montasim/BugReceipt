@@ -8,16 +8,19 @@
     "dev": "vite dev --port 3000",
     "generate-routes": "tsr generate",
     "guide:screenshots": "node scripts/capture-guide-screenshots.mjs",
-    "build": "tsr generate && vite build",
+    "receipt": "node scripts/render-receipt.mjs",
+    "build": "pnpm receipt && tsr generate && vite build",
     "preview": "vite preview",
     "format": "prettier --write . && eslint --fix",
     "lint": "eslint",
     "test": "vitest run && node --test tests/netlify-build-filter.mjs",
     "test:deploy-filter": "node --test tests/netlify-build-filter.mjs",
     "typecheck": "tsc --noEmit",
-    "check": "tsr generate && prettier --check . && eslint && tsc --noEmit && vitest run && node --test tests/netlify-build-filter.mjs && vite build"
+    "check": "tsr generate && pnpm receipt && prettier --check . && eslint && tsc --noEmit && vitest run && node --test tests/netlify-build-filter.mjs && vite build"
   },
   "dependencies": {
+    "@bugreceipt/capture-model": "workspace:*",
+    "@bugreceipt/issue-export": "workspace:*",
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@tailwindcss/vite": "^4.3.3",

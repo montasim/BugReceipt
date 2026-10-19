@@ -156,6 +156,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@bugreceipt/capture-model':
+        specifier: workspace:*
+        version: link:../../packages/capture-model
+      '@bugreceipt/issue-export':
+        specifier: workspace:*
+        version: link:../../packages/issue-export
       '@fontsource-variable/geist':
         specifier: ^5.3.0
         version: 5.3.0
