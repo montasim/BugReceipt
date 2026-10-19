@@ -7,9 +7,9 @@ import appCss from '../styles.css?url';
 
 const siteUrl = 'https://bugreceipt.netlify.app';
 const socialImageUrl = `${siteUrl}/brand/bugreceipt-social-v1.png`;
-const title = 'BugReceipt · Turn broken into reproducible';
+const title = 'BugReceipt · Bug reports developers can reproduce';
 const description =
-  'Capture a privacy-filtered bug reproduction with steps, console messages, network evidence, and a local screen recording—then export a GitHub-ready report.';
+  'BugReceipt records the Chrome tab you are testing, keeps console and network evidence with your steps, and exports a report you review before sharing. Nothing leaves your machine until you share it.';
 
 export const Route = createRootRoute({
   head: () => ({
@@ -18,7 +18,7 @@ export const Route = createRootRoute({
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { title },
       { name: 'description', content: description },
-      { name: 'theme-color', content: '#eef3f5' },
+      { name: 'theme-color', content: '#f6f8f9' },
       { property: 'og:type', content: 'website' },
       { property: 'og:title', content: title },
       { property: 'og:description', content: description },
@@ -80,22 +80,10 @@ function RootDocument({ children }: { children: ReactNode }) {
         className={cn(
           'm-0 min-w-80 bg-fog font-sans text-base leading-[1.6] [font-synthesis:none]',
           'selection:bg-ink selection:text-paper',
-          '[&_.sk-widget-btn]:min-h-11 [&_.sk-widget-btn]:gap-2.5 [&_.sk-widget-btn]:rounded-none [&_.sk-widget-btn]:border [&_.sk-widget-btn]:border-signal [&_.sk-widget-btn]:bg-signal [&_.sk-widget-btn]:px-4 [&_.sk-widget-btn]:py-[11px] [&_.sk-widget-btn]:font-sans [&_.sk-widget-btn]:text-[0.8125rem] [&_.sk-widget-btn]:font-[750] [&_.sk-widget-btn]:text-white [&_.sk-widget-btn]:shadow-none [&_.sk-widget-btn]:transition-[background-color,color,transform] [&_.sk-widget-btn]:duration-180',
-          '[&_.sk-widget-btn:hover]:-translate-y-px [&_.sk-widget-btn:hover]:bg-signal-dark [&_.sk-widget-btn:hover]:text-white [&_.sk-widget-btn:active]:translate-y-0 [&_.sk-widget-btn:focus-visible]:outline-3 [&_.sk-widget-btn:focus-visible]:outline-offset-4 [&_.sk-widget-btn:focus-visible]:outline-trace',
-          '[&_.sk-widget-btn_svg]:h-[18px] [&_.sk-widget-btn_svg]:w-[18px] [&_.sk-widget-btn_svg]:text-white',
-          '[&:has(.landing-page)_.sk-widget-btn]:pointer-events-none [&:has(.landing-page)_.sk-widget-btn]:h-px [&:has(.landing-page)_.sk-widget-btn]:min-h-px [&:has(.landing-page)_.sk-widget-btn]:w-px [&:has(.landing-page)_.sk-widget-btn]:min-w-px [&:has(.landing-page)_.sk-widget-btn]:overflow-hidden [&:has(.landing-page)_.sk-widget-btn]:border-0 [&:has(.landing-page)_.sk-widget-btn]:p-0 [&:has(.landing-page)_.sk-widget-btn]:opacity-0',
-          'max-[680px]:[&_.sk-widget-iframe-container]:right-[15px] max-[680px]:[&_.sk-widget-iframe-container]:bottom-[calc(env(safe-area-inset-bottom)+72px)] max-[680px]:[&_.sk-widget-iframe-container]:left-[15px] max-[680px]:[&_.sk-widget-iframe-container]:h-[min(550px,calc(100dvh-env(safe-area-inset-bottom)-96px))] max-[680px]:[&_.sk-widget-iframe-container]:w-auto',
         )}
       >
         {children}
         <Scripts />
-        <script
-          src="https://www.supportkori.com/widget.js"
-          data-id="montasim"
-          data-message="Support"
-          data-color="#ff5c3a"
-          data-position="right"
-        />
       </body>
     </html>
   );

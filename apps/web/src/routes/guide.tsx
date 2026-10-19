@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { GuidePage } from '../prototypes/landing/guide-page';
-import '../prototypes/landing/clean-landing.css';
+import '../prototypes/landing/site.css';
 
 export const Route = createFileRoute('/guide')({
   head: () => ({

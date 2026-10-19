@@ -9,10 +9,6 @@ describe('extension landing page', () => {
     new URL('../src/prototypes/landing/clean-landing.tsx', import.meta.url),
     'utf8',
   );
-  const pageStyles = readFileSync(
-    new URL('../src/prototypes/landing/clean-landing.css', import.meta.url),
-    'utf8',
-  );
 
   it('promotes the approved landing page at the root route', () => {
     expect(route).toContain("createFileRoute('/')");
@@ -53,6 +49,7 @@ describe('extension landing page', () => {
 
     expect(guideRoute).toContain("createFileRoute('/guide')");
     expect(guideRoute).toContain('GuidePage');
+    expect(guideRoute).toContain('site.css');
     expect(shell).toContain('<a href="/guide">Guide</a>');
     expect(guidePage.match(/src: '\/guide\//g)).toHaveLength(14);
     expect(guidePage).toContain('loading="lazy"');
@@ -76,27 +73,36 @@ describe('extension landing page', () => {
     }
   });
 
-  it('supports light and dark themes with responsive layouts', () => {
+  it('uses Geist and a single light theme across the site shell', () => {
+    const siteStyles = readFileSync(
+      new URL('../src/prototypes/landing/site.css', import.meta.url),
+      'utf8',
+    );
+    const rootStyles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
     const shell = readFileSync(
       new URL('../src/prototypes/landing/site-shell.tsx', import.meta.url),
       'utf8',
     );
-    expect(shell).toContain("useState<'light' | 'dark'>('light')");
-    expect(shell).toContain('bugreceipt-prototype-theme');
-    expect(pageStyles).toContain(".clean-site[data-theme='dark']");
-    expect(pageStyles).toContain('@media (max-width: 900px)');
-    expect(pageStyles).toContain('@media (max-width: 620px)');
+
+    expect(rootStyles).toContain("@import '@fontsource-variable/geist'");
+    expect(rootStyles).not.toContain('bricolage');
+    expect(siteStyles).toContain("font-family: 'Geist Variable'");
+    expect(siteStyles).toContain('--amber: #e8a13f');
+    expect(siteStyles).not.toContain("data-theme='dark'");
+    expect(shell).not.toContain('theme');
+    expect(shell).toContain('<a href="/guide">Guide</a>');
+    expect(shell).toContain('https://www.supportkori.com/montasim');
+    expect(siteStyles).toContain('@media (max-width: 900px)');
+    expect(siteStyles).toContain('@media (max-width: 560px)');
   });
 
-  it('loads the BugReceipt favicon and SupportKori widget from the root document', () => {
+  it('loads the BugReceipt favicon without a floating support widget', () => {
     const source = readFileSync(new URL('../src/routes/__root.tsx', import.meta.url), 'utf8');
 
     expect(source).toContain('/brand/bugreceipt-mark.svg');
     expect(source).toContain('/brand/bugreceipt-32.png');
     expect(source).toContain('/brand/bugreceipt-180.png');
-    expect(source).toContain('https://www.supportkori.com/widget.js');
-    expect(source).toContain('data-id="montasim"');
-    expect(source).toContain('data-message="Support"');
+    expect(source).not.toContain('supportkori.com/widget.js');
   });
 
   it('publishes crawler-visible social preview metadata', () => {

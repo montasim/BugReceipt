@@ -1,100 +1,137 @@
-import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 
-const storeUrl =
+export const storeUrl =
   'https://chromewebstore.google.com/detail/bugreceipt/dcjbnkadoenmkcimidcbhhckdpaondae';
+export const siteVersion = '0.3.0';
 
 export function SiteShell({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem('bugreceipt-prototype-theme');
-    if (saved === 'dark') setTheme('dark');
-  }, []);
-
-  const toggleTheme = () => {
-    const next = theme === 'light' ? 'dark' : 'light';
-    setTheme(next);
-    window.localStorage.setItem('bugreceipt-prototype-theme', next);
-  };
-
   return (
-    <div className="clean-site" data-theme={theme}>
-      <header className="clean-header">
-        <div className="clean-shell header-inner">
+    <div className="clean-site">
+      <header className="site-header">
+        <div className="clean-shell">
           <a className="clean-brand" href="/" aria-label="BugReceipt home">
             <img src="/brand/bugreceipt-mark.svg" alt="" />
             <span>BugReceipt</span>
           </a>
           <nav aria-label="Main navigation">
-            <a href="/#features">Features</a>
-            <a href="/#demo">Demo</a>
             <a href="/guide">Guide</a>
             <a href="/#privacy">Privacy</a>
-            <a href="/#changelog">Changelog</a>
             <a href="/#faq">FAQ</a>
-          </nav>
-          <div className="header-actions">
-            <button
-              className="theme-toggle"
-              type="button"
-              onClick={toggleTheme}
-              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
-            >
-              {theme === 'light' ? <MoonIcon /> : <SunIcon />}
-            </button>
-            <a className="small-download" href={storeUrl} target="_blank" rel="noreferrer">
-              Add to Chrome
+            <a href="https://github.com/montasim/BugReceipt" target="_blank" rel="noreferrer">
+              GitHub
             </a>
-          </div>
+          </nav>
+          <a className="btn-primary" href={storeUrl} target="_blank" rel="noreferrer">
+            <ChromeIcon />
+            <span>Add to Chrome</span>
+          </a>
         </div>
       </header>
 
       {children}
 
-      <footer>
+      <footer className="site-footer">
         <div className="clean-shell">
           <div>
             <a className="clean-brand" href="/">
               <img src="/brand/bugreceipt-mark.svg" alt="" />
               <span>BugReceipt</span>
             </a>
-            <p>Privacy-filtered browser evidence for reproducible bug reports.</p>
+            <p>
+              Local-first bug reports for Chrome. No account, no automatic uploads, review before
+              you share.
+            </p>
+            <p className="version mono">Version {siteVersion}</p>
           </div>
-          <nav aria-label="Footer navigation">
-            <a href="https://github.com/montasim/BugReceipt" target="_blank" rel="noreferrer">
-              GitHub
-            </a>
-            <a
-              href="https://github.com/montasim/BugReceipt/blob/main/SECURITY.md"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Security
-            </a>
-            <a href="/guide">Guide</a>
-            <a href="/#privacy">Privacy</a>
-            <a href="/#changelog">Changelog</a>
-          </nav>
+          <div>
+            <h3>Product</h3>
+            <ul>
+              <li>
+                <a href={storeUrl} target="_blank" rel="noreferrer">
+                  Add to Chrome
+                </a>
+              </li>
+              <li>
+                <a href="/guide">User guide</a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/montasim/BugReceipt/releases"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Releases
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3>Project</h3>
+            <ul>
+              <li>
+                <a href="https://github.com/montasim/BugReceipt" target="_blank" rel="noreferrer">
+                  GitHub
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/montasim/BugReceipt/blob/main/SECURITY.md"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Security policy
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/montasim/BugReceipt/blob/main/SUPPORT.md"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Support
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3>Help the project</h3>
+            <ul>
+              <li>
+                <a href="https://www.supportkori.com/montasim" target="_blank" rel="noreferrer">
+                  Support BugReceipt on SupportKori
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/montasim/BugReceipt/issues/new/choose"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Report a bug or request a feature
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
       </footer>
     </div>
   );
 }
 
-function MoonIcon() {
+export function ChromeIcon() {
   return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M15.5 13.5A7 7 0 0 1 6.5 4.5 7 7 0 1 0 15.5 13.5Z" />
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="4" />
+      <path d="M8.53 14 4.03 6M11.5 21.5l4-7.5M12 8h9" />
     </svg>
   );
 }
 
-function SunIcon() {
+export function ArrowIcon() {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true">
-      <circle cx="10" cy="10" r="3.5" />
-      <path d="M10 1.5v2M10 16.5v2M1.5 10h2M16.5 10h2M4 4l1.4 1.4M14.6 14.6 16 16M16 4l-1.4 1.4M5.4 14.6 4 16" />
+      <path d="M4 10h12M11 5l5 5-5 5" />
     </svg>
   );
 }
