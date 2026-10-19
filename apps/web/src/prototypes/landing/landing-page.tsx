@@ -1,4 +1,5 @@
 import { ArrowIcon, ChromeIcon, SiteShell, storeUrl } from './site-shell';
+import { BrowserFrame, EvidenceTabs } from './evidence-tabs';
 import { Receipt } from './receipt';
 import { demoVideo, hero, steps } from './landing-content';
 
@@ -65,20 +66,20 @@ export function LandingPage() {
             <figcaption>{demoVideo.caption}</figcaption>
           </figure>
         </section>
+        <section className="evidence-section" id="evidence">
+          <div className="clean-shell content-section">
+            <div className="section-heading">
+              <p className="eyebrow">Review evidence</p>
+              <h2>Inspect everything before it leaves.</h2>
+              <p>
+                Three views over the same capture. Remove what should not be shared; the count of
+                sensitive values redacted locally stays visible while you do.
+              </p>
+            </div>
+            <EvidenceTabs />
+          </div>
+        </section>
       </main>
     </SiteShell>
-  );
-}
-
-export function BrowserFrame({ src, alt }: { src: string; alt: string }) {
-  return (
-    <div className="browser-frame">
-      <div className="browser-frame-bar" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
-      <img src={src} alt={alt} loading="lazy" />
-    </div>
   );
 }
