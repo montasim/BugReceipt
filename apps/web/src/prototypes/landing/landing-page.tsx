@@ -1,7 +1,14 @@
 import { ArrowIcon, ChromeIcon, SiteShell, storeUrl } from './site-shell';
 import { BrowserFrame, EvidenceTabs } from './evidence-tabs';
 import { Receipt } from './receipt';
-import { demoVideo, hero, steps } from './landing-content';
+import {
+  deliverables,
+  demoVideo,
+  hero,
+  privacyColumns,
+  privacyFootnote,
+  steps,
+} from './landing-content';
 
 export function LandingPage() {
   return (
@@ -77,6 +84,47 @@ export function LandingPage() {
               </p>
             </div>
             <EvidenceTabs />
+          </div>
+        </section>
+        <section className="clean-shell content-section deliverable" id="deliverable">
+          <div>
+            <p className="eyebrow">Export</p>
+            <h2>{deliverables.title}</h2>
+            <p className="deliverable-lead">{deliverables.lead}</p>
+            <div className="deliverable-copy">
+              {deliverables.paragraphs.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+          </div>
+          <BrowserFrame src={deliverables.image.src} alt={deliverables.image.alt} />
+        </section>
+
+        <section className="privacy-section" id="privacy">
+          <div className="clean-shell content-section">
+            <div className="section-heading">
+              <p className="eyebrow">Privacy</p>
+              <h2>Privacy by construction.</h2>
+              <p>
+                Filtering happens before anything is stored. You inspect the capture and choose
+                which local files to export.
+              </p>
+            </div>
+            <div className="privacy-table" role="table" aria-label="What BugReceipt captures">
+              {privacyColumns.map((column) => (
+                <div role="rowgroup" key={column.title}>
+                  <h3 role="columnheader">{column.title}</h3>
+                  <ul>
+                    {column.items.map((item) => (
+                      <li role="cell" key={item}>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <p className="privacy-footnote">{privacyFootnote}</p>
           </div>
         </section>
       </main>

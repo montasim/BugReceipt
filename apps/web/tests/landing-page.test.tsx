@@ -145,4 +145,16 @@ describe('extension landing page', () => {
     expect(content).toContain('/guide/03-recording.png');
     expect(content).toContain('/guide/05-report-details.png');
   });
+
+  it('states the deliverable and the privacy boundaries as a table, not icon cards', () => {
+    expect(page).toContain('id="deliverable"');
+    expect(page).toContain('id="privacy"');
+    const content = readFileSync(
+      new URL('../src/prototypes/landing/landing-content.ts', import.meta.url),
+      'utf8',
+    );
+    expect(content).toContain('Never read');
+    expect(content).toContain('does not open or submit a GitHub issue');
+    expect(content).toContain('does not recognize every secret');
+  });
 });
