@@ -3,7 +3,7 @@
 // Run `pnpm build:extension` first. Needs Chrome (CHROME_PATH, default google-chrome).
 import { spawn } from 'node:child_process';
 import console from 'node:console';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -488,6 +488,27 @@ try {
   );
   await writeFile(join(outDir, '11-select-text.png'), Buffer.from(selectionShot, 'base64'));
   console.log('wrote 11-select-text.png');
+  // Corrections scene: the selected page at a tab-like size, shown beside the correction panel.
+  await command(
+    'Emulation.setDeviceMetricsOverride',
+    { width: 900, height: 760, deviceScaleFactor: SCALE, mobile: false },
+    pageSession,
+  );
+  await delay(400);
+  await selectOnPage(firstOriginal);
+  await delay(300);
+  const { data: correctionPageShot } = await command(
+    'Page.captureScreenshot',
+    { format: 'png' },
+    pageSession,
+  );
+  await writeFile(join(outDir, 'correction-page.png'), Buffer.from(correctionPageShot, 'base64'));
+  console.log('wrote correction-page.png');
+  await command(
+    'Emulation.setDeviceMetricsOverride',
+    { ...DESKTOP, deviceScaleFactor: SCALE, mobile: false },
+    pageSession,
+  );
   const correctionShotId = crypto.randomUUID();
   await driver.evaluate(`(async () => {
     const db = await new Promise((ok, no) => { const r = indexedDB.open('reprokit-artifacts', 2); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
@@ -558,6 +579,22 @@ try {
   await shootPanel('14-correction-batch.png');
   // 15 · screenshot preview and export
   await shootPanel('15-correction-export.png', { scrollToEnd: true });
+
+  // WebP companions for every PNG, encoded by Chrome itself so no image dependency is needed.
+  for (const file of (await readdir(outDir)).filter((name) => name.endsWith('.png')).sort()) {
+    const png = (await readFile(join(outDir, file))).toString('base64');
+    const webp = await driver.evaluate(`(async () => {
+      const blob = await (await fetch('data:image/png;base64,${png}')).blob();
+      const bitmap = await createImageBitmap(blob);
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      canvas.getContext('2d').drawImage(bitmap, 0, 0);
+      return canvas.toDataURL('image/webp', 0.85).split(',')[1];
+    })()`);
+    await writeFile(join(outDir, file.replace(/\.png$/, '.webp')), Buffer.from(webp, 'base64'));
+  }
+  console.log('wrote webp companions');
 } finally {
   socket?.close();
   chrome.kill('SIGKILL');

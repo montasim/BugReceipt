@@ -30,7 +30,12 @@ describe('extension landing page', () => {
     expect(content).toContain('Bug reports developers can reproduce.');
     expect(page).toContain('{hero.title}');
     expect(page).toContain('<Receipt />');
-    expect(page).toContain('className="hero-scene"');
+    expect(page).toContain('hero-scene');
+    const proof = readFileSync(
+      new URL('../src/prototypes/landing/proof.tsx', import.meta.url),
+      'utf8',
+    );
+    expect(proof).toContain('image/webp');
     expect(receipt).toContain('receipt.generated.json');
     expect(page).not.toContain('bugreceipt-slide-');
     expect(page).not.toContain('carousel');
@@ -117,7 +122,8 @@ describe('extension landing page', () => {
     expect(source).toContain("const siteUrl = 'https://bugreceipt.netlify.app'");
     expect(source).toContain("property: 'og:image'");
     expect(source).toContain("name: 'twitter:card', content: 'summary_large_image'");
-    expect(source).toContain("rel: 'canonical'");
+    expect(source).not.toContain("rel: 'canonical'");
+    expect(route).toContain("rel: 'canonical'");
   });
 
   it('provides themed 404 and 500 recovery pages', () => {
@@ -143,6 +149,7 @@ describe('extension landing page', () => {
     );
     expect(content).toContain('youtube-nocookie.com/embed/BVdi7FF21Sg');
     expect(content).toContain('/guide/hero-page.png');
+    expect(content).toContain('/guide/correction-page.png');
     expect(content).toContain('/guide/01-side-panel.png');
     expect(content).toContain('/guide/03-recording.png');
     expect(content).toContain('/guide/05-report-details.png');
@@ -153,7 +160,7 @@ describe('extension landing page', () => {
     expect(page).toContain('id="privacy"');
     expect(page).not.toContain('role="table"');
     expect(page).toContain('{privacyFootnote}');
-    expect(page).toContain('deliverables.paragraphs.map');
+    expect(page).toContain('deliverables.files.map');
     const content = readFileSync(
       new URL('../src/prototypes/landing/landing-content.ts', import.meta.url),
       'utf8',

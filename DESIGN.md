@@ -65,7 +65,7 @@ components:
 
 ## Overview
 
-The site uses the extension's own light theme, so real product captures sit on the page without a seam. There is no marketing layer between the page and the product: the hero shows a real capture scene (the demo page failing beside the side panel recording it), the Export section shows the actual exported issue.md as a receipt, and every other section shows a real capture of the screen it describes. Amber is the single action color, mint marks state, and one shadow is shared by all proof frames. Numbered markers appear only where the page shows the capture sequence.
+The site uses the extension's own light theme, so real product captures sit on the page without a seam. There is no marketing layer between the page and the product: the hero shows a real capture scene (the demo page failing beside the side panel recording it), the Export section shows the actual exported issue.md as a receipt, and every other section shows a real capture of the screen it describes. Amber is the single action color, mint marks state, and one shadow is shared by all proof frames. Numbered markers appear only where the page shows the capture sequence. Every landing section follows one grammar: a centered eyebrow, heading, and lead; one full-width proof artifact inside a browser frame with a caption; then ruled three-column detail with a mono label, title, and copy.
 
 ## Colors
 
@@ -76,7 +76,7 @@ Eight tokens, declared once on `.clean-site` in `site.css`.
 - **Bg `#f6f8f9`:** The page ground and alternating section bands.
 - **Surface `#ffffff`:** The receipt, browser frames, and bands that carry proof.
 - **Line `#dde4e7`:** Borders and dividers.
-- **Amber `#e8a13f`:** The one action color. Used for Add to Chrome and nothing else; hover is `#d88c29`.
+- **Amber `#e8a13f`:** The one action color. Used for the Add to Chrome actions and the text-selection highlight; nothing else. Hover is `#d88c29`.
 - **Mint `#0f7a6d`:** State: included files, eyebrows, step numbers, and the keyboard focus ring.
 - **Danger `#b83c24`:** Reserved for failed or destructive detail.
 
@@ -110,7 +110,7 @@ Primary: amber background, ink text, 48px high, 8px radius, 150ms background tra
 
 ### Receipt
 
-The signature component. It renders the real issue.md produced by `@bugreceipt/issue-export` from the demo capture: title, numbered steps, expected and current behavior, console and network excerpts, and a footer listing the exported files with mint Included badges. It uses the surface fill, the 12px radius, and the proof shadow, and enters once with a 500ms rise that is disabled under `prefers-reduced-motion`.
+The signature artifact. It renders the real issue.md produced by `@bugreceipt/issue-export` from the demo capture: title, numbered steps, expected and current behavior, the environment lines, and a console excerpt that shows errors first, then a footer listing the exported files with mint Included badges. It sits in the Export section at a maximum width of 820px, uses the surface fill, the 12px radius, and the proof shadow, and has no animation of its own. The single entrance animation belongs to the hero scene (500ms rise), disabled under `prefers-reduced-motion`.
 
 ### Browser frame
 
@@ -138,7 +138,7 @@ Buttons, links, summaries, tabs, and the tab panel show a 3px mint outline offse
 
 - **Do** lead with claims that are backed by an inspectable artifact, ledger, file tree, or explicit boundary.
 - **Do** use thin rules, 12px and 8px radii, and tonal contrast as the default hierarchy tools.
-- **Do** reserve JetBrains Mono for diagnostic metadata, counts, paths, versions, status, and navigation labels.
+- **Do** reserve JetBrains Mono for diagnostic metadata, counts, paths, versions, status, eyebrows, and column labels; navigation is set in Geist.
 - **Do** preserve the 900px and 560px responsive behavior and the reduced-motion guards on the two animations.
 
 ### Don't:

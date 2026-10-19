@@ -190,3 +190,9 @@ Each numbered item is one commit.
 1. Direction: B as specified, or A/C. (Recommended: B.)
 2. Sans: Geist (recommended) or Inter.
 3. Whether the SupportKori support widget stays on the marketing page. Recommended: move it to the footer as a plain "Support" link and drop the floating button.
+
+## Addendum (2026-10-19, after review)
+
+- The hero's artifact is a full-width capture scene (the demo page failing beside the side panel recording it), not the receipt. The receipt moved to the Export section.
+- Every section follows one grammar: centered eyebrow, heading, and lead; one full-width proof artifact in a browser frame with a caption; then ruled three-column detail with a mono label. Surface bands were removed.
+- Mint is `#0f7a6d` (AA on both grounds). Captures ship as WebP with PNG fallback; the hero's page capture is skipped below 700px.

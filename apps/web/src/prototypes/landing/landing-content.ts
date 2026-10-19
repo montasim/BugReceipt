@@ -16,7 +16,7 @@ export const hero = {
       alt: 'BugReceipt side panel recording the tab, with three steps typed by the tester',
     },
     caption:
-      'A real capture: the demo checkout failing, with the BugReceipt side panel recording it.',
+      'Screenshots from the demo capture: the checkout failing, and the side panel capturing it.',
   },
 } as const;
 
@@ -100,18 +100,31 @@ export const evidenceTabs = [
 
 export const deliverables = {
   title: 'What the developer gets',
-  lead: 'One ZIP under Chrome Downloads. The report is GitHub-ready Markdown; the evidence files sit beside it.',
-  paragraphs: [
-    'issue.md carries the title, description, numbered steps, expected and current behavior, the page and browser context, and the console and network excerpts you kept.',
-    'console.json and network.har hold the full filtered diagnostics for tools that read them. Console and network evidence can also be downloaded on their own from the review.',
-    'recording.webm and selected-frame PNGs carry the visual proof. Annotated frames are rendered into the PNG.',
-    'BugReceipt does not open or submit a GitHub issue for you. You attach what you reviewed.',
+  lead: 'One ZIP or folder under Chrome Downloads. The report is GitHub-ready Markdown; the evidence files sit beside it.',
+  receiptCaption: 'An excerpt of the issue.md exported from that capture.',
+  files: [
+    {
+      label: 'issue.md',
+      title: 'The report',
+      body: 'Title, description, numbered steps, expected and current behavior, the page and browser context, and the console and network excerpts you kept.',
+    },
+    {
+      label: 'console.json · network.har',
+      title: 'The diagnostics',
+      body: 'The full filtered console and network evidence for tools that read them. Both can also be downloaded on their own from the review.',
+    },
+    {
+      label: 'recording.webm · frames',
+      title: 'The visual proof',
+      body: 'The tab recording and the frames you saved, with annotations rendered into each PNG.',
+    },
   ],
-  receiptCaption: 'The issue.md from the capture above, rendered as the developer receives it.',
+  note: 'BugReceipt does not open or submit a GitHub issue for you. You attach what you reviewed.',
 } as const;
 
 export const privacyColumns = [
   {
+    label: 'Recorded',
     title: 'Captured after you start',
     items: [
       'Video of the selected tab, without audio',
@@ -122,6 +135,7 @@ export const privacyColumns = [
     ],
   },
   {
+    label: 'Redacted',
     title: 'Filtered before storage',
     items: [
       'URL query strings',
@@ -132,6 +146,7 @@ export const privacyColumns = [
     ],
   },
   {
+    label: 'Not collected',
     title: 'Never read',
     items: [
       'Cookies and browser storage',
@@ -150,32 +165,37 @@ export const corrections = {
   title: 'Wrong wording? Send that too.',
   body: 'Select text on any page, right-click, and choose Suggest a correction. The side panel keeps the original text, takes your suggested wording and locale, and collects up to 20 corrections from one site into a local ZIP with a marked screenshot for each.',
   link: { href: '/guide#corrections', label: 'See the correction workflow in the guide' },
-  images: [
-    {
-      src: '/guide/11-select-text.png',
-      width: 2880,
-      height: 1800,
-      alt: 'Checkout page with a sentence selected',
+  scene: {
+    page: {
+      src: '/guide/correction-page.png',
+      width: 1800,
+      height: 1520,
+      alt: 'Demo checkout page with the sentence under the heading selected',
     },
-    {
+    panel: {
       src: '/guide/14-correction-batch.png',
       width: 880,
       height: 1520,
-      alt: 'BugReceipt side panel with two corrections in a batch',
+      alt: 'BugReceipt side panel holding two corrections, the second with its suggested wording',
     },
-  ],
+    caption:
+      'Screenshots from the demo capture: the selected sentence on the page, and the panel collecting corrections.',
+  },
 } as const;
 
 export const audiences = [
   {
+    label: 'QA',
     title: 'QA engineers',
     body: 'One capture replaces a screenshot, a DevTools export, and a paragraph of guesses. The steps you type land next to the requests that failed.',
   },
   {
+    label: 'Support',
     title: 'Support teams',
     body: 'Ask a customer for one ZIP instead of a screen-share. They review what is in it before sending; you forward it to engineering as is.',
   },
   {
+    label: 'Open source',
     title: 'Open-source maintainers',
     body: 'Issues arrive with console output, the failing request, and the browser version attached, so the first reply can be a fix instead of a question.',
   },

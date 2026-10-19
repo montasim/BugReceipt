@@ -1,29 +1,7 @@
 import { useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { evidenceTabs } from './landing-content';
-
-export function BrowserFrame({
-  src,
-  alt,
-  width,
-  height,
-}: {
-  src: string;
-  alt: string;
-  width: number;
-  height: number;
-}) {
-  return (
-    <div className="browser-frame">
-      <div className="browser-frame-bar" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
-      <img src={src} alt={alt} width={width} height={height} loading="lazy" />
-    </div>
-  );
-}
+import { BrowserFrame, Shot } from './proof';
 
 export function EvidenceTabs() {
   const [active, setActive] = useState(0);
@@ -49,41 +27,42 @@ export function EvidenceTabs() {
 
   return (
     <div className="evidence">
-      <div className="evidence-copy">
-        <div role="tablist" aria-label="Evidence views" className="evidence-tablist">
-          {evidenceTabs.map((tab, index) => (
-            <button
-              key={tab.id}
-              ref={(element) => {
-                tabRefs.current[index] = element;
-              }}
-              type="button"
-              role="tab"
-              id={`${baseId}-tab-${tab.id}`}
-              aria-selected={index === active}
-              aria-controls={`${baseId}-panel`}
-              tabIndex={index === active ? 0 : -1}
-              onClick={() => setActive(index)}
-              onKeyDown={(event) => onKeyDown(event, index)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        <h3>{current.title}</h3>
-        <p>{current.body}</p>
+      <div role="tablist" aria-label="Evidence views" className="evidence-tablist">
+        {evidenceTabs.map((tab, index) => (
+          <button
+            key={tab.id}
+            ref={(element) => {
+              tabRefs.current[index] = element;
+            }}
+            type="button"
+            role="tab"
+            id={`${baseId}-tab-${tab.id}`}
+            aria-selected={index === active}
+            aria-controls={`${baseId}-panel`}
+            tabIndex={index === active ? 0 : -1}
+            onClick={() => setActive(index)}
+            onKeyDown={(event) => onKeyDown(event, index)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
-      <div
+      <figure
         role="tabpanel"
         id={`${baseId}-panel`}
         aria-labelledby={`${baseId}-tab-${current.id}`}
         tabIndex={0}
-        className="evidence-panel"
+        className="proof evidence-panel"
         key={current.id}
       >
-        <span className="visually-hidden">{current.title}</span>
-        <BrowserFrame {...current.image} />
-      </div>
+        <BrowserFrame>
+          <Shot image={current.image} />
+        </BrowserFrame>
+        <figcaption>
+          <h3>{current.title}</h3>
+          <p>{current.body}</p>
+        </figcaption>
+      </figure>
     </div>
   );
 }

@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react';
 import { ArrowIcon, ChromeIcon, SiteShell, storeUrl } from './site-shell';
-import { BrowserFrame, EvidenceTabs } from './evidence-tabs';
+import { EvidenceTabs } from './evidence-tabs';
+import { Proof, Shot } from './proof';
 import { Receipt } from './receipt';
 import {
   audiences,
@@ -16,7 +18,7 @@ import {
 export function LandingPage() {
   return (
     <SiteShell>
-      <main id="top">
+      <main id="top" className="landing">
         <section className="clean-shell hero">
           <div className="hero-copy">
             <h1>{hero.title}</h1>
@@ -31,34 +33,25 @@ export function LandingPage() {
             </div>
             <p className="hero-fine">{hero.finePrint}</p>
           </div>
-          <figure className="hero-scene">
-            <div className="browser-frame">
-              <div className="browser-frame-bar" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-              </div>
-              <div className="scene">
-                <img className="scene-page" {...hero.scene.page} fetchPriority="high" />
-                <img className="scene-panel" {...hero.scene.panel} fetchPriority="high" />
-              </div>
+          <Proof className="hero-scene" caption={hero.scene.caption}>
+            <div className="scene">
+              <Shot className="scene-page" image={hero.scene.page} eager skipBelow={700} />
+              <Shot className="scene-panel" image={hero.scene.panel} eager />
             </div>
-            <figcaption>{hero.scene.caption}</figcaption>
-          </figure>
+          </Proof>
         </section>
-        <section className="clean-shell content-section" id="how-it-works">
-          <div className="section-heading">
-            <p className="eyebrow">How it works</p>
-            <h2>Three actions. One report.</h2>
-            <p>
-              Capture is intentional: it starts when you choose a tab and ends when you stop it.
-            </p>
-          </div>
-          <ol className="steps">
+
+        <Section
+          id="how-it-works"
+          eyebrow="How it works"
+          title="Three actions. One report."
+          lead="Capture is intentional: it starts when you choose a tab and ends when you stop it."
+        >
+          <ol className="cols steps">
             {steps.map((step, index) => (
-              <li className="step" key={step.title}>
+              <li key={step.title}>
                 <div className="step-shot">
-                  <img {...step.image} loading="lazy" />
+                  <Shot image={step.image} />
                 </div>
                 <span className="mono">0{index + 1}</span>
                 <h3>{step.title}</h3>
@@ -66,7 +59,7 @@ export function LandingPage() {
               </li>
             ))}
           </ol>
-          <figure className="video-frame">
+          <figure className="proof video-frame">
             <iframe
               src={demoVideo.src}
               title={demoVideo.title}
@@ -76,108 +69,93 @@ export function LandingPage() {
             />
             <figcaption>{demoVideo.caption}</figcaption>
           </figure>
-        </section>
-        <section className="evidence-section" id="evidence">
-          <div className="clean-shell content-section">
-            <div className="section-heading">
-              <p className="eyebrow">Review evidence</p>
-              <h2>Inspect everything before it leaves.</h2>
-              <p>
-                Three views over the same capture. Remove what should not be shared; the count of
-                sensitive values redacted locally stays visible while you do.
-              </p>
-            </div>
-            <EvidenceTabs />
-          </div>
-        </section>
+        </Section>
 
-        <section className="clean-shell content-section deliverable" id="deliverable">
-          <div>
-            <p className="eyebrow">Export</p>
-            <h2>{deliverables.title}</h2>
-            <p className="deliverable-lead">{deliverables.lead}</p>
-            <div className="deliverable-copy">
-              {deliverables.paragraphs.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
-            </div>
-          </div>
-          <figure className="deliverable-receipt">
+        <Section
+          id="evidence"
+          eyebrow="Review evidence"
+          title="Inspect everything before it leaves."
+          lead="Three views over the same capture. Remove what should not be shared; the count of sensitive values redacted locally stays visible while you do."
+        >
+          <EvidenceTabs />
+        </Section>
+
+        <Section
+          id="deliverable"
+          eyebrow="Export"
+          title={deliverables.title}
+          lead={deliverables.lead}
+        >
+          <figure className="proof proof-receipt">
             <Receipt />
             <figcaption>{deliverables.receiptCaption}</figcaption>
           </figure>
-        </section>
-
-        <section className="privacy-section" id="privacy">
-          <div className="clean-shell content-section">
-            <div className="section-heading">
-              <p className="eyebrow">Privacy</p>
-              <h2>Privacy by construction.</h2>
-              <p>
-                Filtering happens before anything is stored. You inspect the capture and choose
-                which local files to export.
-              </p>
-            </div>
-            <div className="privacy-table">
-              {privacyColumns.map((column) => (
-                <div key={column.title}>
-                  <h3>{column.title}</h3>
-                  <ul>
-                    {column.items.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-            <p className="privacy-footnote">{privacyFootnote}</p>
+          <div className="cols">
+            {deliverables.files.map((file) => (
+              <div key={file.label}>
+                <span className="mono">{file.label}</span>
+                <h3>{file.title}</h3>
+                <p>{file.body}</p>
+              </div>
+            ))}
           </div>
-        </section>
+          <p className="section-note">{deliverables.note}</p>
+        </Section>
 
-        <section className="clean-shell content-section corrections" id="corrections">
-          <div>
-            <p className="eyebrow">Text corrections</p>
-            <h2>{corrections.title}</h2>
-            <p className="corrections-body">{corrections.body}</p>
+        <Section
+          id="privacy"
+          eyebrow="Privacy"
+          title="Privacy by construction."
+          lead="Filtering happens before anything is stored. You inspect the capture and choose which local files to export."
+        >
+          <div className="cols">
+            {privacyColumns.map((column) => (
+              <div key={column.title}>
+                <span className="mono">{column.label}</span>
+                <h3>{column.title}</h3>
+                <ul>
+                  {column.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <p className="section-note is-quiet">{privacyFootnote}</p>
+        </Section>
+
+        <Section
+          id="corrections"
+          eyebrow="Text corrections"
+          title={corrections.title}
+          lead={corrections.body}
+        >
+          <Proof caption={corrections.scene.caption}>
+            <div className="scene">
+              <Shot className="scene-page" image={corrections.scene.page} skipBelow={700} />
+              <Shot className="scene-panel" image={corrections.scene.panel} />
+            </div>
+          </Proof>
+          <div className="section-actions">
             <a className="btn-link" href={corrections.link.href}>
               {corrections.link.label} <ArrowIcon />
             </a>
           </div>
-          <div className="corrections-shots">
-            <BrowserFrame {...corrections.images[0]} />
-            <img
-              className="panel-shot"
-              src={corrections.images[1].src}
-              alt={corrections.images[1].alt}
-              width={corrections.images[1].width}
-              height={corrections.images[1].height}
-              loading="lazy"
-            />
-          </div>
-        </section>
+        </Section>
 
-        <section className="audiences-section" id="audiences">
-          <div className="clean-shell content-section">
-            <div className="section-heading">
-              <p className="eyebrow">Built for</p>
-              <h2>Whoever has to explain the failure.</h2>
-            </div>
-            <div className="audiences">
-              {audiences.map((audience) => (
-                <div key={audience.title}>
-                  <h3>{audience.title}</h3>
-                  <p>{audience.body}</p>
-                </div>
-              ))}
-            </div>
+        <Section id="audiences" eyebrow="Built for" title="Whoever has to explain the failure.">
+          <div className="cols">
+            {audiences.map((audience) => (
+              <div key={audience.title}>
+                <span className="mono">{audience.label}</span>
+                <h3>{audience.title}</h3>
+                <p>{audience.body}</p>
+              </div>
+            ))}
           </div>
-        </section>
+        </Section>
 
-        <section className="clean-shell content-section faq" id="faq">
-          <div className="section-heading">
-            <p className="eyebrow">FAQ</p>
-            <h2>Questions before you install.</h2>
-          </div>
+        <Section id="faq" eyebrow="FAQ" title="Questions before you install.">
           <div className="faq-list">
             {faqs.map((faq) => (
               <details key={faq.question}>
@@ -189,7 +167,7 @@ export function LandingPage() {
               </details>
             ))}
           </div>
-        </section>
+        </Section>
 
         <section className="clean-shell content-section closing">
           <h2>Install it before the next bug.</h2>
@@ -205,5 +183,31 @@ export function LandingPage() {
         </section>
       </main>
     </SiteShell>
+  );
+}
+
+/** Every landing section shares one grammar: centered heading, then proof, then detail. */
+function Section({
+  id,
+  eyebrow,
+  title,
+  lead,
+  children,
+}: {
+  id: string;
+  eyebrow: string;
+  title: string;
+  lead?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="clean-shell content-section" id={id}>
+      <div className="section-heading">
+        <p className="eyebrow">{eyebrow}</p>
+        <h2>{title}</h2>
+        {lead ? <p>{lead}</p> : null}
+      </div>
+      {children}
+    </section>
   );
 }

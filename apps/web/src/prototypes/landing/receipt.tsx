@@ -82,9 +82,9 @@ export function Receipt() {
         <span className="mono">issue.md</span>
         <span className="mono">Local export</span>
       </header>
-      <h2 className="receipt-title">{title}</h2>
+      <h3 className="receipt-title">{title}</h3>
       {visible.map((block, index) => {
-        if (block.kind === 'heading') return <h3 key={index}>{block.text}</h3>;
+        if (block.kind === 'heading') return <h4 key={index}>{block.text}</h4>;
         if (block.kind === 'code')
           return (
             <pre key={index}>

@@ -6,6 +6,7 @@ export const Route = createFileRoute('/guide')({
   head: () => ({
     meta: [
       { title: 'BugReceipt user guide · Every feature, step by step' },
+      { property: 'og:url', content: 'https://bugreceipt.netlify.app/guide' },
       {
         name: 'description',
         content:

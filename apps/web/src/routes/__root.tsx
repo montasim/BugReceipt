@@ -22,7 +22,6 @@ export const Route = createRootRoute({
       { property: 'og:type', content: 'website' },
       { property: 'og:title', content: title },
       { property: 'og:description', content: description },
-      { property: 'og:url', content: siteUrl },
       { property: 'og:image', content: socialImageUrl },
       { property: 'og:image:secure_url', content: socialImageUrl },
       { property: 'og:image:type', content: 'image/png' },
@@ -43,7 +42,6 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
-      { rel: 'canonical', href: siteUrl },
       {
         rel: 'icon',
         href: '/brand/bugreceipt-mark.svg',
@@ -71,7 +69,7 @@ function RootDocument({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
-      className="scroll-smooth bg-fog text-ink [scrollbar-color:#1f9fae_#eef3f5] motion-reduce:scroll-auto"
+      className="scroll-smooth bg-fog text-ink [scrollbar-color:#0f7a6d_#f6f8f9] motion-reduce:scroll-auto"
     >
       <head>
         <HeadContent />

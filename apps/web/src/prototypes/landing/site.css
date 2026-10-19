@@ -43,9 +43,10 @@
   outline: 3px solid var(--mint);
   outline-offset: 3px;
 }
-.clean-site h1,
-.clean-site h2,
-.clean-site h3 {
+:where(.clean-site) h1,
+:where(.clean-site) h2,
+:where(.clean-site) h3,
+:where(.clean-site) h4 {
   margin: 0;
   font-weight: 600;
   text-wrap: balance;
@@ -322,7 +323,7 @@
 }
 
 @media (max-width: 900px) {
-  .site-header nav {
+  .site-header nav a:not([href='/guide']) {
     display: none;
   }
   .site-footer .clean-shell {
