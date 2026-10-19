@@ -60,7 +60,7 @@
 .receipt-head span:last-child {
   color: var(--mint);
 }
-.receipt-title {
+.receipt .receipt-title {
   padding: 20px 24px 0;
   font-size: 22px;
   letter-spacing: -0.01em;
@@ -91,7 +91,14 @@
   list-style: none;
   padding-left: 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 15px;
+}
+.receipt ol {
+  list-style: decimal;
+}
+.receipt ol li::marker {
+  color: var(--muted);
+  font-size: 13px;
 }
 .receipt pre {
   margin: 10px 24px 0;
@@ -104,6 +111,9 @@
   line-height: 1.55;
   overflow-x: auto;
   white-space: pre;
+}
+.receipt pre code {
+  font: inherit;
 }
 .receipt-files {
   margin-top: 20px;

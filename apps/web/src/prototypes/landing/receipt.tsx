@@ -52,6 +52,22 @@ const shownSections = new Set([
   'Console messages',
 ]);
 
+const EXCERPT_LINES = 4;
+
+// Keep the lines a developer reads first: errors, then warnings, then the rest, in original order.
+export function excerptConsole(text: string, limit = EXCERPT_LINES): string[] {
+  const lines = text.split('\n').filter((line) => line.trim() !== '');
+  const rank = (line: string) => (/ ERROR /.test(line) ? 0 : / WARN /.test(line) ? 1 : 2);
+  const chosen = new Set(
+    lines
+      .map((line, index) => ({ line, index }))
+      .sort((a, b) => rank(a.line) - rank(b.line) || a.index - b.index)
+      .slice(0, limit)
+      .map((entry) => entry.index),
+  );
+  return lines.filter((_, index) => chosen.has(index));
+}
+
 export function Receipt() {
   const { title, blocks } = parseReceipt(receipt.markdown);
   const visible: Block[] = [];
@@ -72,7 +88,7 @@ export function Receipt() {
         if (block.kind === 'code')
           return (
             <pre key={index}>
-              <code>{block.text.split('\n').slice(0, 4).join('\n')}</code>
+              <code>{excerptConsole(block.text).join('\n')}</code>
             </pre>
           );
         if (block.kind === 'list')
