@@ -6,34 +6,38 @@ import { NotFound, ServerError } from '../src/routes/__root';
 describe('extension landing page', () => {
   const route = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
   const page = readFileSync(
-    new URL('../src/prototypes/landing/clean-landing.tsx', import.meta.url),
+    new URL('../src/prototypes/landing/landing-page.tsx', import.meta.url),
     'utf8',
   );
 
-  it('promotes the approved landing page at the root route', () => {
+  it('serves the product-first landing page at the root route', () => {
     expect(route).toContain("createFileRoute('/')");
-    expect(route).toContain('CleanLanding');
-    expect(route).toContain('clean-landing.css');
+    expect(route).toContain('LandingPage');
+    expect(route).toContain('site.css');
+    expect(route).toContain('landing.css');
   });
 
-  it('links to the Chrome Web Store and uses the real extension desktop UI', () => {
-    expect(page).toContain('chromewebstore.google.com/detail/bugreceipt');
-    expect(page).toContain('<ChromeIcon /> Add to Chrome');
-    for (let index = 1; index <= 5; index += 1) {
-      expect(page).toContain(`/brand/bugreceipt-slide-${index}.png`);
-    }
-    expect(page).toContain('aria-roledescription="carousel"');
-    expect(page).toContain('Version 0.3.0 is the latest version.');
-  });
-
-  it('explains the product with a demo, privacy details, changelog, and FAQs', () => {
-    expect(page).toContain('youtube-nocookie.com/embed/BVdi7FF21Sg');
-    expect(page).toContain('Everything needed to reproduce the problem.');
-    expect(page).toContain('Your report stays under your control.');
-    expect(page).toContain('href="/guide"');
-    expect(page).toContain('<h2>Changelog</h2>');
-    expect(page).toContain('Frequently asked questions');
-    expect(page).toContain('Report bugs with proof.');
+  it('opens with a real receipt instead of marketing composites', () => {
+    const receipt = readFileSync(
+      new URL('../src/prototypes/landing/receipt.tsx', import.meta.url),
+      'utf8',
+    );
+    const content = readFileSync(
+      new URL('../src/prototypes/landing/landing-content.ts', import.meta.url),
+      'utf8',
+    );
+    expect(content).toContain('Bug reports developers can reproduce.');
+    expect(page).toContain('{hero.title}');
+    expect(page).toContain('<Receipt />');
+    expect(receipt).toContain('receipt.generated.json');
+    expect(page).not.toContain('bugreceipt-slide-');
+    expect(page).not.toContain('carousel');
+    const shell = readFileSync(
+      new URL('../src/prototypes/landing/site-shell.tsx', import.meta.url),
+      'utf8',
+    );
+    expect(shell).toContain('chromewebstore.google.com/detail/bugreceipt');
+    expect(page).toContain('href={storeUrl}');
   });
 
   it('publishes the user guide as its own route with a screenshot for every step', () => {

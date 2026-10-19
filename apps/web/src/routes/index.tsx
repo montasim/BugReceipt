@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { CleanLanding } from '../prototypes/landing/clean-landing';
+import { LandingPage } from '../prototypes/landing/landing-page';
 import '../prototypes/landing/site.css';
-import '../prototypes/landing/clean-landing.css';
+import '../prototypes/landing/landing.css';
 
-export const Route = createFileRoute('/')({ component: CleanLanding });
+export const Route = createFileRoute('/')({ component: LandingPage });
