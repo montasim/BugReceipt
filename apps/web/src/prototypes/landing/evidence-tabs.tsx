@@ -28,6 +28,7 @@ export function EvidenceTabs() {
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.key === 'ArrowRight') focusTab(index + 1);
     else if (event.key === 'ArrowLeft') focusTab(index - 1);
     else if (event.key === 'Home') focusTab(0);
@@ -66,6 +67,7 @@ export function EvidenceTabs() {
         role="tabpanel"
         id={`${baseId}-panel`}
         aria-labelledby={`${baseId}-tab-${current.id}`}
+        tabIndex={0}
         className="evidence-panel"
         key={current.id}
       >

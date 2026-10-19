@@ -267,14 +267,14 @@
   display: inline-flex;
   padding: 4px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-control);
+  border-radius: var(--radius);
   background: var(--bg);
 }
 .evidence-tablist [role='tab'] {
   min-height: 36px;
   padding: 0 14px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--muted);
   font: inherit;
@@ -285,9 +285,8 @@
 .evidence-tablist [role='tab'][aria-selected='true'] {
   background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 1px 2px rgb(19 36 47 / 0.08);
 }
-.evidence-copy h3 {
+.evidence-copy > h3 {
   margin-top: 28px;
 }
 .evidence-copy p {
