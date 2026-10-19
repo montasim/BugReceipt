@@ -1,6 +1,6 @@
 export const hero = {
   title: 'Bug reports developers can reproduce.',
-  lead: 'BugReceipt records the Chrome tab you are testing, keeps the console and network evidence with your steps, and exports a report you review first. Nothing leaves your machine until you share it.',
+  lead: 'Record the tab. Keep the console and network evidence with your steps. Review, then export. Nothing leaves your machine until you share it.',
   finePrint: 'Chrome desktop 125 and newer · Free · No account',
   scene: {
     page: {
@@ -15,15 +15,14 @@ export const hero = {
       height: 1520,
       alt: 'BugReceipt side panel recording the tab, with three steps typed by the tester',
     },
-    caption:
-      'Screenshots from the demo capture: the checkout failing, and the side panel capturing it.',
+    caption: 'Screenshots from the demo capture: the page failing, the side panel recording.',
   },
 } as const;
 
 export const steps = [
   {
     title: 'Choose the tab',
-    body: 'Open the side panel on the page where the problem happens and select Choose tab to record. Nothing is recorded until you confirm the tab in Chrome’s share dialog.',
+    body: 'Open the side panel and pick the tab in Chrome’s share dialog. Nothing is recorded before that.',
     image: {
       src: '/guide/01-side-panel.png',
       width: 880,
@@ -33,7 +32,7 @@ export const steps = [
   },
   {
     title: 'Reproduce and add steps',
-    body: 'Use the page normally. The panel counts console messages and requests as they happen; type each action you take so the report carries human steps next to the evidence.',
+    body: 'Use the page as usual. Type what you do; the panel counts the evidence as it arrives.',
     image: {
       src: '/guide/03-recording.png',
       width: 880,
@@ -43,7 +42,7 @@ export const steps = [
   },
   {
     title: 'Stop and review',
-    body: 'Stop & review opens the workbench. Finish the report, remove anything private from the evidence, then download one ZIP.',
+    body: 'Finish the report, remove anything private, download one ZIP.',
     image: {
       src: '/guide/05-report-details.png',
       width: 2880,
@@ -56,15 +55,15 @@ export const steps = [
 export const demoVideo = {
   src: 'https://www.youtube-nocookie.com/embed/BVdi7FF21Sg?rel=0',
   title: 'BugReceipt product demo',
-  caption: 'The 45-second demo follows one capture from the failing page to the downloaded report.',
+  caption: '45 seconds, from the failing page to the downloaded report.',
 } as const;
 
 export const evidenceTabs = [
   {
     id: 'visual',
     label: 'Visual',
-    title: 'Play the recording, keep the frames that matter',
-    body: 'The WebM recording of the selected tab plays inside the review. Pause on the failure, save up to 20 frames, and annotate them with marker, highlight, border, and notes. Remove the video or any frame before export.',
+    title: 'Play it. Keep the frames that matter.',
+    body: 'Pause on the failure, save up to 20 frames, annotate them. Remove the video or any frame before export.',
     image: {
       src: '/guide/06-visual-evidence.png',
       width: 2880,
@@ -76,7 +75,7 @@ export const evidenceTabs = [
     id: 'console',
     label: 'Console',
     title: 'Every message since recording started',
-    body: 'Logs, warnings, errors, uncaught exceptions, and rejected promises, each with a timestamp. Search, filter by type, highlight the exact text the developer should read, and remove entries you do not want to share. The count of sensitive values redacted locally is shown above the list.',
+    body: 'Search, filter by type, highlight the exact line. Remove what you do not want shared.',
     image: {
       src: '/guide/07-console-evidence.png',
       width: 2880,
@@ -88,7 +87,7 @@ export const evidenceTabs = [
     id: 'network',
     label: 'Network',
     title: 'The failing request, with its body',
-    body: 'Fetch, XHR, and page resources with method, status, and timing. API calls come first. Open a request to read its headers with credentials redacted and its request and response bodies as formatted JSON or raw text.',
+    body: 'Method, status, timing. Open a request for its headers and JSON body, credentials already redacted.',
     image: {
       src: '/guide/08-network-evidence.png',
       width: 2880,
@@ -100,26 +99,26 @@ export const evidenceTabs = [
 
 export const deliverables = {
   title: 'What the developer gets',
-  lead: 'One ZIP or folder under Chrome Downloads. The report is GitHub-ready Markdown; the evidence files sit beside it.',
-  receiptCaption: 'An excerpt of the issue.md exported from that capture.',
+  lead: 'One ZIP or folder. GitHub-ready Markdown, with the evidence beside it.',
+  receiptCaption: 'An excerpt of the issue.md from that capture.',
   files: [
     {
       label: 'issue.md',
       title: 'The report',
-      body: 'Title, description, numbered steps, expected and current behavior, the page and browser context, and the console and network excerpts you kept.',
+      body: 'Title, steps, expected and current behavior, environment, console and network excerpts.',
     },
     {
       label: 'console.json · network.har',
       title: 'The diagnostics',
-      body: 'The full filtered console and network evidence for tools that read them. Both can also be downloaded on their own from the review.',
+      body: 'The full filtered evidence, for tools that read it.',
     },
     {
       label: 'recording.webm · frames',
       title: 'The visual proof',
-      body: 'The tab recording and the frames you saved, with annotations rendered into each PNG.',
+      body: 'The tab recording and your saved frames, annotations included.',
     },
   ],
-  note: 'BugReceipt does not open or submit a GitHub issue for you. You attach what you reviewed.',
+  note: 'BugReceipt does not open or submit a GitHub issue for you.',
 } as const;
 
 export const privacyColumns = [
@@ -127,11 +126,11 @@ export const privacyColumns = [
     label: 'Recorded',
     title: 'Captured after you start',
     items: [
-      'Video of the selected tab, without audio',
-      'Console messages and exceptions',
-      'Requests with status, timing, headers, and bodies',
-      'Your reproduction steps',
-      'Page URL and title, browser, platform',
+      'Tab video, no audio',
+      'Console messages',
+      'Requests and responses',
+      'Your steps',
+      'Page and browser context',
     ],
   },
   {
@@ -140,31 +139,31 @@ export const privacyColumns = [
     items: [
       'URL query strings',
       'Email addresses',
-      'Bearer tokens and secret-shaped values',
-      'Recognized sensitive request headers',
-      'Oversized or binary bodies are bounded or omitted',
+      'Bearer tokens and secrets',
+      'Sensitive request headers',
+      'Oversized bodies',
     ],
   },
   {
     label: 'Not collected',
     title: 'Never read',
     items: [
-      'Cookies and browser storage',
-      'Page HTML or DOM snapshots',
+      'Cookies and storage',
+      'Page HTML',
       'Form values and keystrokes',
-      'Clipboard contents',
+      'Clipboard',
       'Microphone or tab audio',
     ],
   },
 ] as const;
 
 export const privacyFootnote =
-  'Filtering reduces risk; it does not recognize every secret. Recordings and screenshots show whatever was on screen, so review the evidence before you share it.';
+  'Filtering does not recognize every secret, and recordings show whatever was on screen. Review before you share.';
 
 export const corrections = {
   title: 'Wrong wording? Send that too.',
-  body: 'Select text on any page, right-click, and choose Suggest a correction. The side panel keeps the original text, takes your suggested wording and locale, and collects up to 20 corrections from one site into a local ZIP with a marked screenshot for each.',
-  link: { href: '/guide#corrections', label: 'See the correction workflow in the guide' },
+  body: 'Select text, right-click, choose Suggest a correction. Add your wording, then export the batch as a local ZIP.',
+  link: { href: '/guide#corrections', label: 'Correction workflow in the guide' },
   scene: {
     page: {
       src: '/guide/correction-page.png',
@@ -178,8 +177,7 @@ export const corrections = {
       height: 1520,
       alt: 'BugReceipt side panel holding two corrections, the second with its suggested wording',
     },
-    caption:
-      'Screenshots from the demo capture: the selected sentence on the page, and the panel collecting corrections.',
+    caption: 'The selected sentence on the page, and the panel collecting corrections.',
   },
 } as const;
 
@@ -187,44 +185,43 @@ export const audiences = [
   {
     label: 'QA',
     title: 'QA engineers',
-    body: 'One capture replaces a screenshot, a DevTools export, and a paragraph of guesses. The steps you type land next to the requests that failed.',
+    body: 'One capture instead of a screenshot, a DevTools export, and a paragraph of guesses.',
   },
   {
     label: 'Support',
     title: 'Support teams',
-    body: 'Ask a customer for one ZIP instead of a screen-share. They review what is in it before sending; you forward it to engineering as is.',
+    body: 'Ask the customer for one ZIP. They review it; you forward it.',
   },
   {
     label: 'Open source',
-    title: 'Open-source maintainers',
-    body: 'Issues arrive with console output, the failing request, and the browser version attached, so the first reply can be a fix instead of a question.',
+    title: 'Maintainers',
+    body: 'Issues arrive with the console, the request, and the browser version attached.',
   },
 ] as const;
 
 export const faqs = [
   {
     question: 'Which browsers are supported?',
-    answer:
-      'Chrome desktop 125 and newer. The extension uses Chrome’s side panel and debugger APIs, so Firefox and Safari are not supported.',
+    answer: 'Chrome desktop 125 and newer. Firefox and Safari are not supported.',
   },
   {
-    question: 'What happens if the page navigates during a capture?',
+    question: 'What if the page navigates during a capture?',
     answer:
-      'A same-origin reload stays in the session. Leaving the recorded site or closing the tab ends the capture, and the report records why it stopped.',
+      'Same-origin reloads stay in the session. Leaving the site or closing the tab ends it, and the report says why.',
   },
   {
     question: 'How long is evidence kept?',
     answer:
-      'In extension-owned local storage until you delete the capture, start a new one, or download it. Only one capture exists at a time.',
+      'In the extension’s local storage until you delete, replace, or download it. One capture at a time.',
   },
   {
     question: 'Does it work on localhost and staging?',
     answer:
-      'Yes. Any regular HTTP or HTTPS page can be captured, including local development servers. Chrome settings pages and other restricted pages cannot.',
+      'Yes. Any HTTP or HTTPS page, including local servers. Chrome’s own pages cannot be captured.',
   },
   {
     question: 'What is the unpacked ZIP on GitHub Releases?',
     answer:
-      'A manual install for people who cannot use the Chrome Web Store. It needs Developer mode and Load unpacked, and it does not update automatically.',
+      'A manual install for people who cannot use the Web Store. It needs Developer mode and does not update itself.',
   },
 ] as const;

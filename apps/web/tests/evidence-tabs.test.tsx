@@ -11,7 +11,7 @@ describe('EvidenceTabs', () => {
     expect(tabs).toHaveLength(3);
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
     expect(tabs.map((tab) => tab.getAttribute('tabindex'))).toEqual(['0', '-1', '-1']);
-    expect(screen.getByRole('tabpanel')).toHaveTextContent('Play the recording');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('Play it.');
 
     fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
     expect(screen.getByRole('tab', { name: 'Console' })).toHaveAttribute('aria-selected', 'true');

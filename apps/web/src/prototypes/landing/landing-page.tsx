@@ -45,7 +45,7 @@ export function LandingPage() {
           id="how-it-works"
           eyebrow="How it works"
           title="Three actions. One report."
-          lead="Capture is intentional: it starts when you choose a tab and ends when you stop it."
+          lead="Starts when you choose a tab. Ends when you stop."
         >
           <ol className="cols steps">
             {steps.map((step, index) => (
@@ -75,7 +75,7 @@ export function LandingPage() {
           id="evidence"
           eyebrow="Review evidence"
           title="Inspect everything before it leaves."
-          lead="Three views over the same capture. Remove what should not be shared; the count of sensitive values redacted locally stays visible while you do."
+          lead="Three views over one capture. Remove what should not be shared."
         >
           <EvidenceTabs />
         </Section>
@@ -106,7 +106,7 @@ export function LandingPage() {
           id="privacy"
           eyebrow="Privacy"
           title="Privacy by construction."
-          lead="Filtering happens before anything is stored. You inspect the capture and choose which local files to export."
+          lead="Filtered before storage. Reviewed by you. Exported only when you say."
         >
           <div className="cols">
             {privacyColumns.map((column) => (
@@ -171,7 +171,7 @@ export function LandingPage() {
 
         <section className="clean-shell content-section closing">
           <h2>Install it before the next bug.</h2>
-          <p>Free, local-first, no account. Works on Chrome desktop 125 and newer.</p>
+          <p>Free. Local-first. No account.</p>
           <div className="hero-actions">
             <a className="btn-primary" href={storeUrl} target="_blank" rel="noreferrer">
               <ChromeIcon /> Add to Chrome
