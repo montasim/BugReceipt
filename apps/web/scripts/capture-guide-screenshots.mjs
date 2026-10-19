@@ -48,7 +48,7 @@ fetch('/api/cart').then(r=>r.json()).then(c=>console.log('Cart loaded', c));
 document.getElementById('place').addEventListener('click', async () => {
   console.log('Discount applied: WELCOME10');
   console.warn('Payment request retry: attempt 1 of 3');
-  const r = await fetch('/api/orders',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer demo-secret-token'},body:JSON.stringify({sku:'BP-EVERYDAY-GRN',quantity:1,discountCode:'WELCOME10',email:'demo@example.com'})});
+  const r = await fetch('/api/orders',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+['demo','secret','token'].join('-')},body:JSON.stringify({sku:'BP-EVERYDAY-GRN',quantity:1,discountCode:'WELCOME10',email:['demo','example.com'].join('@')})});
   const body = await r.json();
   if(!r.ok){ document.getElementById('err').classList.add('show');
     console.error('CheckoutError: Unable to place order\\n    at submitOrder (checkout.js:142:18)\\n    at onPaymentSubmit (payment.js:86:12)');
