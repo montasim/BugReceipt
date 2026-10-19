@@ -34,14 +34,55 @@ describe('extension landing page', () => {
     expect(page).toContain('youtube-nocookie.com/embed/BVdi7FF21Sg');
     expect(page).toContain('Everything needed to reproduce the problem.');
     expect(page).toContain('Your report stays under your control.');
+    expect(page).toContain('href="/guide"');
     expect(page).toContain('<h2>Changelog</h2>');
     expect(page).toContain('Frequently asked questions');
     expect(page).toContain('Report bugs with proof.');
   });
 
+  it('publishes the user guide as its own route with a screenshot for every step', () => {
+    const guideRoute = readFileSync(new URL('../src/routes/guide.tsx', import.meta.url), 'utf8');
+    const guidePage = readFileSync(
+      new URL('../src/prototypes/landing/guide-page.tsx', import.meta.url),
+      'utf8',
+    );
+    const shell = readFileSync(
+      new URL('../src/prototypes/landing/site-shell.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(guideRoute).toContain("createFileRoute('/guide')");
+    expect(guideRoute).toContain('GuidePage');
+    expect(shell).toContain('<a href="/guide">Guide</a>');
+    expect(guidePage.match(/src: '\/guide\//g)).toHaveLength(14);
+    expect(guidePage).toContain('loading="lazy"');
+    for (const title of [
+      'Install and open the side panel',
+      'Start a capture',
+      'Reproduce the problem and add steps',
+      'Stop and open the review workbench',
+      'Write the report details',
+      'Curate visual evidence',
+      'Inspect console evidence',
+      'Inspect network evidence',
+      'Choose files and export',
+      'Select the wording on the page',
+      'Right-click and choose Suggest a correction',
+      'Enter the suggested wording',
+      'Collect more corrections from the same page',
+      'Check the screenshot and export',
+    ]) {
+      expect(guidePage).toContain(title);
+    }
+  });
+
   it('supports light and dark themes with responsive layouts', () => {
-    expect(page).toContain("useState<'light' | 'dark'>('light')");
-    expect(page).toContain('bugreceipt-prototype-theme');
+    const shell = readFileSync(
+      new URL('../src/prototypes/landing/site-shell.tsx', import.meta.url),
+      'utf8',
+    );
+    expect(shell).toContain("useState<'light' | 'dark'>('light')");
+    expect(shell).toContain('bugreceipt-prototype-theme');
     expect(pageStyles).toContain(".clean-site[data-theme='dark']");
     expect(pageStyles).toContain('@media (max-width: 900px)');
     expect(pageStyles).toContain('@media (max-width: 620px)');
