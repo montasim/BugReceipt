@@ -1,68 +1,63 @@
 ---
 name: BugReceipt
-description: Evidence-led browser diagnostics presented as a precise technical review document.
+description: A light, product-matched site for a Chrome extension that exports reproducible bug reports; real captures sit on the page without a seam.
 colors:
-  ink: '#102332'
-  muted: '#61737d'
-  paper: '#f8fbfc'
-  fog: '#eef3f5'
-  line: '#bacbd2'
-  signal: '#ff5c3a'
-  trace: '#1f9fae'
+  bg: '#f6f8f9'
+  surface: '#ffffff'
+  ink: '#13242f'
+  muted: '#5d6d76'
+  line: '#dde4e7'
+  amber: '#e8a13f'
+  mint: '#0f7a6d'
+  danger: '#b83c24'
 typography:
   display:
-    fontFamily: 'Bricolage Grotesque Variable, system-ui, sans-serif'
-    fontSize: 'clamp(48px, 4.8vw, 60px)'
-    fontWeight: 700
-    lineHeight: 1.04
-    letterSpacing: '-0.04em'
-  headline:
-    fontFamily: 'Bricolage Grotesque Variable, system-ui, sans-serif'
-    fontSize: 'clamp(34px, 3.2vw, 40px)'
-    fontWeight: 700
-    lineHeight: 1.12
-    letterSpacing: '-0.03em'
-  title:
-    fontFamily: 'Bricolage Grotesque Variable, system-ui, sans-serif'
-    fontSize: '22px'
-    fontWeight: 700
-    lineHeight: 1.3
+    fontFamily: 'Geist Variable, system-ui, sans-serif'
+    fontSize: 'clamp(40px, 4.4vw, 56px)'
+    fontWeight: 600
+    lineHeight: 1.05
     letterSpacing: '-0.02em'
+  headline:
+    fontFamily: 'Geist Variable, system-ui, sans-serif'
+    fontSize: 'clamp(28px, 3vw, 36px)'
+    fontWeight: 600
+    lineHeight: 1.15
+    letterSpacing: '-0.015em'
+  title:
+    fontFamily: 'Geist Variable, system-ui, sans-serif'
+    fontSize: '20px'
+    fontWeight: 600
+    lineHeight: 1.3
   body:
-    fontFamily: 'Bricolage Grotesque Variable, system-ui, sans-serif'
-    fontSize: '17px'
+    fontFamily: 'Geist Variable, system-ui, sans-serif'
+    fontSize: '16px'
     fontWeight: 400
-    lineHeight: 1.65
+    lineHeight: 1.6
   label:
     fontFamily: 'JetBrains Mono Variable, monospace'
-    fontSize: '11.5px'
-    fontWeight: 650
-    lineHeight: 1.5
-    letterSpacing: '0.08em'
+    fontSize: '13px'
+    fontWeight: 500
+    lineHeight: 1.6
 rounded:
-  none: '0px'
+  card: '12px'
+  control: '8px'
+  pill: '999px'
 spacing:
-  control: '14px 18px'
+  control: '0 22px'
   page-gutter: '24px'
-  content-gap: '48px'
-  section: '96px'
+  section: '112px'
+  section-small: '72px'
 components:
   button-primary:
-    backgroundColor: '{colors.ink}'
-    textColor: '#ffffff'
-    typography: '{typography.body}'
-    rounded: '{rounded.none}'
-    padding: '{spacing.control}'
-  button-primary-hover:
-    backgroundColor: '#1a3444'
-    textColor: '#ffffff'
-    rounded: '{rounded.none}'
-    padding: '{spacing.control}'
-  button-secondary:
-    backgroundColor: '{colors.paper}'
+    backgroundColor: '{colors.amber}'
     textColor: '{colors.ink}'
     typography: '{typography.body}'
-    rounded: '{rounded.none}'
+    rounded: '{rounded.control}'
+    padding: '{spacing.control}'
+  button-primary-hover:
+    backgroundColor: '#d88c29'
+    textColor: '{colors.ink}'
+    rounded: '{rounded.control}'
     padding: '{spacing.control}'
 ---
 
@@ -70,144 +65,86 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Evidence Desk"**
-
-BugReceipt feels like a carefully assembled technical review copy: cool paper and fog surfaces, deep ink structure, and diagnostic annotations that make evidence easy to inspect. The identity is editorial in scale but operational in detail, balancing oversized, tightly set headlines with compact mono metadata.
-
-The system stays flat and document-like by default. Thin rules, numbered ledgers, file trees, and square evidence panels carry the structure; limited ambient shadows identify the few objects that behave like physical review artifacts. Teal traces progress and trustworthy diagnostic state, while coral signals action, exceptions, and human attention.
-
-**Key Characteristics:**
-
-- Cool fog and paper grounds with deep ink structure.
-- Oversized editorial type paired with compact diagnostic mono labels.
-- Square controls, ruled containers, and evidence-led proof patterns.
-- Teal trace and coral signal accents used by role, not as decoration.
-- Restrained ambient depth with one evidence-preview settle motion.
+The site uses the extension's own light theme, so real product captures sit on the page without a seam. There is no marketing layer between the page and the product: the hero shows a real capture scene (the demo page failing beside the side panel recording it), the Export section shows the actual exported issue.md as a receipt, and every other section shows a real capture of the screen it describes. Amber is the single action color, mint marks state, and one shadow is shared by all proof frames. Numbered markers appear only where the page shows the capture sequence. Every landing section follows one grammar: a centered eyebrow, heading, and lead; one full-width proof artifact inside a browser frame with a caption; then ruled three-column detail with a mono label, title, and copy.
 
 ## Colors
 
-The palette reads like a cool technical document marked up with two deliberate diagnostic inks.
+Eight tokens, declared once on `.clean-site` in `site.css`.
 
-### Primary
-
-- **Deep Ink:** The structural voice for body text, borders with emphasis, dark evidence fields, and high-contrast action surfaces.
-
-### Secondary
-
-- **Teal Trace:** Identifies diagnostic metadata, progress markers, local-state reassurance, focus, and cool technical highlights.
-
-### Tertiary
-
-- **Coral Signal:** Marks primary emphasis, exceptions, numbered evidence, active affordances, and warm error detail.
-
-### Neutral
-
-- **Cool Paper:** The clean reading surface for headers, panels, and alternating sections.
-- **Evidence Fog:** The page ground and default ambient canvas.
-- **Measured Gray:** Secondary body copy and supporting metadata.
-- **Rule Blue:** Dividers, borders, and document structure.
-
-### Named Rules
-
-**The Two-Ink Rule.** Teal communicates trace, state, and technical continuity; coral communicates signal, action, or exception. Do not swap their roles casually.
-
-**The Paper-and-Ink Rule.** Build hierarchy with the paper, fog, ink, and line neutrals before reaching for either accent.
+- **Ink `#13242f`:** Body text, headings, and text on amber.
+- **Muted `#5d6d76`:** Secondary copy and captions.
+- **Bg `#f6f8f9`:** The page ground and alternating section bands.
+- **Surface `#ffffff`:** The receipt, browser frames, and bands that carry proof.
+- **Line `#dde4e7`:** Borders and dividers.
+- **Amber `#e8a13f`:** The one action color. Used for the Add to Chrome actions and the text-selection highlight; nothing else. Hover is `#d88c29`.
+- **Mint `#0f7a6d`:** State: included files, eyebrows, step numbers, and the keyboard focus ring.
+- **Danger `#b83c24`:** Reserved for failed or destructive detail.
 
 ## Typography
 
-**Display Font:** Bricolage Grotesque Variable (with system UI and sans-serif fallbacks)  
-**Body Font:** Bricolage Grotesque Variable (with system UI and sans-serif fallbacks)  
-**Label/Mono Font:** JetBrains Mono Variable (with monospace fallback)
+Geist Variable for text, JetBrains Mono Variable for evidence data.
 
-**Character:** Bricolage Grotesque supplies a compact, assertive editorial voice without losing utility. JetBrains Mono makes timestamps, counts, file trees, privacy boundaries, and diagnostic labels feel explicit and inspectable.
-
-### Hierarchy
-
-- **Display:** Very large, tightly tracked, and compressed vertically; reserve it for the dominant landing statement.
-- **Headline:** Large, tightly tracked section statements with compact line height.
-- **Title:** Strong 22px Bricolage titles for evidence records, workflow steps, and disclosures.
-- **Body:** Comfortable 17px reading copy with a 1.6–1.65 line height and restrained line lengths around 520–680px.
-- **Label:** Small mono text, usually uppercase with tracked letters, for navigation, numbers, statuses, versions, and boundaries.
-
-### Named Rules
-
-**The Diagnostic Register Rule.** Use mono typography for evidence metadata and system state, never as a substitute for readable body copy.
+- **h1:** `clamp(40px, 4.4vw, 56px)`, 600, 1.05, -0.02em.
+- **h2:** `clamp(28px, 3vw, 36px)`, 600, 1.15, -0.015em.
+- **h3:** 20px, 600, 1.3.
+- **Body:** 16px, 1.6.
+- **Mono (`code`, `.mono`):** 13px, 500. Used for filenames, counts, step numbers, and the receipt, not for reading copy.
 
 ## Layout
 
-The primary shell is capped at 1280px and keeps 24px desktop gutters. Primary chapters use 72–96px of responsive vertical breathing room, supporting chapters use 64–80px, and ruled rows and component interiors use a denser 4px-derived scale from 8–28px. Layouts favor asymmetric two-column grids that let editorial statements sit beside concrete proof.
-
-At 900px, major two-column regions and three-column workflows collapse to one column, the trust strip stacks, and navigation retains only its final action-oriented link. At 560px, the shell gutter becomes 16px, hero actions stack full-width, major section padding reduces to 64px, and dense proof containers reduce their internal padding. These are system breakpoints, not instructions about the order of sections on future pages.
-
-**The Proof-Beside-Claim Rule.** When space permits, pair explanatory copy with an inspectable artifact, ledger, or procedure rather than another decorative content block.
+The shell is `min(1200px, 100% - 48px)`; at 560px the gutter is 16px. Section padding is 112px, 72px at 560px. At 900px the header nav hides and multi-column grids collapse; landing grids use `minmax(0, 1fr)` tracks so wide captures cannot widen the page.
 
 ## Elevation & Depth
 
-The system is flat by default. Borders, dark tonal fields, and alternating paper/fog surfaces establish most hierarchy. Ambient shadows are reserved for the primary action and proof objects: the primary button carries a warm coral cast, while evidence and bundle panels use broad low-opacity ink shadows. The sticky header gains separation through a translucent paper fill and 12px backdrop blur rather than a drop shadow.
-
-### Shadow Vocabulary
-
-- **Signal Action:** `5px 7px 18px rgb(255 92 58 / 0.22)` at rest and `4px 10px 24px rgb(255 92 58 / 0.28)` on hover; use only for the primary action.
-- **Evidence Artifact:** `12px 18px 42px rgb(16 35 50 / 0.14)`; use for the featured review-copy preview.
-- **Ink Bundle:** `10px 18px 38px rgb(16 35 50 / 0.16)`; use for substantial dark proof containers.
-
-**The Ambient-Only Rule.** Shadows suggest a review artifact resting above the page; they do not replace borders, rules, or tonal structure.
+Flat by default. A single shadow, `0 20px 50px rgb(19 36 47 / 0.08)`, belongs to proof frames: the receipt and the browser frames around desktop captures. Cards, bands, and the header use borders only.
 
 ## Shapes
 
-BugReceipt uses square corners throughout. Buttons, evidence panels, code blocks, ledgers, and disclosure rows rely on straight edges, one-pixel rules, and occasional heavy top strokes. The skewed three-bar brand mark and the evidence preview's slight desktop rotation are the rare angled silhouettes; the preview returns to an unrotated rectangle on narrow screens.
-
-**The Squared Evidence Rule.** Keep interactive controls and proof containers unrounded so the interface reads as technical documentation rather than a soft consumer dashboard.
+Radii are 12px for frames, receipt, and cards; 8px for controls; 999px only for the three dots in the browser frame bar.
 
 ## Components
 
 ### Buttons
 
-- **Shape:** Square, compact, and weighty, with 14px vertical and 18px horizontal padding.
-- **Primary:** Deep ink with white text and a low coral-cast shadow.
-- **Hover / Focus:** Hover rises 2px, deepens the ink surface, and expands the warm shadow over 180ms; active returns to the baseline. Keyboard focus uses a 3px teal outline offset by 4px.
-- **Secondary:** Cool paper with a one-pixel rule-blue border and no resting shadow; it shares the same lift behavior.
+Primary: amber background, ink text, 48px high, 8px radius, 150ms background transition to the hover amber. The header variant is 40px high. The secondary action is a text link with an arrow and an underline on hover.
 
-### Cards / Containers
+### Receipt
 
-- **Corner Style:** Square.
-- **Background:** Paper for review artifacts; ink for proof bundles and privacy-critical sections.
-- **Shadow Strategy:** Flat by default, with ambient depth only for featured evidence objects.
-- **Border:** One-pixel rules organize rows and edges; featured evidence uses a one-pixel ink frame.
-- **Internal Padding:** Dense rows use 13–27px; substantial proof containers use 44px by 48px on desktop and 30px by 24px on small screens.
+The signature artifact. It renders the real issue.md produced by `@bugreceipt/issue-export` from the demo capture: title, numbered steps, expected and current behavior, the environment lines, and a console excerpt that shows errors first, then a footer listing the exported files with mint Included badges. It sits in the Export section at a maximum width of 820px, uses the surface fill, the 12px radius, and the proof shadow, and has no animation of its own. The single entrance animation belongs to the hero scene (500ms rise), disabled under `prefers-reduced-motion`.
 
-### Navigation
+### Browser frame
 
-The header is a 72px sticky paper strip with a one-pixel bottom rule and light blur. The brand uses bold Bricolage; links use uppercase 11px JetBrains Mono with 0.06em tracking and turn coral on hover. Below 900px, keep only the final action-oriented link visible.
+Wraps desktop captures: three-dot bar, one-pixel line border, 12px radius, proof shadow. Side-panel captures are shown bare with a line border, or cropped to a 4:3 top detail inside the how-it-works columns; the hero scene places the page capture and the panel capture side by side inside one frame. All images carry intrinsic width and height and load lazily below the hero.
 
-### Evidence Preview
+### Numbered markers
 
-The signature proof component is a square paper review copy with an ink frame, ruled rows, compact mono metadata, a dark console excerpt, and a coral label pinned above its top edge. On larger screens it rests at a 1.2-degree angle and enters once with a 700ms settle using `cubic-bezier(0.16, 1, 0.3, 1)`. At 560px it is unrotated. Reduced-motion preferences collapse animation and transition durations to 0.01ms.
+Mono numbers 01 to 03 mark the three capture steps. They are not used for features, benefits, or FAQ items.
 
-### Ledgers and Disclosure Rows
+### Evidence tabs
 
-Evidence ledgers, install steps, privacy statements, and questions are structured as full-width ruled rows. Use mono numbers or short labels as anchors, Bricolage for the human-readable title, and muted body copy for explanation. Disclosure summaries use a coral plus/minus marker rather than a rounded icon button.
+A three-tab group (Visual, Console, Network) with arrow-key, Home, and End navigation. The panel is focusable and the active capture fades in over 150ms, also disabled under reduced motion.
 
-### Extension Prototype: Midnight Evidence Console
+### Guide page
 
-The extension prototype is a scoped replacement world called **Midnight Evidence Console**. It deliberately departs from the light, square editorial web identity above: near-black and layered navy surfaces form a compact operational workbench, controls and panels use restrained 10–16px radii, low-contrast translucent rules separate dense evidence, and neutral soft shadows lift only modal, capture, and embedded-proof surfaces. Bricolage remains the primary sans voice but shifts to a tighter, smaller hierarchy; JetBrains Mono is limited to receipt IDs, timestamps, dimensions, counts, paths, and diagnostic data. Warm amber is the single primary action and active-state color. Mint identifies completed stages, local-only safety, included evidence, and successful export; red remains reserved for destructive or failed states.
+The guide at `/guide` is part of the same shell: the same header, footer, tokens, and frames, with a numbered list of captures that follows the product flow from the side panel to export.
 
-The desktop review workbench is anchored by a persistent receipt rail that makes **Report → Evidence → Export check** visible as one chain of custody. The active stage owns the main canvas, while evidence counts, redactions, removals, and local-draft status remain inspectable in the rail. Evidence review keeps Screen, Console, and Network as adjacent tabs; annotation and exact-text highlighting are explicit modes, and removal visibly changes the receipt before export. On screens at or below 1000px the rail becomes a horizontal three-stage workflow. At 700px and below, the evidence tabs retain an equal three-column fit, diagnostic content wraps without hiding recovery information, and the collapsed Edge cases control moves into the header area so it cannot cover task content.
+### Focus
 
-The primary path is a continuous interactive journey: approve site access, choose a tab, begin capture, add reproduction steps, stop, complete the report, inspect and curate each evidence class, annotate or remove evidence, confirm the local export manifest, and reach download success. User-entered steps and report fields persist across these in-memory transitions, and the current surface/state is reflected in the URL so any demonstrated state remains shareable. The collapsed **Edge cases** selector is a secondary prototype affordance for loading, empty, failure, interruption, stress, and recovery states; it never competes with the product's next action and does not imply extension APIs or durable storage are connected.
+Buttons, links, summaries, tabs, and the tab panel show a 3px mint outline offset by 3px.
 
 ## Do's and Don'ts
 
 ### Do:
 
 - **Do** lead with claims that are backed by an inspectable artifact, ledger, file tree, or explicit boundary.
-- **Do** use thin rules, square geometry, and tonal contrast as the default hierarchy tools.
-- **Do** reserve JetBrains Mono for diagnostic metadata, counts, paths, versions, status, and navigation labels.
-- **Do** preserve the 900px and 560px responsive behavior and reduced-motion handling when extending this web identity.
+- **Do** use thin rules, 12px and 8px radii, and tonal contrast as the default hierarchy tools.
+- **Do** reserve JetBrains Mono for diagnostic metadata, counts, paths, versions, status, eyebrows, and column labels; navigation is set in Geist.
+- **Do** preserve the 900px and 560px responsive behavior and the reduced-motion guards on the two animations.
 
 ### Don't:
 
-- **Don't** introduce rounded pills or soft card radii into the established square form language.
-- **Don't** scatter coral and teal decoratively; keep their signal and trace roles distinct.
-- **Don't** use shadows on every container or create a generic floating-card dashboard aesthetic.
+- **Don't** introduce gradients, dark marketing composites, or a second accent color.
+- **Don't** use amber for state or mint for actions; keep their roles distinct.
+- **Don't** put the proof-frame shadow on every container; it belongs to the receipt and the capture frames.
+- **Don't** use numbered markers outside the capture sequence.
 - **Don't** turn this landing page's current section sequence into a global layout requirement.

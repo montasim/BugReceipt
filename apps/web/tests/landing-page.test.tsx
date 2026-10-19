@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -6,56 +7,113 @@ import { NotFound, ServerError } from '../src/routes/__root';
 describe('extension landing page', () => {
   const route = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
   const page = readFileSync(
-    new URL('../src/prototypes/landing/clean-landing.tsx', import.meta.url),
-    'utf8',
-  );
-  const pageStyles = readFileSync(
-    new URL('../src/prototypes/landing/clean-landing.css', import.meta.url),
+    new URL('../src/prototypes/landing/landing-page.tsx', import.meta.url),
     'utf8',
   );
 
-  it('promotes the approved landing page at the root route', () => {
+  it('serves the product-first landing page at the root route', () => {
     expect(route).toContain("createFileRoute('/')");
-    expect(route).toContain('CleanLanding');
-    expect(route).toContain('clean-landing.css');
+    expect(route).toContain('LandingPage');
+    expect(route).toContain('site.css');
+    expect(route).toContain('landing.css');
   });
 
-  it('links to the Chrome Web Store and uses the real extension desktop UI', () => {
-    expect(page).toContain('chromewebstore.google.com/detail/bugreceipt');
-    expect(page).toContain('<ChromeIcon /> Add to Chrome');
-    for (let index = 1; index <= 5; index += 1) {
-      expect(page).toContain(`/brand/bugreceipt-slide-${index}.png`);
+  it('opens with a real receipt instead of marketing composites', () => {
+    const receipt = readFileSync(
+      new URL('../src/prototypes/landing/receipt.tsx', import.meta.url),
+      'utf8',
+    );
+    const content = readFileSync(
+      new URL('../src/prototypes/landing/landing-content.ts', import.meta.url),
+      'utf8',
+    );
+    expect(content).toContain('Bug reports developers can reproduce.');
+    expect(page).toContain('{hero.title}');
+    expect(page).toContain('<Receipt />');
+    expect(page).toContain('hero-scene');
+    const proof = readFileSync(
+      new URL('../src/prototypes/landing/proof.tsx', import.meta.url),
+      'utf8',
+    );
+    expect(proof).toContain('image/webp');
+    expect(receipt).toContain('receipt.generated.json');
+    expect(page).not.toContain('bugreceipt-slide-');
+    expect(page).not.toContain('carousel');
+    const shell = readFileSync(
+      new URL('../src/prototypes/landing/site-shell.tsx', import.meta.url),
+      'utf8',
+    );
+    expect(shell).toContain('chromewebstore.google.com/detail/bugreceipt');
+    expect(page).toContain('href={storeUrl}');
+  });
+
+  it('publishes the user guide as its own route with a screenshot for every step', () => {
+    const guideRoute = readFileSync(new URL('../src/routes/guide.tsx', import.meta.url), 'utf8');
+    const guidePage = readFileSync(
+      new URL('../src/prototypes/landing/guide-page.tsx', import.meta.url),
+      'utf8',
+    );
+    const shell = readFileSync(
+      new URL('../src/prototypes/landing/site-shell.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(guideRoute).toContain("createFileRoute('/guide')");
+    expect(guideRoute).toContain('GuidePage');
+    expect(guideRoute).toContain('site.css');
+    expect(shell).toContain('<a href="/guide">Guide</a>');
+    expect(guidePage.match(/src: '\/guide\//g)).toHaveLength(14);
+    expect(guidePage).toContain('loading="lazy"');
+    for (const title of [
+      'Install and open the side panel',
+      'Start a capture',
+      'Reproduce the problem and add steps',
+      'Stop and open the review workbench',
+      'Write the report details',
+      'Curate visual evidence',
+      'Inspect console evidence',
+      'Inspect network evidence',
+      'Choose files and export',
+      'Select the wording on the page',
+      'Right-click and choose Suggest a correction',
+      'Enter the suggested wording',
+      'Collect more corrections from the same page',
+      'Check the screenshot and export',
+    ]) {
+      expect(guidePage).toContain(title);
     }
-    expect(page).toContain('aria-roledescription="carousel"');
-    expect(page).toContain('Version 0.3.0 is the latest version.');
   });
 
-  it('explains the product with a demo, privacy details, changelog, and FAQs', () => {
-    expect(page).toContain('youtube-nocookie.com/embed/BVdi7FF21Sg');
-    expect(page).toContain('Everything needed to reproduce the problem.');
-    expect(page).toContain('Your report stays under your control.');
-    expect(page).toContain('<h2>Changelog</h2>');
-    expect(page).toContain('Frequently asked questions');
-    expect(page).toContain('Report bugs with proof.');
+  it('uses Geist and a single light theme across the site shell', () => {
+    const siteStyles = readFileSync(
+      new URL('../src/prototypes/landing/site.css', import.meta.url),
+      'utf8',
+    );
+    const rootStyles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
+    const shell = readFileSync(
+      new URL('../src/prototypes/landing/site-shell.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(rootStyles).toContain("@import '@fontsource-variable/geist'");
+    expect(rootStyles).not.toContain('bricolage');
+    expect(siteStyles).toContain("font-family: 'Geist Variable'");
+    expect(siteStyles).toContain('--amber: #e8a13f');
+    expect(siteStyles).not.toContain("data-theme='dark'");
+    expect(shell).not.toContain('theme');
+    expect(shell).toContain('<a href="/guide">Guide</a>');
+    expect(shell).toContain('https://www.supportkori.com/montasim');
+    expect(siteStyles).toContain('@media (max-width: 900px)');
+    expect(siteStyles).toContain('@media (max-width: 560px)');
   });
 
-  it('supports light and dark themes with responsive layouts', () => {
-    expect(page).toContain("useState<'light' | 'dark'>('light')");
-    expect(page).toContain('bugreceipt-prototype-theme');
-    expect(pageStyles).toContain(".clean-site[data-theme='dark']");
-    expect(pageStyles).toContain('@media (max-width: 900px)');
-    expect(pageStyles).toContain('@media (max-width: 620px)');
-  });
-
-  it('loads the BugReceipt favicon and SupportKori widget from the root document', () => {
+  it('loads the BugReceipt favicon without a floating support widget', () => {
     const source = readFileSync(new URL('../src/routes/__root.tsx', import.meta.url), 'utf8');
 
     expect(source).toContain('/brand/bugreceipt-mark.svg');
     expect(source).toContain('/brand/bugreceipt-32.png');
     expect(source).toContain('/brand/bugreceipt-180.png');
-    expect(source).toContain('https://www.supportkori.com/widget.js');
-    expect(source).toContain('data-id="montasim"');
-    expect(source).toContain('data-message="Support"');
+    expect(source).not.toContain('supportkori.com/widget.js');
   });
 
   it('publishes crawler-visible social preview metadata', () => {
@@ -64,7 +122,8 @@ describe('extension landing page', () => {
     expect(source).toContain("const siteUrl = 'https://bugreceipt.netlify.app'");
     expect(source).toContain("property: 'og:image'");
     expect(source).toContain("name: 'twitter:card', content: 'summary_large_image'");
-    expect(source).toContain("rel: 'canonical'");
+    expect(source).not.toContain("rel: 'canonical'");
+    expect(route).toContain("rel: 'canonical'");
   });
 
   it('provides themed 404 and 500 recovery pages', () => {
@@ -80,5 +139,51 @@ describe('extension landing page', () => {
 
     expect(notFoundMarkup).toContain('This page left no trace.');
     expect(serverErrorMarkup).toContain('The page hit an unexpected failure.');
+  });
+
+  it('walks through capture in three steps and reuses the demo video', () => {
+    expect(page).toContain('id="how-it-works"');
+    const content = readFileSync(
+      new URL('../src/prototypes/landing/landing-content.ts', import.meta.url),
+      'utf8',
+    );
+    expect(content).toContain('youtube-nocookie.com/embed/BVdi7FF21Sg');
+    expect(content).toContain('/guide/hero-page.png');
+    expect(content).toContain('/guide/correction-page.png');
+    expect(content).toContain('/guide/annotated-frame.png');
+    expect(page).toContain('id="instead"');
+    expect(content).toContain('/guide/01-side-panel.png');
+    expect(content).toContain('/guide/03-recording.png');
+    expect(content).toContain('/guide/05-report-details.png');
+  });
+
+  it('states the deliverable and the privacy boundaries as a table, not icon cards', () => {
+    expect(page).toContain('id="deliverable"');
+    expect(page).toContain('id="privacy"');
+    expect(page).not.toContain('role="table"');
+    expect(page).toContain('{privacyFootnote}');
+    expect(page).toContain('deliverables.files.map');
+    const content = readFileSync(
+      new URL('../src/prototypes/landing/landing-content.ts', import.meta.url),
+      'utf8',
+    );
+    expect(content).toContain('Never read');
+    expect(content).toContain('does not open or submit a GitHub issue');
+    expect(content).toContain('does not recognize every secret');
+  });
+
+  it('closes with corrections, audiences, and a five-question FAQ', () => {
+    expect(page).toContain('id="corrections"');
+    expect(page).toContain('id="audiences"');
+    expect(page).toContain('id="faq"');
+    expect(page).not.toContain('id="changelog"');
+    expect(page).toContain('<details key={faq.question}>');
+    expect(page).toContain('className="clean-shell content-section closing"');
+    const content = readFileSync(
+      new URL('../src/prototypes/landing/landing-content.ts', import.meta.url),
+      'utf8',
+    );
+    expect(content.match(/question: '/g)).toHaveLength(5);
+    expect(content).toContain('/guide#corrections');
   });
 });
