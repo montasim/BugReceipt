@@ -150,6 +150,8 @@ describe('extension landing page', () => {
     expect(content).toContain('youtube-nocookie.com/embed/BVdi7FF21Sg');
     expect(content).toContain('/guide/hero-page.png');
     expect(content).toContain('/guide/correction-page.png');
+    expect(content).toContain('/guide/annotated-frame.png');
+    expect(page).toContain('id="instead"');
     expect(content).toContain('/guide/01-side-panel.png');
     expect(content).toContain('/guide/03-recording.png');
     expect(content).toContain('/guide/05-report-details.png');

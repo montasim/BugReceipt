@@ -1,7 +1,14 @@
 export const hero = {
+  eyebrow: 'For QA and support teams',
   title: 'Bug reports developers can reproduce.',
-  lead: 'Record the tab. Keep the console and network evidence with your steps. Review, then export. Nothing leaves your machine until you share it.',
-  finePrint: 'Chrome desktop 125 and newer · Free · No account',
+  lead: 'A screenshot gets you “cannot reproduce”. BugReceipt records the tab, keeps the console and network evidence with your steps, and exports one report you review first.',
+  trust: [
+    { label: 'Free' },
+    { label: 'Open source', href: 'https://github.com/montasim/BugReceipt' },
+    { label: 'No account' },
+    { label: 'Nothing uploaded' },
+    { label: 'Chrome desktop 125+' },
+  ],
   scene: {
     page: {
       src: '/guide/hero-page.png',
@@ -17,6 +24,29 @@ export const hero = {
     },
     caption: 'Screenshots from the demo capture: the page failing, the side panel recording.',
   },
+} as const;
+
+export const insteadOf = {
+  title: 'What gets sent today.',
+  lead: 'Each one leaves the developer asking for more.',
+  columns: [
+    {
+      label: 'Screenshot',
+      title: 'Shows the symptom',
+      body: 'Not the request that failed, not the error behind it.',
+    },
+    {
+      label: 'Screen recording',
+      title: 'Shows the clicks',
+      body: 'Still no console, still no network, and nothing to search.',
+    },
+    {
+      label: 'DevTools export',
+      title: 'Needs a developer to make',
+      body: 'And a call to explain which part matters.',
+    },
+  ],
+  note: 'One BugReceipt ZIP carries all three, with your steps, reviewed before it leaves.',
 } as const;
 
 export const steps = [
@@ -62,13 +92,13 @@ export const evidenceTabs = [
   {
     id: 'visual',
     label: 'Visual',
-    title: 'Play it. Keep the frames that matter.',
-    body: 'Pause on the failure, save up to 20 frames, annotate them. Remove the video or any frame before export.',
+    title: 'Play it. Mark the exact problem.',
+    body: 'Save frames from the recording and annotate them. Remove the video or any frame before export.',
     image: {
-      src: '/guide/06-visual-evidence.png',
+      src: '/guide/annotated-frame.png',
       width: 2880,
       height: 1800,
-      alt: 'Visual evidence tab with the screen recording of the checkout page',
+      alt: 'Visual evidence tab with a saved frame of the checkout page and a highlight drawn over the error',
     },
   },
   {
@@ -185,17 +215,17 @@ export const audiences = [
   {
     label: 'QA',
     title: 'QA engineers',
-    body: 'One capture instead of a screenshot, a DevTools export, and a paragraph of guesses.',
+    body: 'Close the loop in one message. The steps you typed sit next to the request that failed.',
   },
   {
     label: 'Support',
     title: 'Support teams',
-    body: 'Ask the customer for one ZIP. They review it; you forward it.',
+    body: 'No screen-share. The customer sends one ZIP they reviewed; you forward it.',
   },
   {
     label: 'Open source',
     title: 'Maintainers',
-    body: 'Issues arrive with the console, the request, and the browser version attached.',
+    body: 'The first reply is a fix, not a question. Console, request, and browser version arrive attached.',
   },
 ] as const;
 

@@ -10,6 +10,7 @@ import {
   demoVideo,
   faqs,
   hero,
+  insteadOf,
   privacyColumns,
   privacyFootnote,
   steps,
@@ -21,6 +22,7 @@ export function LandingPage() {
       <main id="top" className="landing">
         <section className="clean-shell hero">
           <div className="hero-copy">
+            <p className="eyebrow">{hero.eyebrow}</p>
             <h1>{hero.title}</h1>
             <p className="hero-lead">{hero.lead}</p>
             <div className="hero-actions">
@@ -31,7 +33,19 @@ export function LandingPage() {
                 Read the user guide <ArrowIcon />
               </a>
             </div>
-            <p className="hero-fine">{hero.finePrint}</p>
+            <ul className="trust" aria-label="What you get">
+              {hero.trust.map((item) => (
+                <li key={item.label}>
+                  {'href' in item ? (
+                    <a href={item.href} target="_blank" rel="noreferrer">
+                      {item.label}
+                    </a>
+                  ) : (
+                    item.label
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
           <Proof className="hero-scene" caption={hero.scene.caption}>
             <div className="scene">
@@ -71,6 +85,31 @@ export function LandingPage() {
           </figure>
         </Section>
 
+        <Section id="instead" eyebrow="Instead of" title={insteadOf.title} lead={insteadOf.lead}>
+          <div className="cols">
+            {insteadOf.columns.map((column) => (
+              <div key={column.label}>
+                <span className="mono">{column.label}</span>
+                <h3>{column.title}</h3>
+                <p>{column.body}</p>
+              </div>
+            ))}
+          </div>
+          <p className="section-note">{insteadOf.note}</p>
+        </Section>
+
+        <Section id="audiences" eyebrow="Built for" title="Whoever has to explain the failure.">
+          <div className="cols">
+            {audiences.map((audience) => (
+              <div key={audience.title}>
+                <span className="mono">{audience.label}</span>
+                <h3>{audience.title}</h3>
+                <p>{audience.body}</p>
+              </div>
+            ))}
+          </div>
+        </Section>
+
         <Section
           id="evidence"
           eyebrow="Review evidence"
@@ -78,6 +117,25 @@ export function LandingPage() {
           lead="Three views over one capture. Remove what should not be shared."
         >
           <EvidenceTabs />
+        </Section>
+
+        <Section
+          id="corrections"
+          eyebrow="Text corrections"
+          title={corrections.title}
+          lead={corrections.body}
+        >
+          <Proof caption={corrections.scene.caption}>
+            <div className="scene">
+              <Shot className="scene-page" image={corrections.scene.page} skipBelow={700} />
+              <Shot className="scene-panel" image={corrections.scene.panel} />
+            </div>
+          </Proof>
+          <div className="section-actions">
+            <a className="btn-link" href={corrections.link.href}>
+              {corrections.link.label} <ArrowIcon />
+            </a>
+          </div>
         </Section>
 
         <Section
@@ -122,37 +180,6 @@ export function LandingPage() {
             ))}
           </div>
           <p className="section-note is-quiet">{privacyFootnote}</p>
-        </Section>
-
-        <Section
-          id="corrections"
-          eyebrow="Text corrections"
-          title={corrections.title}
-          lead={corrections.body}
-        >
-          <Proof caption={corrections.scene.caption}>
-            <div className="scene">
-              <Shot className="scene-page" image={corrections.scene.page} skipBelow={700} />
-              <Shot className="scene-panel" image={corrections.scene.panel} />
-            </div>
-          </Proof>
-          <div className="section-actions">
-            <a className="btn-link" href={corrections.link.href}>
-              {corrections.link.label} <ArrowIcon />
-            </a>
-          </div>
-        </Section>
-
-        <Section id="audiences" eyebrow="Built for" title="Whoever has to explain the failure.">
-          <div className="cols">
-            {audiences.map((audience) => (
-              <div key={audience.title}>
-                <span className="mono">{audience.label}</span>
-                <h3>{audience.title}</h3>
-                <p>{audience.body}</p>
-              </div>
-            ))}
-          </div>
         </Section>
 
         <Section id="faq" eyebrow="FAQ" title="Questions before you install.">

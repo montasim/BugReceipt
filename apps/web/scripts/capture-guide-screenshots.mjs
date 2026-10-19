@@ -414,6 +414,79 @@ try {
   await review.waitForText('Visual evidence');
   await delay(1_000);
   await review.shoot('06-visual-evidence.png');
+
+  // Annotated frame: save a frame from the recording, highlight the error, save, capture.
+  try {
+    await review.evaluate(`(async () => {
+      const video = document.querySelector('video');
+      if (!video) throw new Error('no video element');
+      await new Promise((ok, no) => {
+        if (video.readyState >= 1) return ok();
+        video.addEventListener('loadedmetadata', ok, { once: true });
+        setTimeout(() => no(new Error('video metadata timeout')), 8000);
+      });
+      const seeked = new Promise((ok) => video.addEventListener('seeked', ok, { once: true }));
+      video.currentTime = 0.6;
+      await Promise.race([seeked, new Promise((ok) => setTimeout(ok, 3000))]);
+      return video.readyState;
+    })()`);
+    await clickText('button', 'Save current frame');
+    await review.waitForText('Selected frame');
+    await delay(800);
+    await review.evaluate(
+      `(() => { const b = document.querySelector('button[aria-label="Annotate selected frame"]'); if (!b) throw new Error('no annotate button'); b.click(); return true; })()`,
+    );
+    await delay(800);
+    await review.evaluate(
+      `(() => { const tool = document.querySelector('[aria-label="Drawing tools"] [aria-label="Highlight"]'); if (!tool) throw new Error('no highlight tool'); tool.click(); return true; })()`,
+    );
+    await delay(300);
+    const box = await review.evaluate(`(() => {
+      const overlay = document.querySelector('[aria-label="Selected frame annotation canvas"]');
+      if (!overlay) throw new Error('no annotation overlay');
+      overlay.scrollIntoView({ block: 'center', behavior: 'instant' });
+      const r = overlay.getBoundingClientRect();
+      return { x: r.left, y: r.top, w: r.width, h: r.height };
+    })()`);
+    const mouse = (type, x, y, extra = {}) =>
+      command(
+        'Input.dispatchMouseEvent',
+        { type, x, y, button: 'left', buttons: 1, clickCount: 1, pointerType: 'mouse', ...extra },
+        review.sessionId,
+      );
+    // The error card sits in the right column of the recorded page.
+    const from = { x: box.x + box.w * 0.575, y: box.y + box.h * 0.525 };
+    const to = { x: box.x + box.w * 0.855, y: box.y + box.h * 0.655 };
+    await mouse('mouseMoved', from.x, from.y, { buttons: 0 });
+    await mouse('mousePressed', from.x, from.y);
+    for (let i = 1; i <= 8; i++) {
+      await mouse(
+        'mouseMoved',
+        from.x + ((to.x - from.x) * i) / 8,
+        from.y + ((to.y - from.y) * i) / 8,
+      );
+      await delay(30);
+    }
+    await mouse('mouseReleased', to.x, to.y, { buttons: 0 });
+    await delay(400);
+    await clickText('button', 'Save annotations');
+    await review.waitForText('Edit annotations');
+    await delay(600);
+    await review.evaluate(
+      `(() => { const frame = document.querySelector('[aria-label="Video frame evidence"]'); if (!frame) throw new Error('no frame section'); frame.scrollIntoView({ block: 'start', behavior: 'instant' }); window.scrollBy(0, -88); return true; })()`,
+    );
+    await delay(400);
+    await review.shoot('annotated-frame.png');
+  } catch (error) {
+    console.warn('annotated frame skipped:', error.message);
+    // Leave annotation mode so the evidence tabs are enabled again.
+    await review
+      .evaluate(
+        `(() => { const b = [...document.querySelectorAll('[aria-label="Annotation tools"] button')].find((el) => el.textContent.trim() === 'Cancel'); if (b) b.click(); return Boolean(b); })()`,
+      )
+      .catch(() => undefined);
+    await delay(400);
+  }
   await clickText('[role="tab"]', 'Console');
   await review.waitForText('Console evidence');
   await review.shoot('07-console-evidence.png');

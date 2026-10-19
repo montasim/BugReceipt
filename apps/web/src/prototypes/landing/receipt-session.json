@@ -4,64 +4,64 @@
   "diagnostics": [
     {
       "consoleType": "log",
-      "id": "56404adf-7644-4bb7-a79e-2fbcf7507614",
+      "id": "f9dc1e59-7b03-4e0d-81a7-9dc6e9aa589f",
       "kind": "console",
       "level": "log",
       "message": "Checkout initialized · 1 item in cart",
-      "occurredAt": "2026-10-19T12:03:54.538Z",
+      "occurredAt": "2026-10-19T13:14:17.161Z",
       "stack": "at (anonymous) (http://shop.example.test/checkout:26:9)"
     },
     {
       "consoleType": "log",
-      "id": "a818b19a-3cf8-4ff0-a5cf-0e55152c4da6",
+      "id": "dd112060-b227-48e5-ab06-f35ec8cd8535",
       "kind": "console",
       "level": "log",
       "message": "Cart loaded Object {items: 1, subtotal: 89, currency: USD}",
-      "occurredAt": "2026-10-19T12:03:54.541Z",
+      "occurredAt": "2026-10-19T13:14:17.163Z",
       "stack": "at (anonymous) (http://shop.example.test/checkout:27:54)"
     },
     {
       "consoleType": "log",
-      "id": "a7f1baf9-bc65-4366-be53-3127d09ae75f",
+      "id": "e0333f58-a6e4-4645-b08d-b135a362ae9d",
       "kind": "console",
       "level": "log",
       "message": "Discount applied: WELCOME10",
-      "occurredAt": "2026-10-19T12:03:56.036Z",
+      "occurredAt": "2026-10-19T13:14:18.654Z",
       "stack": "at (anonymous) (http://shop.example.test/checkout:29:11)\nat (anonymous) (:1:34)"
     },
     {
       "consoleType": "warn",
-      "id": "bf1ac85b-a728-4ed1-95c5-0c40fa4e8d7f",
+      "id": "6d9ca012-3c3f-40ea-827d-4eea54eba15c",
       "kind": "console",
       "level": "warn",
       "message": "Payment request retry: attempt 1 of 3",
-      "occurredAt": "2026-10-19T12:03:56.036Z",
+      "occurredAt": "2026-10-19T13:14:18.654Z",
       "stack": "at (anonymous) (http://shop.example.test/checkout:30:11)\nat (anonymous) (:1:34)"
     },
     {
       "consoleType": "error",
-      "id": "f8578800-9443-4799-9fe5-38efdf1633b7",
+      "id": "28174924-44f7-4e9b-b1c1-2e19f8e1627e",
       "kind": "console",
       "level": "error",
       "message": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) (http://shop.example.test/api/orders)",
-      "occurredAt": "2026-10-19T12:03:56.037Z"
+      "occurredAt": "2026-10-19T13:14:18.656Z"
     },
     {
       "consoleType": "error",
-      "id": "001648bf-5c6f-401c-8d6f-3181ed5cb758",
+      "id": "638175d6-2a64-4946-a2d6-35e5829b52a7",
       "kind": "console",
       "level": "error",
       "message": "CheckoutError: Unable to place order\n    at submitOrder (checkout.js:142:18)\n    at onPaymentSubmit (payment.js:86:12)",
-      "occurredAt": "2026-10-19T12:03:56.038Z",
+      "occurredAt": "2026-10-19T13:14:18.657Z",
       "stack": "at (anonymous) (http://shop.example.test/checkout:34:13)"
     },
     {
       "consoleType": "error",
-      "id": "a50a3f60-80f6-45d7-9bd9-6e2f4de306f4",
+      "id": "7d9fb260-7d4f-4a31-bf17-04449f5dd963",
       "kind": "console",
       "level": "error",
       "message": "POST /api/orders returned 422 Object {error: DISCOUNT_EXPIRED, message: This discount is no longer available., details: Object}",
-      "occurredAt": "2026-10-19T12:03:56.038Z",
+      "occurredAt": "2026-10-19T13:14:18.657Z",
       "stack": "at (anonymous) (http://shop.example.test/checkout:35:13)"
     }
   ],
@@ -77,13 +77,13 @@
     "redactionCount": 8,
     "reviewRedactionCount": 0
   },
-  "id": "6fb7d004-9b2a-4dbc-a97a-8b5d80dc57ea",
+  "id": "310aba48-0cc6-49a1-b41b-ad312936d037",
   "network": [
     {
-      "durationMs": 1.5100000018719584,
-      "id": "8fe066d0-b415-4c49-ad3e-0e1573af796d",
+      "durationMs": 1.6379999869968742,
+      "id": "e9b5b915-74f7-419b-9aa2-1e184eb71409",
       "method": "GET",
-      "occurredAt": "2026-10-19T12:03:54.529Z",
+      "occurredAt": "2026-10-19T13:14:17.151Z",
       "requestHeaders": [
         {
           "name": "Referer",
@@ -104,10 +104,10 @@
       "url": "http://shop.example.test/checkout"
     },
     {
-      "durationMs": 1.6929999983403832,
-      "id": "766a15e9-8697-4cab-966d-d69ff289f07a",
+      "durationMs": 1.436999998986721,
+      "id": "d2783ab9-d4d4-4357-b5ea-c0c241222d57",
       "method": "GET",
-      "occurredAt": "2026-10-19T12:03:54.538Z",
+      "occurredAt": "2026-10-19T13:14:17.161Z",
       "requestHeaders": [
         {
           "name": "Referer",
@@ -124,10 +124,10 @@
       "url": "http://shop.example.test/api/cart"
     },
     {
-      "durationMs": 2.2520000056829304,
-      "id": "52d64772-3ffe-441f-b19e-59517a264851",
+      "durationMs": 1.4740000187885016,
+      "id": "db494352-7664-4ccd-b458-047cd5a8f78c",
       "method": "GET",
-      "occurredAt": "2026-10-19T12:03:54.547Z",
+      "occurredAt": "2026-10-19T13:14:17.169Z",
       "requestHeaders": [
         {
           "name": "Referer",
@@ -144,10 +144,10 @@
       "url": "http://shop.example.test/favicon.ico"
     },
     {
-      "durationMs": 1.2630000128410757,
-      "id": "7917c7c0-875b-46a7-9dbb-af710aa29a7a",
+      "durationMs": 1.6140000079758465,
+      "id": "f8cc558e-ecb1-4f7c-960d-fdeb106c90c7",
       "method": "POST",
-      "occurredAt": "2026-10-19T12:03:56.036Z",
+      "occurredAt": "2026-10-19T13:14:18.655Z",
       "requestBody": "{\"sku\":\"BP-EVERYDAY-GRN\",\"quantity\":1,\"discountCode\":\"WELCOME10\",\"email\":\"[REDACTED]\"}",
       "requestHeaders": [
         {
@@ -175,39 +175,49 @@
   ],
   "origin": "http://shop.example.test",
   "page": {
-    "capturedAt": "2026-10-19T12:03:59.813Z",
+    "capturedAt": "2026-10-19T13:14:22.396Z",
     "recording": {
-      "blobId": "bfb95ebf-1c2d-4fa0-acf7-cbd63a1c9616",
+      "blobId": "552d7f09-8e66-493e-9c4b-8255c3cf6cb2",
       "durationMs": 4000,
       "mimeType": "video/webm",
       "sizeBytes": 86882
     },
-    "screenshotBlobId": "7bc610cb-847a-4df8-92d0-b971ff9cdde7",
+    "screenshotBlobId": "c600f576-39f6-4c8e-a285-a65b1bb13900",
+    "selectedFrames": [
+      {
+        "blobId": "ecb2c411-28c8-4ff0-9881-7f7785a09be4",
+        "height": 757,
+        "mimeType": "image/png",
+        "sizeBytes": 157051,
+        "videoTimeMs": 600,
+        "width": 1440
+      }
+    ],
     "title": "Everyday Supply · Checkout",
     "url": "http://shop.example.test/checkout"
   },
   "schemaVersion": 1,
-  "startedAt": "2026-10-19T12:03:53.707Z",
+  "startedAt": "2026-10-19T13:14:16.336Z",
   "status": "ready-for-review",
   "steps": [
     {
-      "id": "b00c6857-5624-4bb9-bafb-85ebd78de2d2",
+      "id": "0248b444-f5fa-4f90-9379-94a9609c13c6",
       "position": 0,
       "text": "Opened the checkout page with one item in the cart"
     },
     {
-      "id": "21b84a36-6545-4cfe-84f1-fc58112959af",
+      "id": "2f43c142-5405-48d3-8a0c-8c76198503fe",
       "position": 1,
       "text": "Applied the WELCOME10 discount code"
     },
     {
-      "id": "f86dc45a-4d2e-426f-a272-a99f709926a8",
+      "id": "6a9288ea-97b6-4220-aba0-5b427757610d",
       "position": 2,
       "text": "Clicked Place order and saw the error"
     }
   ],
-  "stoppedAt": "2026-10-19T12:03:59.813Z",
+  "stoppedAt": "2026-10-19T13:14:22.396Z",
   "summary": "Checkout fails after applying a discount",
-  "tabId": 1862187566,
-  "windowId": 1862187557
+  "tabId": 1076436271,
+  "windowId": 1076436262
 }

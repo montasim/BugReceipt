@@ -29,7 +29,7 @@ describe('landing receipt', () => {
       'console.json',
       'network.har',
     ]);
-    expect(receipt.files.filter((file: { included: boolean }) => file.included)).toHaveLength(4);
+    expect(receipt.files.filter((file: { included: boolean }) => file.included)).toHaveLength(5);
   });
 
   it('renders the exported report with the error lines in the console excerpt', () => {
@@ -38,7 +38,7 @@ describe('landing receipt', () => {
     expect(html).toContain('Steps to reproduce');
     expect(html).not.toContain('Network activity');
     expect(html).not.toContain('Description');
-    expect(html.match(/Included</g)).toHaveLength(4);
+    expect(html.match(/Included</g)).toHaveLength(5);
     expect(html).toMatch(/<pre><code>[\s\S]*ERROR[\s\S]*<\/code><\/pre>/);
     expect(html).not.toMatch(/secret-token|demo%40/);
   });
