@@ -38,7 +38,8 @@
 .clean-site button:focus-visible,
 .clean-site a:focus-visible,
 .clean-site summary:focus-visible,
-.clean-site [role='tab']:focus-visible {
+.clean-site [role='tab']:focus-visible,
+.clean-site [role='tabpanel']:focus-visible {
   outline: 3px solid var(--mint);
   outline-offset: 3px;
 }
@@ -325,7 +326,7 @@
     display: none;
   }
   .site-footer .clean-shell {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .guide-list > li {
     grid-template-columns: 1fr;
@@ -344,7 +345,7 @@
     display: none;
   }
   .site-footer .clean-shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 28px;
     padding-block: 40px;
   }

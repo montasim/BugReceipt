@@ -2,7 +2,17 @@ import { useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { evidenceTabs } from './landing-content';
 
-export function BrowserFrame({ src, alt }: { src: string; alt: string }) {
+export function BrowserFrame({
+  src,
+  alt,
+  width,
+  height,
+}: {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+}) {
   return (
     <div className="browser-frame">
       <div className="browser-frame-bar" aria-hidden="true">
@@ -10,7 +20,7 @@ export function BrowserFrame({ src, alt }: { src: string; alt: string }) {
         <span />
         <span />
       </div>
-      <img src={src} alt={alt} loading="lazy" />
+      <img src={src} alt={alt} width={width} height={height} loading="lazy" />
     </div>
   );
 }
@@ -72,7 +82,7 @@ export function EvidenceTabs() {
         key={current.id}
       >
         <span className="visually-hidden">{current.title}</span>
-        <BrowserFrame src={current.image.src} alt={current.image.alt} />
+        <BrowserFrame {...current.image} />
       </div>
     </div>
   );

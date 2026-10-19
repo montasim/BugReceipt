@@ -209,6 +209,12 @@
   margin-inline: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  height: auto;
+}
+.step .panel-shot {
+  max-height: 560px;
+  width: auto;
+  max-width: 100%;
 }
 .browser-frame {
   border: 1px solid var(--line);
@@ -233,6 +239,7 @@
 .browser-frame img {
   display: block;
   width: 100%;
+  height: auto;
 }
 .video-frame {
   margin: 56px 0 0;

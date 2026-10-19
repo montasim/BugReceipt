@@ -53,12 +53,14 @@ export function LandingPage() {
                   <p>{step.body}</p>
                 </div>
                 {'frame' in step.image ? (
-                  <BrowserFrame src={step.image.src} alt={step.image.alt} />
+                  <BrowserFrame {...step.image} />
                 ) : (
                   <img
                     className="panel-shot"
                     src={step.image.src}
                     alt={step.image.alt}
+                    width={step.image.width}
+                    height={step.image.height}
                     loading="lazy"
                   />
                 )}
@@ -101,7 +103,7 @@ export function LandingPage() {
               ))}
             </div>
           </div>
-          <BrowserFrame src={deliverables.image.src} alt={deliverables.image.alt} />
+          <BrowserFrame {...deliverables.image} />
         </section>
 
         <section className="privacy-section" id="privacy">
@@ -140,11 +142,13 @@ export function LandingPage() {
             </a>
           </div>
           <div className="corrections-shots">
-            <BrowserFrame src={corrections.images[0].src} alt={corrections.images[0].alt} />
+            <BrowserFrame {...corrections.images[0]} />
             <img
               className="panel-shot"
               src={corrections.images[1].src}
               alt={corrections.images[1].alt}
+              width={corrections.images[1].width}
+              height={corrections.images[1].height}
               loading="lazy"
             />
           </div>

@@ -9,13 +9,20 @@ export const steps = [
   {
     title: 'Choose the tab',
     body: 'Open the side panel on the page where the problem happens and select Choose tab to record. Nothing is recorded until you confirm the tab in Chrome’s share dialog.',
-    image: { src: '/guide/01-side-panel.png', alt: 'BugReceipt side panel ready to record' },
+    image: {
+      src: '/guide/01-side-panel.png',
+      width: 880,
+      height: 1520,
+      alt: 'BugReceipt side panel ready to record',
+    },
   },
   {
     title: 'Reproduce and add steps',
     body: 'Use the page normally. The panel counts console messages and requests as they happen; type each action you take so the report carries human steps next to the evidence.',
     image: {
       src: '/guide/03-recording.png',
+      width: 880,
+      height: 1520,
       alt: 'BugReceipt side panel recording with three recorded steps',
     },
   },
@@ -24,6 +31,8 @@ export const steps = [
     body: 'Stop & review opens the workbench. Finish the report, remove anything private from the evidence, then download one ZIP.',
     image: {
       src: '/guide/05-report-details.png',
+      width: 2880,
+      height: 1800,
       alt: 'BugReceipt review page with the report details stage',
       frame: true,
     },
@@ -44,6 +53,8 @@ export const evidenceTabs = [
     body: 'The WebM recording of the selected tab plays inside the review. Pause on the failure, save up to 20 frames, and annotate them with marker, highlight, border, and notes. Remove the video or any frame before export.',
     image: {
       src: '/guide/06-visual-evidence.png',
+      width: 2880,
+      height: 1800,
       alt: 'Visual evidence tab with the screen recording of the checkout page',
     },
   },
@@ -54,6 +65,8 @@ export const evidenceTabs = [
     body: 'Logs, warnings, errors, uncaught exceptions, and rejected promises, each with a timestamp. Search, filter by type, highlight the exact text the developer should read, and remove entries you do not want to share. The count of sensitive values redacted locally is shown above the list.',
     image: {
       src: '/guide/07-console-evidence.png',
+      width: 2880,
+      height: 1800,
       alt: 'Console evidence tab listing seven captured messages',
     },
   },
@@ -64,6 +77,8 @@ export const evidenceTabs = [
     body: 'Fetch, XHR, and page resources with method, status, and timing. API calls come first. Open a request to read its headers with credentials redacted and its request and response bodies as formatted JSON or raw text.',
     image: {
       src: '/guide/08-network-evidence.png',
+      width: 2880,
+      height: 1800,
       alt: 'Network evidence tab with a failed POST request expanded to its JSON response',
     },
   },
@@ -80,6 +95,8 @@ export const deliverables = {
   ],
   image: {
     src: '/guide/09-choose-files.png',
+    width: 2880,
+    height: 1800,
     alt: 'Choose files stage listing the report files with Included badges',
   },
 } as const;
@@ -127,11 +144,14 @@ export const corrections = {
   images: [
     {
       src: '/guide/11-select-text.png',
+      width: 2880,
+      height: 1800,
       alt: 'Checkout page with a sentence selected',
-      frame: true,
     },
     {
       src: '/guide/14-correction-batch.png',
+      width: 880,
+      height: 1520,
       alt: 'BugReceipt side panel with two corrections in a batch',
     },
   ],
