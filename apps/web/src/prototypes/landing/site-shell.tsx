@@ -21,7 +21,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
               GitHub
             </a>
           </nav>
-          <a className="btn-primary" href={storeUrl} target="_blank" rel="noreferrer">
+          <a
+            className="btn-primary"
+            href={storeUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Add to Chrome"
+          >
             <ChromeIcon />
             <span>Add to Chrome</span>
           </a>
