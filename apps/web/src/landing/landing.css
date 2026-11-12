@@ -1,4 +1,5 @@
-/* Landing page. Dark, matching the launch video: one amber action color, teal for "good" state. */
+/* Landing page. Dark by default (matching the launch video), with a light theme.
+   The theme follows the system until the visitor picks one with the toggle (data-theme on <html>). */
 .lp {
   --bg: #0a1318;
   --bg-2: #0f1c23;
@@ -8,17 +9,70 @@
   --muted: #9aaeb7;
   --amber: #f0a63e;
   --amber-hover: #ffb85a;
+  --amber-soft: rgb(240 166 62 / 0.15);
   --teal: #2fb5a3;
+  --teal-soft: rgb(47 181 163 / 0.14);
+  --teal-line: rgb(47 181 163 / 0.45);
   --red: #ff7a66;
+  --header-bg: rgb(10 19 24 / 0.82);
+  --edge: rgb(255 255 255 / 0.12);
+  --edge-strong: rgb(255 255 255 / 0.18);
+  --edge-hover: rgb(255 255 255 / 0.4);
+  --soft: rgb(255 255 255 / 0.04);
+  --shadow: rgb(0 0 0 / 0.5);
+  --glow-amber: rgb(240 166 62 / 0.16);
+  --glow-teal: rgb(47 181 163 / 0.12);
+  --code-bg: #0d171d;
+  --scrollbar: #2a3c45;
   --radius: 16px;
-  min-height: 100vh;
+  --header-h: 68px;
+  /* The header stays put; only the content below it scrolls, so the scrollbar starts under the header. */
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--bg);
   color: var(--text);
   font-family: 'Geist Variable', system-ui, sans-serif;
   font-size: 17px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+}
+html[data-theme='light'] .lp {
+  --bg: #f6f8f9;
+  --bg-2: #edf2f4;
+  --card: #ffffff;
+  --line: rgb(19 36 47 / 0.1);
+  --text: #13242f;
+  --muted: #55656e;
+  --amber: #e8a13f;
+  --amber-hover: #d88c29;
+  --amber-soft: rgb(232 161 63 / 0.18);
+  --teal: #0f7a6d;
+  --teal-soft: rgb(15 122 109 / 0.1);
+  --teal-line: rgb(15 122 109 / 0.4);
+  --red: #c4452e;
+  --header-bg: rgb(246 248 249 / 0.85);
+  --edge: rgb(19 36 47 / 0.12);
+  --edge-strong: rgb(19 36 47 / 0.2);
+  --edge-hover: rgb(19 36 47 / 0.45);
+  --soft: rgb(19 36 47 / 0.04);
+  --shadow: rgb(19 36 47 / 0.16);
+  --glow-amber: rgb(232 161 63 / 0.18);
+  --glow-teal: rgb(15 122 109 / 0.08);
+  --code-bg: #ffffff;
+  --scrollbar: #c3cfd4;
+  color-scheme: light;
+}
+.lp-scroll {
+  flex: 1;
+  min-height: 0;
   overflow-x: clip;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scrollbar-color: var(--scrollbar) var(--bg);
 }
 .lp *,
 .lp *::before,
@@ -63,18 +117,19 @@
 
 /* Header */
 .lp-header {
-  position: sticky;
+  flex-shrink: 0;
+  position: relative;
   top: 0;
   z-index: 20;
   border-bottom: 1px solid var(--line);
-  background: rgb(10 19 24 / 0.82);
+  background: var(--header-bg);
   backdrop-filter: blur(14px);
 }
 .lp-header-row {
   display: flex;
   align-items: center;
   gap: 32px;
-  height: 68px;
+  height: var(--header-h);
 }
 .lp-brand {
   display: inline-flex;
@@ -141,11 +196,11 @@
   box-shadow: none;
 }
 .lp-btn-ghost {
-  border: 1px solid rgb(255 255 255 / 0.18);
+  border: 1px solid var(--edge-strong);
   color: var(--text);
 }
 .lp-btn-ghost:hover {
-  border-color: rgb(255 255 255 / 0.4);
+  border-color: var(--edge-hover);
 }
 .lp-btn-ghost svg {
   width: 18px;
@@ -163,8 +218,8 @@
   position: relative;
   padding: 88px 0 96px;
   background:
-    radial-gradient(60% 50% at 50% 0%, rgb(240 166 62 / 0.16), transparent 70%),
-    radial-gradient(40% 40% at 85% 55%, rgb(47 181 163 / 0.12), transparent 70%);
+    radial-gradient(60% 50% at 50% 0%, var(--glow-amber), transparent 70%),
+    radial-gradient(40% 40% at 85% 55%, var(--glow-teal), transparent 70%);
 }
 .lp-hero-copy {
   max-width: 900px;
@@ -181,7 +236,7 @@
   padding: 6px 14px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.04);
+  background: var(--soft);
   color: var(--muted);
   font-size: 14px;
 }
@@ -226,7 +281,7 @@
   color: var(--teal);
 }
 .lp-trust a {
-  text-decoration-color: rgb(255 255 255 / 0.3);
+  text-decoration-color: var(--edge-hover);
 }
 
 /* Video */
@@ -243,14 +298,14 @@
   width: 100%;
   aspect-ratio: 16 / 9;
   padding: 0;
-  border: 1px solid rgb(255 255 255 / 0.12);
+  border: 1px solid var(--edge);
   border-radius: 20px;
   overflow: hidden;
   background: #000;
   cursor: pointer;
   box-shadow:
-    0 40px 120px rgb(0 0 0 / 0.55),
-    0 0 0 8px rgb(255 255 255 / 0.03);
+    0 40px 120px var(--shadow),
+    0 0 0 8px var(--soft);
 }
 .lp-video button img {
   width: 100%;
@@ -387,8 +442,8 @@
   color: var(--red);
 }
 .lp-card-good {
-  border-color: rgb(47 181 163 / 0.45);
-  background: linear-gradient(160deg, rgb(47 181 163 / 0.12), var(--card) 60%);
+  border-color: var(--teal-line);
+  background: linear-gradient(160deg, var(--teal-soft), var(--card) 60%);
 }
 .lp-card-good .lp-tag {
   color: var(--teal);
@@ -460,15 +515,15 @@
   position: absolute;
   inset: -12% -8%;
   z-index: 0;
-  background: radial-gradient(closest-side, rgb(240 166 62 / 0.14), transparent);
+  background: radial-gradient(closest-side, var(--glow-amber), transparent);
 }
 .lp-feature-media picture img,
 .lp-feature-media .lp-redact {
   position: relative;
   z-index: 1;
-  border: 1px solid rgb(255 255 255 / 0.12);
+  border: 1px solid var(--edge);
   border-radius: var(--radius);
-  box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
+  box-shadow: 0 30px 80px var(--shadow);
 }
 .lp-feature-media.is-tall picture img {
   max-height: 560px;
@@ -478,7 +533,7 @@
 .lp-aside {
   margin-top: 88px;
   padding: 18px 24px;
-  border: 1px dashed rgb(255 255 255 / 0.16);
+  border: 1px dashed var(--edge-strong);
   border-radius: 12px;
   color: var(--muted);
   text-align: center;
@@ -491,7 +546,7 @@
 /* Redaction card */
 .lp-redact {
   padding: 22px;
-  background: #0d171d;
+  background: var(--code-bg);
   font:
     14px/1.5 'JetBrains Mono Variable',
     monospace;
@@ -528,7 +583,7 @@
 .lp-redact b {
   padding: 2px 8px;
   border-radius: 6px;
-  background: rgb(47 181 163 / 0.16);
+  background: var(--teal-soft);
   color: var(--teal);
   font-weight: 600;
 }
@@ -558,7 +613,7 @@
   height: 40px;
   margin-bottom: 18px;
   border-radius: 50%;
-  background: rgb(240 166 62 / 0.15);
+  background: var(--amber-soft);
   color: var(--amber);
   font:
     700 17px 'JetBrains Mono Variable',
@@ -581,7 +636,7 @@
   border-radius: 14px;
   background: #fbfaf6;
   color: #13242f;
-  box-shadow: 0 40px 100px rgb(0 0 0 / 0.5);
+  box-shadow: 0 40px 100px var(--shadow);
   overflow: hidden;
   font-size: 15px;
 }
@@ -700,7 +755,7 @@
 .lp-final {
   padding: 120px 0;
   text-align: center;
-  background: radial-gradient(55% 70% at 50% 100%, rgb(240 166 62 / 0.2), transparent 70%);
+  background: radial-gradient(55% 70% at 50% 100%, var(--glow-amber), transparent 70%);
 }
 .lp-final h2 {
   max-width: 760px;
@@ -745,6 +800,9 @@
   .lp * {
     animation: none !important;
     transition: none !important;
+  }
+  .lp-scroll {
+    scroll-behavior: auto;
   }
 }
 
@@ -820,5 +878,48 @@
   }
   .lp-final {
     padding: 80px 0;
+  }
+}
+
+/* Theme toggle */
+.lp-theme {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--edge-strong);
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 150ms;
+}
+.lp-theme:hover {
+  border-color: var(--edge-hover);
+}
+.lp-theme svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.lp-theme .lp-moon,
+html[data-theme='light'] .lp-theme .lp-sun {
+  display: none;
+}
+html[data-theme='light'] .lp-theme .lp-moon {
+  display: block;
+}
+.lp-header-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .lp-header-end {
+    margin-left: auto;
   }
 }

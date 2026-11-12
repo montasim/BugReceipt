@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { LandingPage, storeUrl, videoId } from '../src/landing/landing-page';
+import { LandingPage, storeUrl, themeScript, videoId } from '../src/landing/landing-page';
 import { NotFound, ServerError } from '../src/routes/__root';
 
 describe('extension landing page', () => {
@@ -43,6 +43,14 @@ describe('extension landing page', () => {
     expect(markup.match(/<details>/g)).toHaveLength(5);
     expect(markup).toContain('Filtering cannot recognize every secret');
     expect(markup).toContain('does not open or submit an issue');
+  });
+
+  it('offers a light and dark theme toggle and scrolls only below the header', () => {
+    expect(markup).toContain('aria-label="Switch between light and dark theme"');
+    expect(markup).toMatch(/<\/header><div class="lp-scroll">/);
+    expect(themeScript).toContain('localStorage');
+    expect(themeScript).toContain('prefers-color-scheme: light');
+    expect(route).toContain('themeScript');
   });
 
   it('publishes the user guide as its own route with a screenshot for every step', () => {
