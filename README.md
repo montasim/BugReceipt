@@ -6,8 +6,6 @@ BugReceipt is a local-first Chrome extension for reporting web application bugs 
 
 [![Watch the 50-second BugReceipt video on YouTube](store-assets/v0.2.0/video/youtube-thumbnail-launch.png)](https://youtu.be/QkJJBP71Ze0)
 
-![BugReceipt review workbench](store-assets/v0.2.0/screenshots/01-report-1280x800.png)
-
 The Chrome Web Store currently lists version 0.1.6; this source tree is version 0.2.0. The store listing and this repository may therefore differ until a new store version is published. The repository also publishes [checksummed, unpacked Chrome archives](https://github.com/montasim/BugReceipt/releases) for manual installation.
 
 ## What you can do
