@@ -68,6 +68,7 @@ export const Route = createRootRoute({
 function RootDocument({ children }: { children: ReactNode }) {
   return (
     <html
+      suppressHydrationWarning
       lang="en"
       className="scroll-smooth bg-fog text-ink [scrollbar-color:#0f7a6d_#f6f8f9] motion-reduce:scroll-auto"
     >

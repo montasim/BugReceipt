@@ -20,7 +20,8 @@ function wav(name, seconds, sample) {
   buf.writeUInt16LE(16, 34);
   buf.write('data', 36);
   buf.writeUInt32LE(n * 2, 40);
-  for (let i = 0; i < n; i++) buf.writeInt16LE(Math.round(Math.max(-1, Math.min(1, sample(i / SR))) * 32767), 44 + i * 2);
+  for (let i = 0; i < n; i++)
+    buf.writeInt16LE(Math.round(Math.max(-1, Math.min(1, sample(i / SR))) * 32767), 44 + i * 2);
   writeFileSync(new URL(`./src/sfx/${name}.wav`, import.meta.url), buf);
 }
 
@@ -35,7 +36,8 @@ wav('whoosh', 0.9, (t) => {
 });
 
 // Click: a very short filtered noise burst, like a trackpad tap.
-let hp = 0, prev = 0;
+let hp = 0,
+  prev = 0;
 wav('click', 0.06, (t) => {
   const x = noise();
   hp = 0.6 * (hp + x - prev);

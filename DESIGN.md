@@ -63,9 +63,13 @@ components:
 
 # Design System: BugReceipt
 
+## Landing page (`/`)
+
+The landing page is built to win installs and has its own dark system in `apps/web/src/landing/landing.css`, matching the launch video: background `#0a1318`, amber `#f0a63e` as the only action color, teal `#2fb5a3` for good state and eyebrows, and coral `#ff7a66` for failure. Its hero leads with the headline, two calls to action (Add to Chrome, watch the demo) and the launch video, a poster that loads the YouTube player only on click. Sections follow the order problem, four features with real captures, how it works, the real issue.md receipt (shown as a light paper slip), audiences, privacy, FAQ and a final call to action. Every install button links to the Chrome Web Store listing. The light system below still governs the guide page and the error pages.
+
 ## Overview
 
-The site uses the extension's own light theme, so real product captures sit on the page without a seam. There is no marketing layer between the page and the product: the hero shows a real capture scene (the demo page failing beside the side panel recording it), the Export section shows the actual exported issue.md as a receipt, and every other section shows a real capture of the screen it describes. Amber is the single action color, mint marks state, and one shadow is shared by all proof frames. Numbered markers appear only where the page shows the capture sequence. Every landing section follows one grammar: a centered eyebrow, heading, and lead; one full-width proof artifact inside a browser frame with a caption; then ruled three-column detail with a mono label, title, and copy.
+Outside the landing page, the site uses the extension's own light theme, so real product captures sit on the page without a seam. There is no marketing layer between the page and the product: the hero shows a real capture scene (the demo page failing beside the side panel recording it), the Export section shows the actual exported issue.md as a receipt, and every other section shows a real capture of the screen it describes. Amber is the single action color, mint marks state, and one shadow is shared by all proof frames. Numbered markers appear only where the page shows the capture sequence. Every landing section follows one grammar: a centered eyebrow, heading, and lead; one full-width proof artifact inside a browser frame with a caption; then ruled three-column detail with a mono label, title, and copy.
 
 ## Colors
 

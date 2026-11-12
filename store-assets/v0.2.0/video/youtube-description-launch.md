@@ -13,6 +13,7 @@ Website: https://bugreceipt.netlify.app
 BugReceipt is a free Chrome extension that turns any bug into a report a developer can reproduce, straight from the Chrome side panel.
 
 What it does:
+
 - Record the tab and write each step as you reproduce the problem
 - Capture console errors, stack traces and the exact failing network request automatically
 - Redact tokens, passwords, cookies and emails on your machine, before anything is stored
