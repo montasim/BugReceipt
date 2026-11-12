@@ -1,0 +1,22 @@
+{
+  "name": "bugreceipt-marketing-video",
+  "private": true,
+  "scripts": {
+    "voice": "node voice.mjs",
+    "sfx": "node sfx.mjs",
+    "studio": "remotion studio",
+    "render": "node sfx.mjs && remotion render Marketing ../bugreceipt-v0.2.0-marketing-1080p.mp4 --codec h264 --crf 18",
+    "render:launch": "node sfx.mjs && remotion render Launch ../bugreceipt-v0.2.0-launch-1080p.mp4 --codec h264 --crf 18"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@remotion/cli": "^4.0.540",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "^4.0.540"
+  },
+  "devDependencies": {
+    "msedge-tts": "^2.1.1"
+  }
+}
