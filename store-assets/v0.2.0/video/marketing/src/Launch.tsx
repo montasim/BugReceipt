@@ -40,7 +40,10 @@ const LEAD = 10;
 // Scene length: its animation minimum, or narration plus breathing room, whichever is longer.
 const MIN_SECONDS = [6.4, 5.6, 7.6, 8.4, 6.6, 7.8, 5.6];
 const STARTS = MIN_SECONDS.reduce(
-  (s, min, i) => [...s, s[i] + Math.max(Math.round(min * FPS), Math.ceil(VOICE_SECONDS[i] * FPS) + LEAD + 22)],
+  (s, min, i) => [
+    ...s,
+    s[i] + Math.max(Math.round(min * FPS), Math.ceil(VOICE_SECONDS[i] * FPS) + LEAD + 22),
+  ],
   [0],
 );
 export const LAUNCH_TOTAL = STARTS[STARTS.length - 1];
@@ -61,7 +64,12 @@ const Backdrop: React.FC = () => {
   const f = useCurrentFrame();
   const a = f / 120;
   return (
-    <AbsoluteFill style={{ background: `radial-gradient(ellipse at 50% 120%, ${K.bg2}, ${K.bg} 70%)`, overflow: 'hidden' }}>
+    <AbsoluteFill
+      style={{
+        background: `radial-gradient(ellipse at 50% 120%, ${K.bg2}, ${K.bg} 70%)`,
+        overflow: 'hidden',
+      }}
+    >
       <div
         style={{
           position: 'absolute',
@@ -118,19 +126,31 @@ const Scene: React.FC<{ dur: number; children: React.ReactNode }> = ({ dur, chil
 /* ---------------------------------------------------------------- text */
 
 /** Words rise and unblur one by one. */
-const Words: React.FC<{ text: string; delay: number; size: number; color?: string; weight?: number; accent?: string[] }> = ({
-  text,
-  delay,
-  size,
-  color = K.ink,
-  weight = 640,
-  accent = [],
-}) => {
+const Words: React.FC<{
+  text: string;
+  delay: number;
+  size: number;
+  color?: string;
+  weight?: number;
+  accent?: string[];
+}> = ({ text, delay, size, color = K.ink, weight = 640, accent = [] }) => {
   const f = useCurrentFrame();
   return (
-    <div style={{ fontFamily: SANS, fontSize: size, fontWeight: weight, color, lineHeight: 1.08, letterSpacing: '-0.035em' }}>
+    <div
+      style={{
+        fontFamily: SANS,
+        fontSize: size,
+        fontWeight: weight,
+        color,
+        lineHeight: 1.08,
+        letterSpacing: '-0.035em',
+      }}
+    >
       {text.split(' ').map((w, i) => {
-        const p = interpolate(f, [delay + i * 3, delay + i * 3 + 14], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
+        const p = interpolate(f, [delay + i * 3, delay + i * 3 + 14], [0, 1], {
+          ...clamp,
+          easing: Easing.out(Easing.cubic),
+        });
         return (
           <span
             key={i}
@@ -151,19 +171,57 @@ const Words: React.FC<{ text: string; delay: number; size: number; color?: strin
   );
 };
 
-const FeatureCopy: React.FC<{ n: string; tag: string; title: string; accent: string[]; sub: string }> = ({ n, tag, title, accent, sub }) => {
+const FeatureCopy: React.FC<{
+  n: string;
+  tag: string;
+  title: string;
+  accent: string[];
+  sub: string;
+}> = ({ n, tag, title, accent, sub }) => {
   const f = useCurrentFrame();
   const bar = interpolate(f, [4, 26], [0, 1], { ...clamp, easing: ease });
   const subP = interpolate(f, [24, 40], [0, 1], clamp);
   return (
-    <div style={{ position: 'absolute', left: 120, top: 0, bottom: 0, width: 560, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontFamily: MONO, fontSize: 22, letterSpacing: '0.18em', color: K.amber, marginBottom: 28 }}>
+    <div
+      style={{
+        position: 'absolute',
+        left: 120,
+        top: 0,
+        bottom: 0,
+        width: 560,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          fontFamily: MONO,
+          fontSize: 22,
+          letterSpacing: '0.18em',
+          color: K.amber,
+          marginBottom: 28,
+        }}
+      >
         <span>{n}</span>
         <span style={{ width: 56 * bar, height: 2, background: K.amber }} />
         <span style={{ opacity: bar }}>{tag}</span>
       </div>
       <Words text={title} delay={8} size={72} accent={accent} />
-      <div style={{ marginTop: 30, fontFamily: SANS, fontSize: 28, lineHeight: 1.45, color: K.muted, opacity: subP, transform: `translateY(${(1 - subP) * 12}px)` }}>
+      <div
+        style={{
+          marginTop: 30,
+          fontFamily: SANS,
+          fontSize: 28,
+          lineHeight: 1.45,
+          color: K.muted,
+          opacity: subP,
+          transform: `translateY(${(1 - subP) * 12}px)`,
+        }}
+      >
         {sub}
       </div>
     </div>
@@ -175,7 +233,15 @@ const FeatureCopy: React.FC<{ n: string; tag: string; title: string; accent: str
 type Rect = [number, number, number, number]; // x, y, w, h in image pixels
 type Cam = { f: number; c?: [number, number]; z: number }; // z = zoom relative to "fit"
 // end: right-align the label to the ring so it sits over empty space at the end of a row.
-type Mark = { from: number; to?: number; rect: Rect; label?: string; below?: boolean; end?: boolean; spot?: boolean };
+type Mark = {
+  from: number;
+  to?: number;
+  rect: Rect;
+  label?: string;
+  below?: boolean;
+  end?: boolean;
+  spot?: boolean;
+};
 type Click = { f: number; at: [number, number]; from?: [number, number] };
 
 function camAt(f: number, keys: Cam[], w: number, h: number) {
@@ -186,7 +252,10 @@ function camAt(f: number, keys: Cam[], w: number, h: number) {
       const a = pts[i - 1];
       const b = pts[i];
       const t = ease((f - a.f) / (b.f - a.f));
-      return { c: [a.c[0] + (b.c[0] - a.c[0]) * t, a.c[1] + (b.c[1] - a.c[1]) * t] as [number, number], z: a.z + (b.z - a.z) * t };
+      return {
+        c: [a.c[0] + (b.c[0] - a.c[0]) * t, a.c[1] + (b.c[1] - a.c[1]) * t] as [number, number],
+        z: a.z + (b.z - a.z) * t,
+      };
     }
   }
   return pts[pts.length - 1];
@@ -238,14 +307,46 @@ const Shot: React.FC<{
         opacity: interpolate(rise, [0, 0.4], [0, 1], clamp),
       }}
     >
-      <div style={{ height: BAR, background: '#fbfcfc', borderBottom: '1px solid #dfe5e8', display: 'flex', alignItems: 'center', padding: '0 18px', gap: 9 }}>
+      <div
+        style={{
+          height: BAR,
+          background: '#fbfcfc',
+          borderBottom: '1px solid #dfe5e8',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 18px',
+          gap: 9,
+        }}
+      >
         {['#f26b5b', '#f5be4f', '#4cc27a'].map((col) => (
           <span key={col} style={{ width: 13, height: 13, borderRadius: 7, background: col }} />
         ))}
-        <span style={{ marginLeft: 16, padding: '5px 16px', borderRadius: 8, background: '#eef2f4', fontFamily: SANS, fontSize: 16, color: '#5d6d76' }}>{title}</span>
+        <span
+          style={{
+            marginLeft: 16,
+            padding: '5px 16px',
+            borderRadius: 8,
+            background: '#eef2f4',
+            fontFamily: SANS,
+            fontSize: 16,
+            color: '#5d6d76',
+          }}
+        >
+          {title}
+        </span>
       </div>
       <div style={{ position: 'relative', width: bw, height: vh, overflow: 'hidden' }}>
-        <Img src={staticFile(src)} style={{ position: 'absolute', left: tx, top: ty, width: w * s, height: h * s, maxWidth: 'none' }} />
+        <Img
+          src={staticFile(src)}
+          style={{
+            position: 'absolute',
+            left: tx,
+            top: ty,
+            width: w * s,
+            height: h * s,
+            maxWidth: 'none',
+          }}
+        />
         {marks.map((m, i) => (
           <Highlight key={i} m={m} r={toScreen(m.rect)} vw={bw} />
         ))}
@@ -269,7 +370,10 @@ const Highlight: React.FC<{ m: Mark; r: number[]; vw: number }> = ({ m, r, vw })
   const [x, y, w, h] = [r[0] - pad, r[1] - pad, r[2] + pad * 2, r[3] + pad * 2];
   const pulse = interpolate(f - m.from, [6, 30], [0, 1], clamp);
   const breathe = 0.5 + 0.5 * Math.sin((f - m.from) / 9);
-  const labelP = interpolate(f, [m.from + 6, m.from + 18], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
+  const labelP = interpolate(f, [m.from + 6, m.from + 18], [0, 1], {
+    ...clamp,
+    easing: Easing.out(Easing.cubic),
+  });
   return (
     <>
       {m.spot !== false && (
@@ -340,7 +444,10 @@ const Highlight: React.FC<{ m: Mark; r: number[]; vw: number }> = ({ m, r, vw })
   );
 };
 
-const Cursor: React.FC<{ k: Click; toScreen: (p: [number, number]) => number[] }> = ({ k, toScreen }) => {
+const Cursor: React.FC<{ k: Click; toScreen: (p: [number, number]) => number[] }> = ({
+  k,
+  toScreen,
+}) => {
   const f = useCurrentFrame();
   const start = k.f - 22;
   if (f < start || f > k.f + 30) return null;
@@ -367,24 +474,57 @@ const Cursor: React.FC<{ k: Click; toScreen: (p: [number, number]) => number[] }
           transform: `scale(${0.3 + ripple})`,
         }}
       />
-      <svg width="34" height="40" viewBox="0 0 24 28" style={{ position: 'absolute', left: x - 4, top: y - 2, opacity: fade, transform: `scale(${press})`, transformOrigin: '4px 2px', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))' }}>
-        <path d="M2 1 L2 22 L7.5 17 L11 25 L14.5 23.5 L11 15.8 L18.5 15.8 Z" fill="#111" stroke="#fff" strokeWidth="1.6" strokeLinejoin="round" />
+      <svg
+        width="34"
+        height="40"
+        viewBox="0 0 24 28"
+        style={{
+          position: 'absolute',
+          left: x - 4,
+          top: y - 2,
+          opacity: fade,
+          transform: `scale(${press})`,
+          transformOrigin: '4px 2px',
+          filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))',
+        }}
+      >
+        <path
+          d="M2 1 L2 22 L7.5 17 L11 25 L14.5 23.5 L11 15.8 L18.5 15.8 Z"
+          fill="#111"
+          stroke="#fff"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
       </svg>
     </>
   );
 };
 
 /** Fades a nested piece in and out inside a scene. */
-const Fade: React.FC<{ from: number; dur: number; children: React.ReactNode; fadeIn?: boolean }> = ({ from, dur, children, fadeIn = true }) => (
+const Fade: React.FC<{
+  from: number;
+  dur: number;
+  children: React.ReactNode;
+  fadeIn?: boolean;
+}> = ({ from, dur, children, fadeIn = true }) => (
   <Sequence from={from} durationInFrames={dur} layout="none">
     <FadeInner dur={dur} fadeIn={fadeIn}>
       {children}
     </FadeInner>
   </Sequence>
 );
-const FadeInner: React.FC<{ dur: number; fadeIn: boolean; children: React.ReactNode }> = ({ dur, fadeIn, children }) => {
+const FadeInner: React.FC<{ dur: number; fadeIn: boolean; children: React.ReactNode }> = ({
+  dur,
+  fadeIn,
+  children,
+}) => {
   const f = useCurrentFrame();
-  const op = interpolate(f, [0, fadeIn ? 10 : 0.01, dur - 10, dur], [fadeIn ? 0 : 1, 1, 1, 0], clamp);
+  const op = interpolate(
+    f,
+    [0, fadeIn ? 10 : 0.01, dur - 10, dur],
+    [fadeIn ? 0 : 1, 1, 1, 0],
+    clamp,
+  );
   return <AbsoluteFill style={{ opacity: op }}>{children}</AbsoluteFill>;
 };
 
@@ -417,16 +557,55 @@ const Hook: React.FC = () => {
           opacity: card,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontFamily: SANS, fontSize: 22, color: '#6a7a83' }}>
-          <span style={{ padding: '6px 14px', borderRadius: 999, background: '#e6f4ea', color: '#1a7f37', fontWeight: 600 }}>● Open</span>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            fontFamily: SANS,
+            fontSize: 22,
+            color: '#6a7a83',
+          }}
+        >
+          <span
+            style={{
+              padding: '6px 14px',
+              borderRadius: 999,
+              background: '#e6f4ea',
+              color: '#1a7f37',
+              fontWeight: 600,
+            }}
+          >
+            ● Open
+          </span>
           <span>Issue #482 · opened just now</span>
         </div>
-        <div style={{ marginTop: 26, fontFamily: SANS, fontSize: 64, fontWeight: 700, color: '#14232c', letterSpacing: '-0.03em', minHeight: 76 }}>
+        <div
+          style={{
+            marginTop: 26,
+            fontFamily: SANS,
+            fontSize: 64,
+            fontWeight: 700,
+            color: '#14232c',
+            letterSpacing: '-0.03em',
+            minHeight: 76,
+          }}
+        >
           {typed}
           <span style={{ opacity: caret && typed.length < 19 ? 1 : 0, color: K.amber }}>|</span>
         </div>
         <div style={{ marginTop: 22, height: 2, background: '#e8edf0' }} />
-        <div style={{ marginTop: 26, fontFamily: SANS, fontSize: 26, color: '#9aa7ae', fontStyle: 'italic' }}>No description provided.</div>
+        <div
+          style={{
+            marginTop: 26,
+            fontFamily: SANS,
+            fontSize: 26,
+            color: '#9aa7ae',
+            fontStyle: 'italic',
+          }}
+        >
+          No description provided.
+        </div>
         <div style={{ display: 'flex', gap: 16, marginTop: 34 }}>
           {lacks.map((t, i) => {
             const p = spring({ frame: f - at[i], fps: FPS, config: { damping: 12, mass: 0.6 } });
@@ -499,13 +678,36 @@ const Brand: React.FC = () => {
         </div>
       </div>
       <div style={{ marginTop: 44, width: 1300, textAlign: 'center' }}>
-        <Words text="Every bug, with a receipt developers can reproduce." delay={30} size={50} weight={520} color={K.muted} accent={['receipt']} />
+        <Words
+          text="Every bug, with a receipt developers can reproduce."
+          delay={30}
+          size={50}
+          weight={520}
+          color={K.muted}
+          accent={['receipt']}
+        />
       </div>
       <div style={{ display: 'flex', gap: 14, marginTop: 46 }}>
         {chips.map((c, i) => {
-          const p = interpolate(f, [62 + i * 5, 76 + i * 5], [0, 1], { ...clamp, easing: Easing.out(Easing.back(2)) });
+          const p = interpolate(f, [62 + i * 5, 76 + i * 5], [0, 1], {
+            ...clamp,
+            easing: Easing.out(Easing.back(2)),
+          });
           return (
-            <div key={c} style={{ padding: '10px 22px', borderRadius: 999, border: `1px solid ${K.line}`, background: 'rgba(255,255,255,0.05)', fontFamily: MONO, fontSize: 22, color: K.ink, opacity: p, transform: `translateY(${(1 - p) * 16}px)` }}>
+            <div
+              key={c}
+              style={{
+                padding: '10px 22px',
+                borderRadius: 999,
+                border: `1px solid ${K.line}`,
+                background: 'rgba(255,255,255,0.05)',
+                fontFamily: MONO,
+                fontSize: 22,
+                color: K.ink,
+                opacity: p,
+                transform: `translateY(${(1 - p) * 16}px)`,
+              }}
+            >
               <span style={{ color: K.teal }}>✓</span> {c}
             </div>
           );
@@ -520,7 +722,13 @@ const Record: React.FC<{ dur: number }> = ({ dur }) => {
   const swap = sec(2.6);
   return (
     <AbsoluteFill>
-      <FeatureCopy n="01" tag="RECORD" title="Every step, written as it happens." accent={['step,']} sub="Pick the tab, press record, and note each step right in the Chrome side panel." />
+      <FeatureCopy
+        n="01"
+        tag="RECORD"
+        title="Every step, written as it happens."
+        accent={['step,']}
+        sub="Pick the tab, press record, and note each step right in the Chrome side panel."
+      />
       <Fade from={0} dur={swap + 10} fadeIn={false}>
         <Shot
           src="guide/02-choose-tab.png"
@@ -528,7 +736,11 @@ const Record: React.FC<{ dur: number }> = ({ dur }) => {
           h={1200}
           box={[RIGHT_TALL[0], RIGHT_TALL[1] + 120, RIGHT_TALL[2], 820]}
           title="Side panel"
-          cam={[{ f: 0, z: 1 }, { f: 30, z: 1 }, { f: 70, z: 1.25, c: [400, 1000] }]}
+          cam={[
+            { f: 0, z: 1 },
+            { f: 30, z: 1 },
+            { f: 70, z: 1.25, c: [400, 1000] },
+          ]}
           marks={[{ from: 40, rect: [40, 1080, 388, 80], label: 'Start recording' }]}
           clicks={[{ f: 62, at: [234, 1120] }]}
         />
@@ -541,7 +753,12 @@ const Record: React.FC<{ dur: number }> = ({ dur }) => {
           box={RIGHT_TALL}
           title="Side panel · recording"
           enter={false}
-          cam={[{ f: 0, z: 1.05, c: [440, 600] }, { f: 26, z: 1.35, c: [440, 300] }, { f: 60, z: 1.35, c: [440, 560] }, { f: 140, z: 1.3, c: [440, 600] }]}
+          cam={[
+            { f: 0, z: 1.05, c: [440, 600] },
+            { f: 26, z: 1.35, c: [440, 300] },
+            { f: 60, z: 1.35, c: [440, 560] },
+            { f: 140, z: 1.3, c: [440, 600] },
+          ]}
           marks={[
             { from: 12, to: 48, rect: [40, 168, 800, 217], label: '● Recording the tab' },
             { from: 54, to: 72, rect: [52, 540, 776, 55] },
@@ -568,7 +785,13 @@ const Capture: React.FC<{ dur: number }> = ({ dur }) => {
   const swap = sec(4.1);
   return (
     <AbsoluteFill>
-      <FeatureCopy n="02" tag="CAPTURE" title="Console and network, caught for you." accent={['caught']} sub="Errors, stack traces and the exact failing request are recorded automatically." />
+      <FeatureCopy
+        n="02"
+        tag="CAPTURE"
+        title="Console and network, caught for you."
+        accent={['caught']}
+        sub="Errors, stack traces and the exact failing request are recorded automatically."
+      />
       <Fade from={0} dur={swap + 10} fadeIn={false}>
         <Shot
           src="guide/07-console-evidence.png"
@@ -576,9 +799,20 @@ const Capture: React.FC<{ dur: number }> = ({ dur }) => {
           h={1800}
           box={RIGHT_WIDE}
           title="Console evidence"
-          cam={[{ f: 0, z: 1 }, { f: 18, z: 1 }, { f: 50, z: 1.6, c: [1656, 1330] }, { f: swap, z: 1.7, c: [1656, 1330] }]}
+          cam={[
+            { f: 0, z: 1 },
+            { f: 18, z: 1 },
+            { f: 50, z: 1.6, c: [1656, 1330] },
+            { f: swap, z: 1.7, c: [1656, 1330] },
+          ]}
           marks={[
-            { from: 54, to: 82, rect: d(412, 785, 1500, 70), label: '422 Unprocessable Entity', end: true },
+            {
+              from: 54,
+              to: 82,
+              rect: d(412, 785, 1500, 70),
+              label: '422 Unprocessable Entity',
+              end: true,
+            },
             { from: 84, rect: d(412, 862, 1500, 92), label: 'Stack trace', end: true },
           ]}
         />
@@ -591,7 +825,11 @@ const Capture: React.FC<{ dur: number }> = ({ dur }) => {
           box={RIGHT_WIDE}
           title="Network evidence"
           enter={false}
-          cam={[{ f: 0, z: 1.7, c: [1700, 1060] }, { f: 40, z: 1.8, c: [1400, 1270] }, { f: 100, z: 1.85, c: [1350, 1330] }]}
+          cam={[
+            { f: 0, z: 1.7, c: [1700, 1060] },
+            { f: 40, z: 1.8, c: [1400, 1270] },
+            { f: 100, z: 1.85, c: [1350, 1330] },
+          ]}
           marks={[
             { from: 8, to: 40, rect: d(428, 664, 1484, 108), label: 'Failing request' },
             { from: 46, rect: d(455, 945, 560, 56), label: 'The real reason', below: true },
@@ -617,10 +855,19 @@ const Privacy: React.FC = () => {
     ['"email": ', '"jane@shop.example"', '"[REDACTED]"'],
   ];
   const panel = useSpring(4, 18, 1);
-  const badge = interpolate(f, [sec(4.2), sec(4.2) + 14], [0, 1], { ...clamp, easing: Easing.out(Easing.back(1.8)) });
+  const badge = interpolate(f, [sec(4.2), sec(4.2) + 14], [0, 1], {
+    ...clamp,
+    easing: Easing.out(Easing.back(1.8)),
+  });
   return (
     <AbsoluteFill>
-      <FeatureCopy n="03" tag="PRIVATE" title="Secrets never leave your machine." accent={['never']} sub="Tokens, passwords, cookies and emails are redacted locally, before anything is stored." />
+      <FeatureCopy
+        n="03"
+        tag="PRIVATE"
+        title="Secrets never leave your machine."
+        accent={['never']}
+        sub="Tokens, passwords, cookies and emails are redacted locally, before anything is stored."
+      />
       <div
         style={{
           position: 'absolute',
@@ -636,7 +883,16 @@ const Privacy: React.FC = () => {
           transform: `perspective(2200px) translateY(${(1 - panel) * 70}px) rotateX(${(1 - panel) * 9}deg)`,
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: MONO, fontSize: 20, color: K.muted, marginBottom: 22 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontFamily: MONO,
+            fontSize: 20,
+            color: K.muted,
+            marginBottom: 22,
+          }}
+        >
           <span>POST /api/orders · request</span>
           <span style={{ color: K.teal }}>filtered locally</span>
         </div>
@@ -645,10 +901,22 @@ const Privacy: React.FC = () => {
           const sweep = interpolate(f, [t0, t0 + 14], [0, 1], { ...clamp, easing: ease });
           const done = f >= t0 + 8;
           return (
-            <div key={k} style={{ position: 'relative', fontFamily: MONO, fontSize: 30, lineHeight: '64px', color: K.ink, borderTop: i ? `1px solid ${K.line}` : 'none' }}>
+            <div
+              key={k}
+              style={{
+                position: 'relative',
+                fontFamily: MONO,
+                fontSize: 30,
+                lineHeight: '64px',
+                color: K.ink,
+                borderTop: i ? `1px solid ${K.line}` : 'none',
+              }}
+            >
               <span style={{ color: '#8fc7ff' }}>{k}</span>
               <span style={{ position: 'relative' }}>
-                <span style={{ color: done ? K.amber : '#ffb4a8', fontWeight: done ? 600 : 400 }}>{done ? red : secret}</span>
+                <span style={{ color: done ? K.amber : '#ffb4a8', fontWeight: done ? 600 : 400 }}>
+                  {done ? red : secret}
+                </span>
                 {/* Redaction bar sweeps across the secret. */}
                 <span
                   style={{
@@ -678,11 +946,36 @@ const Privacy: React.FC = () => {
           transform: `translateY(${(1 - badge) * 20}px)`,
         }}
       >
-        <div style={{ padding: '16px 26px', borderRadius: 16, background: K.amberSoft, border: `1px solid ${K.amber}`, fontFamily: SANS, fontSize: 28, fontWeight: 600, color: K.amber }}>
+        <div
+          style={{
+            padding: '16px 26px',
+            borderRadius: 16,
+            background: K.amberSoft,
+            border: `1px solid ${K.amber}`,
+            fontFamily: SANS,
+            fontSize: 28,
+            fontWeight: 600,
+            color: K.amber,
+          }}
+        >
           4 sensitive values redacted
         </div>
-        <div style={{ padding: '16px 26px', borderRadius: 16, background: 'rgba(47,181,163,0.14)', border: `1px solid ${K.teal}`, fontFamily: MONO, fontSize: 24, color: K.teal, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ width: 12, height: 12, borderRadius: 6, background: K.teal }} /> REPORT STAYS LOCAL
+        <div
+          style={{
+            padding: '16px 26px',
+            borderRadius: 16,
+            background: 'rgba(47,181,163,0.14)',
+            border: `1px solid ${K.teal}`,
+            fontFamily: MONO,
+            fontSize: 24,
+            color: K.teal,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <span style={{ width: 12, height: 12, borderRadius: 6, background: K.teal }} /> REPORT
+          STAYS LOCAL
         </div>
       </div>
       {lines.map((_, i) => (
@@ -700,7 +993,13 @@ const Export: React.FC<{ dur: number }> = ({ dur }) => {
   const zipClick = swap + 92;
   return (
     <AbsoluteFill>
-      <FeatureCopy n="04" tag="SHARE" title="Mark it. Zip it. Ship it." accent={['Ship']} sub="Highlight the problem on a frame, then download one GitHub-ready ZIP." />
+      <FeatureCopy
+        n="04"
+        tag="SHARE"
+        title="Mark it. Zip it. Ship it."
+        accent={['Ship']}
+        sub="Highlight the problem on a frame, then download one GitHub-ready ZIP."
+      />
       <Fade from={0} dur={swap + 10} fadeIn={false}>
         <Shot
           src="guide/annotated-frame.png"
@@ -708,7 +1007,11 @@ const Export: React.FC<{ dur: number }> = ({ dur }) => {
           h={1800}
           box={RIGHT_WIDE}
           title="Visual evidence"
-          cam={[{ f: 0, z: 1 }, { f: 16, z: 1 }, { f: 48, z: 1.9, c: [2140, 1100] }]}
+          cam={[
+            { f: 0, z: 1 },
+            { f: 16, z: 1 },
+            { f: 48, z: 1.9, c: [2140, 1100] },
+          ]}
           marks={[{ from: 50, rect: d(1280, 755, 415, 103), label: 'Annotated frame' }]}
         />
       </Fade>
@@ -720,9 +1023,18 @@ const Export: React.FC<{ dur: number }> = ({ dur }) => {
           box={RIGHT_WIDE}
           title="Choose files"
           enter={false}
-          cam={[{ f: 0, z: 1.25, c: [1680, 760] }, { f: 70, z: 1.25, c: [1680, 760] }, { f: 92, z: 1.15, c: [1900, 1300] }]}
+          cam={[
+            { f: 0, z: 1.25, c: [1680, 760] },
+            { f: 70, z: 1.25, c: [1680, 760] },
+            { f: 92, z: 1.15, c: [1900, 1300] },
+          ]}
           marks={[
-            ...[290, 386, 482, 579, 674].map((y, i) => ({ from: 6 + i * 11, to: 6 + i * 11 + 12, rect: d(1812, y + 30, 98, 36), spot: false })),
+            ...[290, 386, 482, 579, 674].map((y, i) => ({
+              from: 6 + i * 11,
+              to: 6 + i * 11 + 12,
+              rect: d(1812, y + 30, 98, 36),
+              spot: false,
+            })),
             { from: zipClick - 4, rect: d(1748, 1183, 218, 50), label: 'Download as ZIP' },
           ]}
           clicks={[{ f: zipClick + 6, at: d(1857, 1208, 0, 0).slice(0, 2) as [number, number] }]}
@@ -749,14 +1061,49 @@ const Cta: React.FC = () => {
   const url = interpolate(f, [40, 56], [0, 1], clamp);
   return (
     <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 26, transform: `scale(${0.85 + 0.15 * mark})`, opacity: mark }}>
-        <div style={{ width: 104, height: 104, borderRadius: 28, background: '#fff', display: 'grid', placeItems: 'center', boxShadow: '0 0 50px rgba(240,166,62,0.4)' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 26,
+          transform: `scale(${0.85 + 0.15 * mark})`,
+          opacity: mark,
+        }}
+      >
+        <div
+          style={{
+            width: 104,
+            height: 104,
+            borderRadius: 28,
+            background: '#fff',
+            display: 'grid',
+            placeItems: 'center',
+            boxShadow: '0 0 50px rgba(240,166,62,0.4)',
+          }}
+        >
           <Img src={staticFile('brand/bugreceipt-mark.svg')} style={{ width: 66, height: 66 }} />
         </div>
-        <div style={{ fontFamily: SANS, fontWeight: 720, fontSize: 104, letterSpacing: '-0.05em', color: K.ink }}>BugReceipt</div>
+        <div
+          style={{
+            fontFamily: SANS,
+            fontWeight: 720,
+            fontSize: 104,
+            letterSpacing: '-0.05em',
+            color: K.ink,
+          }}
+        >
+          BugReceipt
+        </div>
       </div>
       <div style={{ marginTop: 26 }}>
-        <Words text="Free. Private. Built for Chrome." delay={10} size={44} weight={520} color={K.muted} accent={['Free.', 'Private.']} />
+        <Words
+          text="Free. Private. Built for Chrome."
+          delay={10}
+          size={44}
+          weight={520}
+          color={K.muted}
+          accent={['Free.', 'Private.']}
+        />
       </div>
       <div
         style={{
@@ -780,9 +1127,20 @@ const Cta: React.FC = () => {
       >
         <Img src={staticFile('brand/chrome-logo.svg')} style={{ width: 46, height: 46 }} />
         Add to Chrome, it's free
-        <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${shine}%`, width: 120, background: 'linear-gradient(100deg, transparent, rgba(255,255,255,0.55), transparent)' }} />
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: `${shine}%`,
+            width: 120,
+            background: 'linear-gradient(100deg, transparent, rgba(255,255,255,0.55), transparent)',
+          }}
+        />
       </div>
-      <div style={{ marginTop: 30, fontFamily: MONO, fontSize: 26, color: K.muted, opacity: url }}>bugreceipt.netlify.app</div>
+      <div style={{ marginTop: 30, fontFamily: MONO, fontSize: 26, color: K.muted, opacity: url }}>
+        bugreceipt.netlify.app
+      </div>
     </AbsoluteFill>
   );
 };
@@ -817,27 +1175,84 @@ export const Launch: React.FC = () => (
 export const LaunchThumbnail: React.FC = () => (
   <AbsoluteFill style={{ background: K.bg }}>
     <Backdrop />
-    <div style={{ position: 'absolute', left: 64, top: 0, bottom: 0, width: 600, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+    <div
+      style={{
+        position: 'absolute',
+        left: 64,
+        top: 0,
+        bottom: 0,
+        width: 600,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 30 }}>
-        <div style={{ width: 64, height: 64, borderRadius: 18, background: '#fff', display: 'grid', placeItems: 'center' }}>
+        <div
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 18,
+            background: '#fff',
+            display: 'grid',
+            placeItems: 'center',
+          }}
+        >
           <Img src={staticFile('brand/bugreceipt-mark.svg')} style={{ width: 42, height: 42 }} />
         </div>
-        <span style={{ fontFamily: SANS, fontWeight: 720, fontSize: 44, letterSpacing: '-0.04em', color: K.ink }}>BugReceipt</span>
+        <span
+          style={{
+            fontFamily: SANS,
+            fontWeight: 720,
+            fontSize: 44,
+            letterSpacing: '-0.04em',
+            color: K.ink,
+          }}
+        >
+          BugReceipt
+        </span>
       </div>
-      <div style={{ fontFamily: SANS, fontWeight: 760, fontSize: 92, lineHeight: 0.98, letterSpacing: '-0.05em', color: K.ink }}>
+      <div
+        style={{
+          fontFamily: SANS,
+          fontWeight: 760,
+          fontSize: 92,
+          lineHeight: 0.98,
+          letterSpacing: '-0.05em',
+          color: K.ink,
+        }}
+      >
         Bug reports
         <br />
         with <span style={{ color: K.amber }}>proof.</span>
       </div>
       <div style={{ display: 'flex', gap: 10, marginTop: 34 }}>
         {['Steps', 'Console', 'Network', 'Private'].map((c) => (
-          <span key={c} style={{ padding: '8px 16px', borderRadius: 999, border: `1px solid ${K.line}`, background: 'rgba(255,255,255,0.06)', fontFamily: MONO, fontSize: 20, color: K.ink }}>
+          <span
+            key={c}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 999,
+              border: `1px solid ${K.line}`,
+              background: 'rgba(255,255,255,0.06)',
+              fontFamily: MONO,
+              fontSize: 20,
+              color: K.ink,
+            }}
+          >
             <span style={{ color: K.teal }}>✓</span> {c}
           </span>
         ))}
       </div>
     </div>
-    <div style={{ position: 'absolute', inset: 0, transform: 'perspective(1800px) rotateY(-10deg)', transformOrigin: '100% 50%' }}>
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        transform: 'perspective(1800px) rotateY(-10deg)',
+        transformOrigin: '100% 50%',
+      }}
+    >
       <Shot
         src="guide/07-console-evidence.png"
         w={2880}
